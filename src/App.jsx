@@ -3,14 +3,12 @@ import {
   CalendarDays,
   ClipboardCheck,
   ClipboardList,
+  Download,
   FileBarChart2,
   Gauge,
   Home,
   Layers3,
-  Menu,
-  MessageSquareText,
-  Paperclip,
-  Search,
+  Megaphone,
   Settings,
   ShieldCheck,
   Users,
@@ -25,511 +23,182 @@ const navItems = [
   { label: 'Users', icon: Users },
   { label: 'Groups', icon: Layers3 },
   { label: 'Calendar', icon: CalendarDays },
-  { label: 'Announcements', icon: MessageSquareText },
+  { label: 'Announcements', icon: Megaphone },
   { label: 'Admin', icon: Gauge },
   { label: 'Settings', icon: Settings },
 ]
 
 const stats = [
-  { label: 'Overall Compliance', value: '87%', detail: '+5% from last month', tone: 'good' },
-  { label: 'Total Users', value: '248', detail: '+12 new this month', tone: 'neutral' },
-  { label: 'Training Overdue', value: '31', detail: '-8 from last month', tone: 'danger' },
-  { label: 'Due This Month', value: '42', detail: '+3 from last month', tone: 'neutral' },
+  {
+    label: 'Overall Compliance',
+    value: '87%',
+    detail: '+5% from last month',
+    tone: 'positive',
+  },
+  {
+    label: 'Total Users',
+    value: '248',
+    detail: '+12 new this month',
+    tone: 'positive',
+  },
+  {
+    label: 'Training Overdue',
+    value: '31',
+    detail: '-8 from last month',
+    tone: 'negative',
+  },
+  {
+    label: 'Due This Month',
+    value: '42',
+    detail: '+3 from last month',
+    tone: 'positive',
+  },
+]
+
+const compliance = [
+  { label: 'Compliant', value: '216 (87%)', color: 'green' },
+  { label: 'In Progress', value: '18 (7%)', color: 'yellow' },
+  { label: 'Overdue', value: '14 (6%)', color: 'red' },
+  { label: 'Not Started', value: '0 (0%)', color: 'gray' },
 ]
 
 const dueSoon = [
-  ['Cyber Awareness Challenge', 'Due in 7 days', '48 users'],
-  ['Secure Communications Refresher', 'Due in 10 days', '22 users'],
-  ['OPSEC Level I', 'Due in 14 days', '15 users'],
-  ['Privacy Act Refresher', 'Due in 20 days', '8 users'],
-]
-
-const trainingRows = [
-  ['Cyber Awareness Challenge', 'Required', 'Annual', '31 May 2024', 'In Progress', '248'],
-  ['Secure Communications Refresher', 'Required', 'Annual', '3 Jun 2024', 'Not Started', '248'],
-  ['OPSEC Level I', 'Required', 'Annual', '7 Jun 2024', 'Completed', '248'],
-  ['Privacy Act Refresher', 'Required', 'Annual', '16 Jun 2024', 'In Progress', '248'],
-  ['Insider Threat Awareness', 'Required', 'Annual', '20 Jun 2024', 'Not Started', '248'],
-  ['Phishing Awareness', 'Elective', 'Annual', '28 Jun 2024', 'In Progress', '142'],
-]
-
-const mobileTrainings = [
-  ['Cyber Awareness Challenge', 'In Progress', '60'],
-  ['Secure Communications Refresher', 'Not Started', '0'],
-  ['OPSEC Level I', 'Completed', '100'],
-  ['Privacy Act Refresher', 'In Progress', '90'],
-]
-
-const reportLinks = [
-  'Compliance Report',
-  'Training Status Report',
-  'Overdue Training Report',
+  ['Cyber Awareness Challenge', 'Due in 7 days - 48 users'],
+  ['Secure Communications Refresher', 'Due in 10 days - 22 users'],
+  ['OPSEC Level I', 'Due in 14 days - 15 users'],
+  ['Privacy Act Refresher', 'Due in 20 days - 8 users'],
 ]
 
 function App() {
   return (
-    <main className="workspace">
-      <BrandPanel />
-      <section className="showcase">
-        <header className="showcase-header">
-          <p>1. Dashboard (Home)</p>
-          <p>2. Mobile App (Responsive)</p>
-        </header>
+    <main className="app-shell">
+      <aside className="sidebar" aria-label="SkillIssue navigation">
+        <Brand />
 
-        <div className="hero-grid">
-          <Dashboard />
-          <MobilePreview />
-        </div>
-
-        <div className="secondary-grid">
-          <TrainingView />
-          <UserProgress />
-          <AdditionalPages />
-        </div>
-
-        <LogoStrip />
-      </section>
-    </main>
-  )
-}
-
-function LogoMark({ small = false }) {
-  return (
-    <div className={small ? 'logo-mark small' : 'logo-mark'} aria-hidden="true">
-      <ClipboardCheck size={small ? 22 : 36} strokeWidth={2.4} />
-    </div>
-  )
-}
-
-function BrandLockup({ light = false }) {
-  return (
-    <div className={light ? 'brand-lockup light' : 'brand-lockup'}>
-      <LogoMark small />
-      <div>
-        <strong>SkillIssue</strong>
-        <span>Track. Train. Ready.</span>
-      </div>
-    </div>
-  )
-}
-
-function BrandPanel() {
-  return (
-    <aside className="brand-panel">
-      <section className="brand-card dark-card">
-        <LogoMark />
-        <h1>SkillIssue</h1>
-        <p>Track. Train. Ready.</p>
-        <span>Ancillary Training Tracker for the Air Force Software Factory</span>
-      </section>
-
-      <section className="brand-card">
-        <h2>Brand Identity</h2>
-        <div className="identity-row">
-          <div>
-            <small>Logo</small>
-            <BrandLockup />
-          </div>
-          <div>
-            <small>Icon Mark</small>
-            <LogoMark />
-          </div>
-        </div>
-      </section>
-
-      <section className="brand-card">
-        <h2>Color Palette</h2>
-        <div className="swatches">
-          {['#6d20d8', '#8b35ea', '#b26cff', '#101827', '#f5f4f0'].map((color) => (
-            <div className="swatch" key={color}>
-              <span style={{ background: color }} />
-              <code>{color}</code>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="brand-card typography">
-        <h2>Typography</h2>
-        <div>
-          <strong>Aa</strong>
-          <p>Inter</p>
-          <span>ABCDEFGHIJKLMNOPQRSTUVWXYZ</span>
-          <span>abcdefghijklmnopqrstuvwxyz</span>
-          <span>0123456789</span>
-        </div>
-      </section>
-
-      <section className="brand-card">
-        <h2>Buttons</h2>
-        <div className="button-row">
-          <button className="primary-btn" type="button">Primary Button</button>
-          <button className="secondary-btn" type="button">Secondary</button>
-          <a href="#reports">Text Link +</a>
-        </div>
-      </section>
-
-      <section className="brand-card">
-        <h2>Status Badges</h2>
-        <div className="badge-row">
-          <StatusBadge status="Completed" />
-          <StatusBadge status="In Progress" />
-          <StatusBadge status="Overdue" />
-          <StatusBadge status="Not Started" />
-        </div>
-      </section>
-    </aside>
-  )
-}
-
-function Shell({ active = 'Dashboard', children, compact = false }) {
-  return (
-    <div className={compact ? 'app-shell compact' : 'app-shell'}>
-      <aside className="sidebar">
-        <BrandLockup light />
-        <nav aria-label="Main navigation">
-          {navItems.map(({ label, icon: Icon }) => (
-            <button className={label === active ? 'active' : ''} key={label} type="button">
-              <Icon size={16} />
+        <nav>
+          {navItems.map(({ label, icon: Icon, active }) => (
+            <button className={active ? 'active' : ''} key={label} type="button">
+              <Icon size={18} strokeWidth={2.2} />
               <span>{label}</span>
             </button>
           ))}
         </nav>
-        <div className="profile-chip">
-          <div>TS</div>
+
+        <div className="manager-card">
+          <div className="avatar">TS</div>
           <span>
             TSgt Jane Doe
             <small>Training Manager</small>
           </span>
         </div>
       </aside>
-      <div className="app-content">{children}</div>
-    </div>
-  )
-}
 
-function Dashboard() {
-  return (
-    <section className="panel dashboard-panel" aria-label="Dashboard preview">
-      <Shell>
-        <header className="topbar">
+      <section className="dashboard" aria-label="Dashboard home">
+        <header className="dashboard-header">
           <div>
-            <h2>Welcome back, TSgt Jane Doe</h2>
-            <p>Here's what's happening with your training program.</p>
+            <p className="eyebrow">1. Dashboard (Home)</p>
+            <h1>Welcome back, TSgt Jane Doe</h1>
+            <span>Here's what's happening with your training program.</span>
           </div>
-          <div className="top-actions">
-            <Bell size={18} />
-            <button className="primary-btn" type="button">Export Report</button>
+
+          <div className="header-actions">
+            <button className="icon-button" aria-label="Notifications" type="button">
+              <Bell size={19} />
+              <i />
+            </button>
+            <button className="primary-button" type="button">
+              <Download size={16} />
+              Export Report
+            </button>
           </div>
         </header>
 
-        <div className="stats-grid">
+        <section className="stats-grid" aria-label="Training statistics">
           {stats.map((stat) => (
             <article className="stat-card" key={stat.label}>
-              <span>{stat.label}</span>
+              <p>{stat.label}</p>
               <strong>{stat.value}</strong>
-              <small className={stat.tone}>{stat.detail}</small>
+              <span className={stat.tone}>{stat.detail}</span>
             </article>
           ))}
-        </div>
+        </section>
 
-        <div className="dashboard-grid">
-          <article className="content-card compliance">
-            <h3>Compliance Overview</h3>
-            <div className="compliance-body">
-              <div className="donut" aria-label="87 percent compliant">
-                <span>87%</span>
-                <small>Compliant</small>
-              </div>
-              <ul>
-                <li><b className="green" />Compliant <span>216 (87%)</span></li>
-                <li><b className="yellow" />In Progress <span>18 (7%)</span></li>
-                <li><b className="red" />Overdue <span>14 (6%)</span></li>
-                <li><b className="gray" />Not Started <span>0 (0%)</span></li>
-              </ul>
+        <section className="main-grid">
+          <article className="panel compliance-card">
+            <div className="panel-header">
+              <h2>Compliance Overview</h2>
             </div>
+
+            <div className="compliance-layout">
+              <div className="donut" aria-label="87 percent compliant">
+                <strong>87%</strong>
+                <span>Compliant</span>
+              </div>
+
+              <div className="legend">
+                {compliance.map((item) => (
+                  <div className="legend-row" key={item.label}>
+                    <b className={item.color} />
+                    <span>{item.label}</span>
+                    <strong>{item.value}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             <a href="#reports">View full report +</a>
           </article>
 
-          <article className="content-card">
-            <div className="card-title">
-              <h3>Training Due Soon</h3>
+          <article className="panel due-card" id="training">
+            <div className="panel-header">
+              <h2>Training Due Soon</h2>
               <a href="#training">View All</a>
             </div>
-            <TrainingList />
-          </article>
-        </div>
 
-        <article className="content-card announcements">
-          <MessageSquareText size={22} />
+            <div className="due-list">
+              {dueSoon.map(([title, subtitle]) => (
+                <div className="due-item" key={title}>
+                  <div>
+                    <ClipboardCheck size={18} />
+                  </div>
+                  <span>
+                    <strong>{title}</strong>
+                    <small>{subtitle}</small>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </article>
+        </section>
+
+        <section className="announcement panel" id="announcements">
+          <div className="announcement-icon">
+            <Megaphone size={22} />
+          </div>
           <div>
-            <h3>Recent Announcements</h3>
+            <h2>Recent Announcements</h2>
             <p>Annual training audit begins 1 Jun 2026. Ensure all records are up to date.</p>
           </div>
           <a href="#announcements">View All</a>
-        </article>
-      </Shell>
-    </section>
+        </section>
+
+        <span id="reports" className="anchor-target" aria-hidden="true" />
+      </section>
+    </main>
   )
 }
 
-function TrainingList() {
+function Brand() {
   return (
-    <div className="training-list">
-      {dueSoon.map(([name, due, users]) => (
-        <div className="training-item" key={name}>
-          <ClipboardCheck size={18} />
-          <span>
-            <strong>{name}</strong>
-            <small>{due} - {users}</small>
-          </span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function MobilePreview() {
-  return (
-    <section className="mobile-wrap" aria-label="Mobile responsive previews">
-      <PhoneFrame>
-        <div className="mobile-head">
-          <BrandLockup />
-          <Menu size={18} />
-        </div>
-        <h3>Welcome back, TSgt Jane Doe</h3>
-        <article className="mobile-card">
-          <span>Overall Compliance</span>
-          <strong>87%</strong>
-          <small>+5% from last month</small>
-          <div className="sparkline" />
-        </article>
-        <article className="mobile-card">
-          <div className="card-title">
-            <h4>Training Due Soon</h4>
-            <a href="#training">View All</a>
-          </div>
-          <TrainingList />
-        </article>
-        <MobileTabs />
-      </PhoneFrame>
-
-      <PhoneFrame>
-        <div className="mobile-head centered">
-          <Search size={17} />
-          <strong>My Training</strong>
-          <Menu size={17} />
-        </div>
-        <div className="segmented">
-          <button className="active" type="button">All</button>
-          <button type="button">In Progress</button>
-          <button type="button">Completed</button>
-          <button type="button">Overdue</button>
-        </div>
-        <div className="mobile-progress-list">
-          {mobileTrainings.map(([name, status, percent]) => (
-            <article key={name}>
-              <ClipboardCheck size={18} />
-              <span>
-                <strong>{name}</strong>
-                <small>{status}</small>
-                <i><b style={{ width: `${percent}%` }} /></i>
-              </span>
-              <em>{percent}%</em>
-            </article>
-          ))}
-        </div>
-        <MobileTabs active="My Training" />
-      </PhoneFrame>
-    </section>
-  )
-}
-
-function PhoneFrame({ children }) {
-  return (
-    <div className="phone">
-      <div className="notch" />
-      <div className="phone-screen">{children}</div>
-    </div>
-  )
-}
-
-function MobileTabs({ active = 'Dashboard' }) {
-  const tabs = [
-    ['Dashboard', Home],
-    ['My Training', ShieldCheck],
-    ['Reports', FileBarChart2],
-    ['More', Menu],
-  ]
-  return (
-    <nav className="mobile-tabs" aria-label="Mobile navigation">
-      {tabs.map(([label, Icon]) => (
-        <button className={label === active ? 'active' : ''} key={label} type="button">
-          <Icon size={15} />
-          <span>{label}</span>
-        </button>
-      ))}
-    </nav>
-  )
-}
-
-function TrainingView() {
-  return (
-    <section className="panel">
-      <p className="section-label">3. Training Tracking View</p>
-      <Shell active="Training" compact>
-        <header className="table-header">
-          <h2>Training</h2>
-          <Bell size={18} />
-        </header>
-        <div className="tabs">
-          {['All Training', 'Required', 'Electives', 'Mandatory'].map((tab, index) => (
-            <button className={index === 0 ? 'active' : ''} key={tab} type="button">{tab}</button>
-          ))}
-        </div>
-        <div className="filters">
-          <label>
-            <Search size={15} />
-            <input aria-label="Search training" placeholder="Search training..." />
-          </label>
-          <button className="secondary-btn" type="button">Filter</button>
-          <button className="secondary-btn" type="button">Group By</button>
-          <button className="primary-btn" type="button">Add Training</button>
-        </div>
-        <TrainingTable />
-      </Shell>
-    </section>
-  )
-}
-
-function TrainingTable() {
-  return (
-    <div className="training-table" id="training">
-      <div className="row header">
-        <span>Training Name</span>
-        <span>Type</span>
-        <span>Frequency</span>
-        <span>Due Date</span>
-        <span>Status</span>
-        <span>Users</span>
+    <div className="brand">
+      <div className="brand-mark" aria-hidden="true">
+        <ClipboardCheck size={26} strokeWidth={2.5} />
       </div>
-      {trainingRows.map((row) => (
-        <div className="row" key={row[0]}>
-          {row.map((cell, index) => (
-            index === 4 ? <StatusBadge key={cell} status={cell} /> : <span key={cell}>{cell}</span>
-          ))}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function StatusBadge({ status }) {
-  const className = status.toLowerCase().replace(/\s+/g, '-')
-  return <span className={`status ${className}`}>{status}</span>
-}
-
-function UserProgress() {
-  return (
-    <section className="panel">
-      <p className="section-label">4. User Progress / Compliance</p>
-      <Shell active="Users" compact>
-        <header className="table-header">
-          <h2>User Details</h2>
-          <Search size={18} />
-        </header>
-        <div className="user-summary">
-          <div className="avatar">AJ</div>
-          <div>
-            <h3>TSgt Alex Smith</h3>
-            <p>Development Lead</p>
-          </div>
-        </div>
-        <div className="metrics">
-          {[
-            ['Overall', '92%'],
-            ['Overall Compliance', '92%'],
-            ['Assigned Training', '11/12'],
-            ['Overdue', '1'],
-          ].map(([label, value]) => (
-            <article key={label}>
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </article>
-          ))}
-        </div>
-        <div className="tabs">
-          {['Training Progress', 'Profile', 'Groups', 'History'].map((tab, index) => (
-            <button className={index === 0 ? 'active' : ''} key={tab} type="button">{tab}</button>
-          ))}
-        </div>
-        <TrainingTable />
-      </Shell>
-    </section>
-  )
-}
-
-function AdditionalPages() {
-  return (
-    <section className="additional" id="reports">
-      <p className="section-label">5. Additional Pages</p>
-      <div className="additional-grid">
-        <article className="info-card about-card">
-          <h3>About SkillIssue</h3>
-          <p>SkillIssue is an ancillary training tracker built for the Air Force Software Factory to simplify training, reporting, and compliance management.</p>
-          <ul>
-            <li>Built for Airmen, by Airmen</li>
-            <li>Secure, reliable, compliant</li>
-            <li>Track, train, ready</li>
-          </ul>
-          <LogoMark />
-        </article>
-        <article className="info-card reports-card">
-          <h3>Reports</h3>
-          {reportLinks.map((link) => (
-            <button type="button" key={link}>
-              <FileBarChart2 size={18} />
-              <span>{link}<small>Generate summary</small></span>
-              <Paperclip size={15} />
-            </button>
-          ))}
-          <button className="primary-btn" type="button">Custom Report Builder</button>
-        </article>
-        <article className="info-card">
-          <h3>Contact</h3>
-          <p>Have questions or need help? We're here to help.</p>
-          <dl>
-            <div><dt>Email</dt><dd>skillissue@us.af.mil</dd></div>
-            <div><dt>DSN</dt><dd>555-1234</dd></div>
-            <div><dt>Comm</dt><dd>(719) 555-1234</dd></div>
-          </dl>
-        </article>
-        <article className="info-card settings-card">
-          <h3>Admin Settings</h3>
-          {['Training Categories', 'Users & Permissions', 'Groups', 'System Settings', 'Audit Logs'].map((item) => (
-            <button type="button" key={item}>
-              <Settings size={15} />
-              <span>{item}</span>
-            </button>
-          ))}
-        </article>
-      </div>
-    </section>
-  )
-}
-
-function LogoStrip() {
-  return (
-    <section className="logo-strip">
-      <p className="section-label">6. Brand Variations (Logo Options)</p>
       <div>
-        <BrandLockup />
-        <BrandLockup light />
-        <BrandLockup light />
-        <BrandLockup />
-        <BrandLockup light />
+        <strong>SkillIssue</strong>
+        <span>Track. Train. Ready.</span>
       </div>
-    </section>
+    </div>
   )
 }
 
