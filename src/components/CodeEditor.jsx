@@ -4,9 +4,24 @@ import { cpp } from '@codemirror/lang-cpp';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { EditorView, keymap } from '@codemirror/view';
 import { Prec } from '@codemirror/state';
-import { indentUnit } from '@codemirror/language';
+import { indentUnit, syntaxHighlighting, HighlightStyle } from '@codemirror/language';
+import { tags as t } from '@lezer/highlight';
 import { lintGutter, setDiagnostics } from '@codemirror/lint';
 import { cppCompletions } from '../lib/completions.js';
+
+// One Dark's coral (#e06c75) is just under WCAG AA contrast on its background; brighten it slightly.
+const darkContrastFix = [
+  syntaxHighlighting(HighlightStyle.define([{ tag: [t.name, t.deleted, t.character, t.propertyName, t.macroName], color: '#ef8a92' }])),
+  EditorView.theme({ '.cm-gutters': { color: '#9aa3b5' } }, { dark: true }),
+];
+// The default light theme's strings/numbers are too faint on white.
+const lightContrastFix = syntaxHighlighting(
+  HighlightStyle.define([
+    { tag: [t.string, t.special(t.string)], color: '#a11' },
+    { tag: [t.number, t.bool, t.atom], color: '#164' },
+    { tag: [t.processingInstruction, t.meta], color: '#555' },
+  ]),
+);
 
 /** Convert parsed compiler diagnostics into CodeMirror diagnostics for the given document. */
 function toCm(doc, diags) {
@@ -53,6 +68,7 @@ export default function CodeEditor({ value, onChange, onRun, onCheck, onView, di
   const extensions = useMemo(
     () => [
       cpp(),
+      Prec.high(theme === 'dark' ? darkContrastFix : lightContrastFix),
       ...cppCompletions,
       lintGutter(),
       indentUnit.of('    '),
@@ -74,7 +90,7 @@ export default function CodeEditor({ value, onChange, onRun, onCheck, onView, di
         '.cm-tooltip-lint': { maxWidth: '520px', whiteSpace: 'pre-wrap' },
       }),
     ],
-    [fontSize, label],
+    [fontSize, label, theme],
   );
 
   return (

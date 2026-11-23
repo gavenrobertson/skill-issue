@@ -31,7 +31,7 @@ const marked = new Marked({
       const [language, ...rest] = info.split(/\s+/);
       const meta = rest.join(' ');
       if (language === 'output') {
-        return `<div class="codeblock output"><div class="codeblock-bar"><span class="label">Output</span></div><pre><code>${esc(text)}</code></pre></div>`;
+        return `<div class="codeblock output"><div class="codeblock-bar"><span class="label">Output</span></div><pre tabindex="0"><code>${esc(text)}</code></pre></div>`;
       }
       if (language === 'cpp' || language === 'c++') {
         const runnable = /\brun\b/.test(meta);
@@ -41,10 +41,10 @@ const marked = new Marked({
           : broken
             ? `<div class="codeblock-bar error"><span class="label">✗ Does not compile</span><span class="bar-actions"><button class="run-example ghost" data-run>See the error</button></span></div>`
             : '';
-        return `<div class="codeblock${runnable ? ' runnable' : ''}${broken ? ' broken' : ''}">${bar}<pre><code class="hljs language-cpp">${highlight(text)}</code></pre>${bar ? '' : COPY.replace('copy-code', 'copy-code floating')}</div>`;
+        return `<div class="codeblock${runnable ? ' runnable' : ''}${broken ? ' broken' : ''}">${bar}<pre tabindex="0"><code class="hljs language-cpp">${highlight(text)}</code></pre>${bar ? '' : COPY.replace('copy-code', 'copy-code floating')}</div>`;
       }
       const shell = /^(sh|bash|shell|console)$/.test(language) || (!language && /^(g\+\+|clang|\.\/)/m.test(text));
-      return `<div class="codeblock plain"><pre><code class="hljs">${shell ? highlight(text, 'bash') : esc(text)}</code></pre></div>`;
+      return `<div class="codeblock plain"><pre tabindex="0"><code class="hljs">${shell ? highlight(text, 'bash') : esc(text)}</code></pre></div>`;
     },
     link({ href, title, tokens }) {
       const text = this.parser.parseInline(tokens);

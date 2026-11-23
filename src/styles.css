@@ -12,6 +12,7 @@
   --accent: #8b6cff;
   --accent-2: #a78bfa;
   --accent-soft: rgba(139, 108, 255, 0.14);
+  --accent-strong: #6a46f0;
   --good: #3ecf8e;
   --good-soft: rgba(62, 207, 142, 0.12);
   --bad: #ff6b6b;
@@ -38,15 +39,16 @@
   --border-2: #cfd4e1;
   --text: #171a26;
   --text-2: #3b4256;
-  --muted: #6b7286;
+  --muted: #5d6478;
   --accent: #6d4aff;
   --accent-2: #5b3df0;
   --accent-soft: rgba(109, 74, 255, 0.1);
-  --good: #12925e;
+  --accent-strong: #5b3df0;
+  --good: #0b7a4b;
   --good-soft: rgba(18, 146, 94, 0.1);
-  --bad: #d93b3b;
+  --bad: #c42b2b;
   --bad-soft: rgba(217, 59, 59, 0.08);
-  --warn: #b7791f;
+  --warn: #8a5a0f;
   --warn-soft: rgba(183, 121, 31, 0.1);
   --info: #2563eb;
   --info-soft: rgba(37, 99, 235, 0.07);
@@ -100,7 +102,7 @@ kbd {
   border: 1px solid var(--border-2);
   border-bottom-width: 2px;
   border-radius: 5px;
-  color: var(--muted);
+  color: var(--text-2);
   background: var(--panel-2);
 }
 .muted {
@@ -165,8 +167,8 @@ kbd {
   cursor: not-allowed;
 }
 .btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
   color: #fff;
 }
 .btn.primary:hover {
@@ -267,7 +269,7 @@ kbd {
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: var(--accent);
+  background: var(--accent-strong);
   color: #fff;
   font-size: 15px;
 }
@@ -638,7 +640,7 @@ body.dragging .split-handle {
 }
 .run-example {
   border: none;
-  background: var(--accent);
+  background: var(--accent-strong);
   color: #fff;
   font-weight: 700;
   font-size: 12px;
@@ -710,7 +712,7 @@ body.dragging .split-handle {
   color: #1e66f5;
 }
 :root[data-theme='light'] .hljs-string {
-  color: #40a02b;
+  color: #2b7a1c;
 }
 :root[data-theme='light'] .hljs-number,
 :root[data-theme='light'] .hljs-literal {
@@ -1681,7 +1683,7 @@ body.dragging .split-handle {
   z-index: 200;
   padding: 8px 14px;
   border-radius: 8px;
-  background: var(--accent);
+  background: var(--accent-strong);
   color: #fff;
   font-weight: 700;
 }

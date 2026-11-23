@@ -123,8 +123,8 @@ export default function App() {
           <div style={{ width: `${pct}%` }} />
         </div>
         <nav className="top-nav" aria-label="Main">
-          <button className="search-btn" onClick={() => setDialog('search')} aria-label="Search lessons">
-            <Search size={15} aria-hidden="true" /> <span>Search</span> <kbd>Ctrl K</kbd>
+          <button className="search-btn" onClick={() => setDialog('search')} title="Search lessons (Ctrl K)">
+            <Search size={15} aria-hidden="true" /> <span>Search</span> <kbd aria-hidden="true">Ctrl K</kbd>
           </button>
           <a href="#/practice" className={`icon-btn${route.page === 'practice' ? ' active' : ''}`} title="Practice" aria-label="Practice">
             <Dumbbell size={18} aria-hidden="true" />
