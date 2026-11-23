@@ -309,8 +309,9 @@ with readable syntax: `template <std::integral T>`.
 - **Forgetting `_v`/`_t`**: `std::is_integral<T>` is a *type*; in a condition you need
   `std::is_integral_v<T>` (or `::value`).
 - **`is_same_v<T, int>` when `T` is deduced as `const int&`**: strip it with `std::remove_cvref_t<T>` first.
-- **`static_assert(false, "...")` in a discarded branch**: before C++23 this fires even when discarded.
-  Use a condition that depends on `T`, such as `static_assert(sizeof(T) == 0, "...")`.
+- **`static_assert(false, "...")` in a discarded branch**: older compilers reject this even when the
+  branch is discarded (the rule was relaxed around C++23). The portable way is a condition that depends
+  on `T`, such as `static_assert(sizeof(T) == 0, "...")`.
 
 :::quiz
 Which of these are `true`? (select all that apply)
@@ -614,12 +615,12 @@ Check for an empty vector **before** dividing by its size.
 
 ```stdin
 3 1 2 4
-2 0.5 0.25
+2 0.5 0.3
 ```
 
 ```expected
 2.33
-0.38
+0.40
 ```
 
 ```stdin
