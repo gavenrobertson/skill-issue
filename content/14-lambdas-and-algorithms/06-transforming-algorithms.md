@@ -276,8 +276,8 @@ size is still 6, kept 3 elements
 ### C++20: `std::erase` and `std::erase_if`
 
 C++20 added free functions that do the whole idiom in one call and return how many elements were
-removed. They work on every standard container (vector, string, deque, list, map, set, ...).
-**Prefer them** in new code:
+removed. They're overloaded for the standard sequence and associative containers (vector, string,
+deque, list, map, set, unordered_map, ...). **Prefer them** in new code:
 
 ```cpp run
 #include <iostream>

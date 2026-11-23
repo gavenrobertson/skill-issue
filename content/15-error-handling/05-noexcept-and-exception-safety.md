@@ -156,7 +156,8 @@ promise (the "Abrahams guarantees"), from strongest to weakest:
 | *None* | Anything goes: leaks, broken objects. Unacceptable. |
 
 Every function should give **at least the basic** guarantee. Standard containers do. For example,
-`push_back` gives the strong guarantee: if it throws, the vector is unchanged.
+`std::vector::push_back` gives the strong guarantee (as long as the element's move constructor
+doesn't throw): if it throws, the vector is unchanged.
 
 ### Basic vs. strong, in code
 

@@ -219,7 +219,7 @@ And two more that are hard to demonstrate safely:
 ```cpp
 // new throws std::bad_alloc when memory runs out:
 try {
-    auto huge = std::make_unique<char[]>(1'000'000'000'000);   // ~1 TB
+    auto huge = std::make_unique<char[]>(1'000'000'000'000);   // ~1 TB: most machines will refuse
 } catch (const std::bad_alloc&) {
     std::cout << "out of memory\n";
 }

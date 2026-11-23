@@ -109,8 +109,8 @@ jump to line 2
 ```
 
 > **Tip:** Keep exception members cheap and safe to copy: `int`s, enums, and at most a few strings.
-> An exception object may be copied while it's being thrown, and if copying it throws
-> another exception, the program is terminated.
+> Exception objects can get copied (for example into a handler that catches by value), and if such
+> a copy throws another exception, the program is terminated.
 
 ## Deriving from `std::exception` and overriding `what()`
 

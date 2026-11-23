@@ -8,7 +8,7 @@ summary: C++20 ranges. Algorithms that take whole containers, projections, and l
 Writing `v.begin(), v.end()` every time is noisy, and passing iterators from two different
 containers by accident is a real bug. C++20 added versions of the algorithms in the namespace
 **`std::ranges`** that take a **range** (anything with `begin()` and `end()`: a container, an array,
-a view) directly. They live in the same headers (`<algorithm>`, and `<numeric>` for `iota`):
+a view) directly. They live in the same header, `<algorithm>`:
 
 ```cpp run
 #include <algorithm>
@@ -267,8 +267,7 @@ view created, nothing computed yet
 ```
 
 Only two elements were ever computed. That laziness is also why an infinite `iota` works: `take`
-stops asking after `n` elements. Views also see the **current** contents of the underlying range
-each time you iterate.
+stops asking after `n` elements.
 
 ### Storing and reusing pipelines
 
