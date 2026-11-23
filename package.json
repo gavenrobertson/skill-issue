@@ -8,7 +8,8 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "verify": "node scripts/verify-content.mjs"
+    "verify": "node scripts/verify-content.mjs",
+    "deploy": "npm run build && npx wrangler@4 deploy"
   },
   "dependencies": {
     "@codemirror/lang-cpp": "^6.0.3",

@@ -24,6 +24,10 @@ npm run dev
 npm run build
 ```
 
+Live at **https://skill-issue.gaven-robertson.workers.dev** (Cloudflare Workers static assets).
+To redeploy after changes, from your own machine: `npm run deploy` (runs the build, then `wrangler deploy`
+using `wrangler.jsonc`; the first time, `npx wrangler login`).
+
 `dist/` is a plain static site: host it anywhere (Cloudflare Pages, GitHub Pages, Netlify, or any folder
 on a web server). It uses hash routing and relative paths, so no server configuration is needed.
 

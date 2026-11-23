@@ -1,0 +1,11 @@
+{
+  // Deploys the built site (dist/) as a static-assets Worker on Cloudflare.
+  // Build first: npm run build, then: npx wrangler deploy
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "skill-issue",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
