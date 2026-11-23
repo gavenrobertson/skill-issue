@@ -258,7 +258,8 @@ after raii:   1 alive
 ```
 
 The leaked object from `manual` stays alive forever (count `1`); the RAII version cleaned up after
-itself (the count didn't grow). The same goes for every kind of resource: files (`std::fstream`),
+itself (the count didn't grow). If you turn on **Sanitizers** in the settings and run this, the leak
+checker even reports the lost `Resource` when the program exits. The same goes for every kind of resource: files (`std::fstream`),
 locks (`std::lock_guard`), memory (`std::vector`, `std::unique_ptr`). **If you never write `delete`,
 `fclose` or `unlock` by hand, you can't forget them on the error path.**
 
