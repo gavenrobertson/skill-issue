@@ -75,7 +75,7 @@ export function useStore(selector = (s) => s) {
 export const setCode = (key, code) => update((s) => ({ ...s, code: { ...s.code, [key]: code } }));
 export const setStdin = (key, text) => update((s) => ({ ...s, stdin: { ...s.stdin, [key]: text } }));
 export const markDone = (id) => update((s) => (s.done[id] ? s : { ...s, done: { ...s.done, [id]: Date.now() } }));
-export const setQuiz = (id, value) => update((s) => ({ ...s, quiz: { ...s.quiz, [id]: value } }));
+export const setQuiz = (id, value) => update((s) => ({ ...s, quiz: { ...s.quiz, [id]: { ...value, at: Date.now() } } }));
 export const clearQuiz = (id) =>
   update((s) => {
     const quiz = { ...s.quiz };
@@ -84,9 +84,7 @@ export const clearQuiz = (id) =>
   });
 export const revealHint = (id) => update((s) => ({ ...s, hints: { ...s.hints, [id]: (s.hints[id] || 0) + 1 } }));
 export const visit = (lessonId) =>
-  update((s) =>
-    s.last === lessonId && s.visited[lessonId] ? s : { ...s, last: lessonId, visited: { ...s.visited, [lessonId]: s.visited[lessonId] || Date.now() } },
-  );
+  update((s) => (s.last === lessonId && s.visited[lessonId] ? s : { ...s, last: lessonId, visited: { ...s.visited, [lessonId]: s.visited[lessonId] || Date.now() } }));
 export const setSettings = (patch) => update((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
 
 export function exportProgress() {
@@ -104,6 +102,32 @@ export function resetProgress() {
 }
 
 // ---- derived progress ----
+
+/** Day key (local time) for activity tracking, e.g. "2026-11-23". */
+export function dayKey(ts) {
+  const d = new Date(ts);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/** Map of day -> number of exercises passed and quizzes answered correctly that day. */
+export function activityByDay(s = state) {
+  const days = {};
+  for (const ts of Object.values(s.done)) days[dayKey(ts)] = (days[dayKey(ts)] || 0) + 1;
+  for (const q of Object.values(s.quiz)) if (q.correct && q.at) days[dayKey(q.at)] = (days[dayKey(q.at)] || 0) + 1;
+  return days;
+}
+
+/** Consecutive days with activity, ending today (or yesterday, so the streak survives until you practice today). */
+export function streak(days, now = Date.now()) {
+  let n = 0;
+  let t = now;
+  if (!days[dayKey(t)]) t -= 864e5;
+  while (days[dayKey(t)]) {
+    n++;
+    t -= 864e5;
+  }
+  return n;
+}
 export function lessonProgress(lesson, s = state) {
   const items = [...lesson.exercises, ...lesson.quizzes];
   const total = items.length;

@@ -1,125 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Download, Upload, Trash2, Terminal, BookOpen, Trophy, ListChecks } from 'lucide-react';
-import { course, lessonById, totals } from '../lib/content.js';
-import { useStore, moduleProgress, setSettings, exportProgress, importProgress, resetProgress, DEFAULT_SETTINGS } from '../lib/store.js';
-import { lessonHref } from '../lib/router.js';
+import { Download, Upload, Trash2 } from 'lucide-react';
+import { useStore, setSettings, exportProgress, importProgress, resetProgress, DEFAULT_SETTINGS } from '../lib/store.js';
 import { GODBOLT_COMPILERS, STANDARDS, runCode } from '../lib/runner.js';
-import Ide from './Ide.jsx';
 
-export function Home() {
-  const state = useStore();
-  useEffect(() => {
-    document.title = 'skill::issue · Learn C++';
-  }, []);
-  const doneEx = course.lessons.reduce((n, l) => n + l.exercises.filter((e) => state.done[e.id]).length, 0);
-  const doneQuiz = course.lessons.reduce((n, l) => n + l.quizzes.filter((q) => state.quiz[q.id]?.correct).length, 0);
-  const resume = (state.last && lessonById.get(state.last)) || course.lessons[0];
-  const started = Object.keys(state.visited).length > 0;
-  const pct = totals.exercises + totals.quizzes ? Math.round(((doneEx + doneQuiz) / (totals.exercises + totals.quizzes)) * 100) : 0;
-
-  return (
-    <div className="home">
-      <section className="hero">
-        <div className="hero-text">
-          <p className="eyebrow">Interactive C++ · zero to hero</p>
-          <h1>
-            Learn C++ by <span className="accent">writing</span> C++.
-          </h1>
-          <p className="lead">
-            {course.modules.length} modules, {totals.lessons} lessons, {totals.exercises} auto-graded exercises and {totals.quizzes} quizzes, covering everything from{' '}
-            <code>int main()</code> to templates, move semantics, and concurrency. Every exercise is compiled with a real GCC and checked against tests.
-          </p>
-          <div className="hero-actions">
-            {resume && (
-              <a className="btn primary lg" href={lessonHref(resume)}>
-                {started ? 'Continue' : 'Start learning'} <ArrowRight size={17} />
-              </a>
-            )}
-            <a className="btn lg" href="#/playground">
-              <Terminal size={17} /> Open playground
-            </a>
-          </div>
-          {started && resume && (
-            <p className="muted resume-note">
-              Up next: <a href={lessonHref(resume)}>{resume.moduleTitle} → {resume.title}</a>
-            </p>
-          )}
-        </div>
-        <div className="hero-stats">
-          <Stat icon={<Trophy size={18} />} value={`${pct}%`} label="course complete" />
-          <Stat icon={<ListChecks size={18} />} value={`${doneEx}/${totals.exercises}`} label="exercises passed" />
-          <Stat icon={<BookOpen size={18} />} value={`${doneQuiz}/${totals.quizzes}`} label="quizzes correct" />
-          <div className="progress big">
-            <div style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-      </section>
-
-      <section className="modules-grid">
-        {course.modules.map((mod) => {
-          const p = moduleProgress(mod, state);
-          const pc = p.total ? Math.round((p.done / p.total) * 100) : 0;
-          return (
-            <a key={mod.slug} className={`module-card${p.lessons && p.lessonsDone === p.lessons ? ' complete' : ''}`} href={lessonHref(mod.lessons[0])}>
-              <div className="module-card-top">
-                <span className="mod-num">{String(mod.index).padStart(2, '0')}</span>
-                <span className="muted">
-                  {p.lessonsDone}/{p.lessons} lessons
-                </span>
-              </div>
-              <h3>{mod.title}</h3>
-              <p>{mod.description}</p>
-              <div className="progress">
-                <div style={{ width: `${pc}%` }} />
-              </div>
-            </a>
-          );
-        })}
-      </section>
-    </div>
-  );
-}
-
-function Stat({ icon, value, label }) {
-  return (
-    <div className="stat">
-      <span className="stat-icon">{icon}</span>
-      <span className="stat-value">{value}</span>
-      <span className="stat-label">{label}</span>
-    </div>
-  );
-}
-
-const PLAYGROUND_TEMPLATE = `#include <iostream>
-#include <string>
-#include <vector>
-
-int main() {
-    std::vector<std::string> langs{"C", "C++", "Rust"};
-    for (const auto& lang : langs) {
-        std::cout << "Hello, " << lang << "!\\n";
-    }
-}
-`;
-
-export function Playground() {
-  useEffect(() => {
-    document.title = 'Playground · skill::issue';
-  }, []);
-  return (
-    <div className="playground">
-      <div className="playground-head">
-        <h1>Playground</h1>
-        <p className="muted">A free-form scratchpad. Your code is saved automatically in this browser. Put program input in the Input (stdin) tab.</p>
-      </div>
-      <div className="playground-ide">
-        <Ide tabs={[{ key: 'playground', label: 'Playground', template: PLAYGROUND_TEMPLATE }]} activeKey="playground" onSelect={() => {}} />
-      </div>
-    </div>
-  );
-}
-
-export function Settings() {
+export default function Settings() {
   const state = useStore();
   const s = state.settings;
   const fileRef = useRef(null);
@@ -225,9 +109,7 @@ export function Settings() {
 
       <section className="card">
         <h2>Your progress</h2>
-        <p className="muted">
-          Progress and code are stored only in this browser's localStorage. Export a backup now and then, or to move to another device.
-        </p>
+        <p className="muted">Progress and code are stored only in this browser's localStorage. Export a backup now and then, or to move to another device.</p>
         <div className="row">
           <button className="btn" onClick={doExport}>
             <Download size={15} /> Export progress

@@ -1,25 +1,39 @@
-// Loads every lesson in /content at build time. Edit Markdown, refresh, done.
-import { buildCourse } from './parse.js';
+// The course index is small and loaded up front; each lesson's full content is
+// parsed at build time (vite-plugin-course.js) and fetched when it is opened.
+import { modules, loaders } from 'virtual:course';
 
-const files = import.meta.glob(['/content/**/*.md', '/content/**/module.json'], {
-  query: '?raw',
-  import: 'default',
-  eager: true,
-});
+const lessons = modules.flatMap((m) => m.lessons);
+export const course = { modules, lessons };
+export const lessonById = new Map(lessons.map((l) => [l.id, l]));
+export const moduleBySlug = new Map(modules.map((m) => [m.slug, m]));
 
-export const course = buildCourse(files);
-if (course.errors.length) console.warn('Content problems:\n' + course.errors.join('\n'));
-
-export const lessonById = new Map(course.lessons.map((l) => [l.id, l]));
-export const moduleBySlug = new Map(course.modules.map((m) => [m.slug, m]));
+export const allExercises = lessons.flatMap((l) => l.exercises.map((e, i) => ({ ...e, n: i + 1, lesson: l })));
 
 export function neighbors(lessonId) {
-  const i = course.lessons.findIndex((l) => l.id === lessonId);
-  return { prev: course.lessons[i - 1] || null, next: course.lessons[i + 1] || null };
+  const i = lessons.findIndex((l) => l.id === lessonId);
+  return { prev: lessons[i - 1] || null, next: lessons[i + 1] || null };
 }
 
 export const totals = {
-  lessons: course.lessons.length,
-  exercises: course.lessons.reduce((n, l) => n + l.exercises.length, 0),
-  quizzes: course.lessons.reduce((n, l) => n + l.quizzes.length, 0),
+  lessons: lessons.length,
+  exercises: allExercises.length,
+  quizzes: lessons.reduce((n, l) => n + l.quizzes.length, 0),
 };
+
+const cache = new Map();
+/** Full lesson (blocks, exercises with tests, quizzes). Cached; safe to call repeatedly. */
+export function loadLesson(id) {
+  if (!loaders[id]) return Promise.reject(new Error(`Unknown lesson ${id}`));
+  if (!cache.has(id)) {
+    const p = loaders[id]().then((m) => ({ ...m.default, ...lessonById.get(id), exercises: m.default.exercises, quizzes: m.default.quizzes }));
+    p.catch(() => cache.delete(id));
+    cache.set(id, p);
+  }
+  return cache.get(id);
+}
+
+let searchIndex = null;
+export function loadSearchIndex() {
+  searchIndex ??= import('virtual:course-search').then((m) => m.default);
+  return searchIndex;
+}

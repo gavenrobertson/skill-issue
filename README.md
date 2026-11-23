@@ -31,6 +31,18 @@ using `wrangler.jsonc`; the first time, `npx wrangler login`).
 `dist/` is a plain static site: host it anywhere (Cloudflare Pages, GitHub Pages, Netlify, or any folder
 on a web server). It uses hash routing and relative paths, so no server configuration is needed.
 
+## Development
+
+```bash
+npm run dev        # local dev server with hot reload (lesson edits reload the page)
+npm test           # unit tests (parser, grader, diagnostics, progress, runner)
+npm run lint       # ESLint
+npm run format     # Prettier
+npm run check      # everything CI runs: lint, format, tests, build, content verification
+```
+
+CI (`.github/workflows/ci.yml`) runs `npm run check` on every push.
+
 ## Writing and changing lessons
 
 Lessons are Markdown files in `content/`. See [CONTENT_GUIDE.md](CONTENT_GUIDE.md) for the format
@@ -46,8 +58,11 @@ npm run verify
 ```
 content/                 the course (Markdown + module.json per module)
 scripts/verify-content.mjs  compiles & tests all content with local g++
-src/lib/parse.js         content parser (shared by app and verifier)
+vite-plugin-course.js    parses content at build time: small index + one lazy chunk per lesson
+src/lib/parse.js         content parser (shared by app, build plugin and verifier)
+src/lib/diagnostics.js   compiler messages -> editor squiggles + plain-English explanations
 src/lib/runner.js        compile/run via Compiler Explorer or Wandbox
 src/lib/store.js         localStorage-backed progress store
-src/components/          UI: lesson view, IDE, quizzes, sidebar, pages
+src/components/          UI: lesson view, IDE, quizzes, sidebar, dialogs
+src/pages/               Home, Practice, Playground, Settings
 ```

@@ -10,6 +10,9 @@ export const GODBOLT_COMPILERS = [
 ];
 export const STANDARDS = ['c++17', 'c++20', 'c++23'];
 
+/** A transient failure (rate limit, server busy) worth retrying. */
+class RetryableError extends Error {}
+
 // eslint-disable-next-line no-control-regex
 const stripAnsi = (s) => s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
 const joinLines = (arr) => stripAnsi((arr || []).map((l) => l.text).join('\n'));
@@ -38,7 +41,8 @@ async function runGodbolt(source, stdin, settings, signal) {
       },
     }),
   });
-  if (!res.ok) throw new Error(`Compiler Explorer returned HTTP ${res.status}${res.status === 429 ? ' (rate limited, wait a few seconds)' : ''}`);
+  if (res.status === 429 || res.status >= 500) throw new RetryableError(`Compiler Explorer is busy (HTTP ${res.status}). Wait a few seconds and try again.`);
+  if (!res.ok) throw new Error(`Compiler Explorer returned HTTP ${res.status}.`);
   const d = await res.json();
   const build = d.buildResult || {};
   const compileOutput = [joinLines(build.stdout), joinLines(build.stderr)].filter(Boolean).join('\n').replaceAll('/app/example.cpp', 'main.cpp').replaceAll('<source>', 'main.cpp');
@@ -71,7 +75,8 @@ async function runWandbox(source, stdin, settings, signal) {
       save: false,
     }),
   });
-  if (!res.ok) throw new Error(`Wandbox returned HTTP ${res.status}`);
+  if (res.status === 429 || res.status >= 500) throw new RetryableError(`Wandbox is busy (HTTP ${res.status}). Wait a few seconds and try again.`);
+  if (!res.ok) throw new Error(`Wandbox returned HTTP ${res.status}.`);
   const d = await res.json();
   const compileOutput = stripAnsi([d.compiler_output, d.compiler_error].filter(Boolean).join('\n')).replace(/prog\.cc/g, 'main.cpp');
   const ran = d.program_output !== undefined || d.program_error !== undefined || /^0$/.test(d.status ?? '');
@@ -87,16 +92,36 @@ async function runWandbox(source, stdin, settings, signal) {
   };
 }
 
-/** Compile and run once. Returns a result object; network problems become { error }. */
+const sleep = (ms, signal) =>
+  new Promise((resolve, reject) => {
+    const t = setTimeout(resolve, ms);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(t);
+      reject(new DOMException('Aborted', 'AbortError'));
+    });
+  });
+
+/** Compile and run once. Returns a result object; network problems become { error }. Rate limits are retried with backoff. */
 export async function runCode(source, stdin, settings, signal) {
   const started = performance.now();
-  try {
-    const fn = settings.backend === 'wandbox' ? runWandbox : runGodbolt;
-    const r = await fn(source, stdin, settings, signal);
-    return { ...r, wallTime: Math.round(performance.now() - started) };
-  } catch (e) {
-    if (e.name === 'AbortError') return { aborted: true };
-    return { error: e.message === 'Failed to fetch' ? 'Could not reach the compile service. Are you online? (You can switch services in Settings.)' : e.message };
+  const fn = settings.backend === 'wandbox' ? runWandbox : runGodbolt;
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const r = await fn(source, stdin, settings, signal);
+      return { ...r, source, wallTime: Math.round(performance.now() - started) };
+    } catch (e) {
+      if (e.name === 'AbortError') return { aborted: true };
+      if (e instanceof RetryableError && attempt < 3) {
+        try {
+          await sleep(1200 * 2 ** attempt, signal);
+        } catch {
+          return { aborted: true };
+        }
+        continue;
+      }
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return { error: 'You are offline. Running code needs an internet connection.' };
+      return { error: e.message === 'Failed to fetch' ? 'Could not reach the compile service. Check your connection, or switch services in Settings.' : e.message };
+    }
   }
 }
 
@@ -139,7 +164,7 @@ export async function checkExercise(exercise, source, settings, onProgress, sign
       if (r.error) results[i] = { error: r.error, pass: false, stdin: exercise.tests[i].stdin, expected: exercise.tests[i].expected, hidden: exercise.tests[i].hidden };
     }
   };
-  await Promise.all([worker(), worker(), worker()]);
+  await Promise.all([worker(), worker()]);
   if (signal?.aborted) return { aborted: true };
   const passed = results.every((r) => r?.pass) && checkFailures.length === 0;
   return { checkFailures, tests: results, passed, compileOutput: first.compileOutput };

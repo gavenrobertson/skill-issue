@@ -35,7 +35,13 @@ export default function Sidebar({ currentLessonId, onNavigate }) {
                   return (
                     <li key={l.id}>
                       <a href={lessonHref(l)} className={`side-lesson${current ? ' current' : ''}`} onClick={onNavigate} aria-current={current ? 'page' : undefined}>
-                        {lp.complete ? <CircleCheck size={14} className="ok" /> : lp.done > 0 || state.visited[l.id] ? <CircleDot size={14} className="partial" /> : <Circle size={14} className="todo" />}
+                        {lp.complete ? (
+                          <CircleCheck size={14} className="ok" />
+                        ) : lp.done > 0 || state.visited[l.id] ? (
+                          <CircleDot size={14} className="partial" />
+                        ) : (
+                          <Circle size={14} className="todo" />
+                        )}
                         <span>{l.title}</span>
                       </a>
                     </li>

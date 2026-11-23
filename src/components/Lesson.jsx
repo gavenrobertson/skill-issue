@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { CircleCheck, Code2, ChevronLeft, ChevronRight, CircleX } from 'lucide-react';
+import { CircleCheck, Code2, ChevronLeft, ChevronRight, CircleX, ListTree } from 'lucide-react';
 import { renderMarkdown, renderInline } from '../lib/markdown.js';
 import { useStore, setQuiz, clearQuiz, lessonProgress } from '../lib/store.js';
 import { neighbors } from '../lib/content.js';
+import { splitFences } from '../lib/parse.js';
 import { lessonHref } from '../lib/router.js';
 
 export default function Lesson({ lesson, onRunExample, onOpenExercise, activeKey }) {
@@ -10,8 +11,26 @@ export default function Lesson({ lesson, onRunExample, onOpenExercise, activeKey
   const { prev, next } = neighbors(lesson.id);
   const progress = lessonProgress(lesson, state);
 
-  // Event delegation for the "▶ Run" buttons inside rendered Markdown.
+  // Event delegation for buttons inside rendered Markdown (run, copy, heading anchors).
   const onClick = (e) => {
+    const anchor = e.target.closest('[data-anchor]');
+    if (anchor) {
+      e.preventDefault();
+      scrollToId(anchor.dataset.anchor);
+      return;
+    }
+    const copy = e.target.closest('[data-copy]');
+    if (copy) {
+      const code = copy.closest('.codeblock')?.querySelector('pre code')?.textContent ?? '';
+      navigator.clipboard?.writeText(code).then(
+        () => {
+          copy.textContent = 'Copied';
+          setTimeout(() => (copy.textContent = 'Copy'), 1500);
+        },
+        () => {},
+      );
+      return;
+    }
     const btn = e.target.closest('[data-run]');
     if (!btn) return;
     const code = btn.closest('.codeblock')?.querySelector('pre code')?.textContent;
@@ -32,12 +51,12 @@ export default function Lesson({ lesson, onRunExample, onOpenExercise, activeKey
             <span>
               {lesson.exercises.length} exercise{lesson.exercises.length === 1 ? '' : 's'} · {lesson.quizzes.length} quiz{lesson.quizzes.length === 1 ? '' : 'zes'}
             </span>
-            <span className={`badge ${progress.complete ? 'ok' : ''}`}>
-              {progress.complete ? 'Complete' : `${progress.done}/${progress.total} done`}
-            </span>
+            <span className={`badge ${progress.complete ? 'ok' : ''}`}>{progress.complete ? 'Complete' : `${progress.done}/${progress.total} done`}</span>
           </div>
         )}
       </header>
+
+      <Contents lesson={lesson} state={state} />
 
       {lesson.blocks.map((b, i) => {
         if (b.kind === 'prose') return <Prose key={i} md={b.md} />;
@@ -80,6 +99,69 @@ export default function Lesson({ lesson, onRunExample, onOpenExercise, activeKey
   );
 }
 
+function scrollToId(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
+}
+
+const DIFF_LABEL = { easy: 'Easy', medium: 'Medium', hard: 'Hard' };
+
+/** "In this lesson": section headings plus exercises, collapsed by default on long lessons. */
+function Contents({ lesson, state }) {
+  const items = [];
+  let exNum = 0;
+  let h = 0;
+  const headings = lesson.headings || [];
+  // Walk blocks in order so exercises appear between the sections they follow.
+  for (const b of lesson.blocks) {
+    if (b.kind === 'prose') {
+      const count = splitFences(b.md)
+        .filter((p) => p.type === 'text')
+        .reduce((n, p) => n + (p.text.match(/^##\s+/gm) || []).length, 0);
+      for (let k = 0; k < count && h < headings.length; k++, h++) items.push({ kind: 'h', ...headings[h] });
+    } else if (b.kind === 'exercise') {
+      exNum++;
+      items.push({ kind: 'ex', id: `ex-${b.id}`, text: b.title, n: exNum, difficulty: b.difficulty, done: Boolean(state.done[b.id]) });
+    }
+  }
+  if (items.length < 4) return null;
+  return (
+    <details className="toc">
+      <summary>
+        <ListTree size={15} aria-hidden="true" /> In this lesson
+        <span className="muted">
+          {' '}
+          · {headings.length} sections, {lesson.exercises.length} exercises
+        </span>
+      </summary>
+      <ol>
+        {items.map((it) => (
+          <li key={it.id} className={it.kind}>
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToId(it.id);
+              }}
+            >
+              {it.kind === 'ex' ? (
+                <>
+                  {it.done ? <CircleCheck size={13} className="ok" aria-label="passed" /> : <span className={`dot ${it.difficulty || ''}`} aria-hidden="true" />}
+                  Exercise {it.n}: {it.text}
+                </>
+              ) : (
+                <span dangerouslySetInnerHTML={{ __html: renderInline(it.text) }} />
+              )}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+}
+
 function Prose({ md }) {
   const html = useMemo(() => renderMarkdown(md), [md]);
   return <div className="prose" dangerouslySetInnerHTML={{ __html: html }} />;
@@ -93,6 +175,7 @@ function ExerciseCard({ ex, n, done, active, onOpen }) {
       <header>
         <span className="ex-label">Exercise {n}</span>
         <h3>{ex.title}</h3>
+        {ex.difficulty && <span className={`diff-badge ${ex.difficulty}`}>{DIFF_LABEL[ex.difficulty]}</span>}
         {done && (
           <span className="badge ok">
             <CircleCheck size={13} /> Passed
@@ -114,9 +197,15 @@ function ExerciseCard({ ex, n, done, active, onOpen }) {
           </div>
         </div>
       )}
-      <button className="btn primary" onClick={onOpen}>
-        <Code2 size={15} /> {active ? 'Open in IDE ✓' : 'Open in IDE'}
-      </button>
+      <div className="ex-actions">
+        <button className="btn primary" onClick={onOpen}>
+          <Code2 size={15} aria-hidden="true" /> {active ? 'Open in editor ✓' : 'Open in editor'}
+        </button>
+        <span className="muted small">
+          {ex.tests.length} test{ex.tests.length === 1 ? '' : 's'}
+          {ex.tests.some((t) => t.hidden) ? ` (${ex.tests.filter((t) => t.hidden).length} hidden)` : ''}
+        </span>
+      </div>
     </section>
   );
 }

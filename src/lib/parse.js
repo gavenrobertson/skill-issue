@@ -11,6 +11,11 @@ export function slugify(s) {
     .replace(/^-+|-+$/g, '');
 }
 
+/** Anchor id for a Markdown heading (shared by the renderer and the table of contents). */
+export function headingId(raw) {
+  return slugify(String(raw).replace(/[`*_]/g, ''));
+}
+
 /** Strip a leading "NN-" ordering prefix from a file/folder name. */
 export function stripOrder(name) {
   return name.replace(/^\d+[-_]/, '').replace(/\.md$/, '');
@@ -224,10 +229,15 @@ export function parseLesson(src, moduleSlug, fileName) {
   const blocks = [];
   let quizIndex = 0;
   const examples = [];
+  const headings = [];
   for (const seg of segs) {
     if (seg.kind === 'prose') {
       blocks.push({ kind: 'prose', md: seg.md });
       const parts = splitFences(seg.md);
+      for (const p of parts) {
+        if (p.type !== 'text') continue;
+        for (const m of p.text.matchAll(/^##\s+(.+?)\s*#*\s*$/gm)) headings.push({ text: m[1], id: headingId(m[1]) });
+      }
       parts.forEach((p, i) => {
         if (p.type === 'fence' && p.lang === 'cpp' && /\b(run|compile-error)\b/.test(p.meta)) {
           // An ```output fence right after a runnable example (only blank text between) is its expected output.
@@ -250,7 +260,13 @@ export function parseLesson(src, moduleSlug, fileName) {
     if (b.id && ids.has(b.id)) errors.push(`${b.id}: duplicate id (titles must be unique within a lesson)`);
     if (b.id) ids.add(b.id);
   }
-  const text = body.replace(/```[\s\S]*?```/g, ' ').replace(/[#>*_`:-]/g, ' ');
+  // Search text: the prose, plus each identifier that appears in code once (people search for `push_back`).
+  const codeWords = new Set();
+  const prose = body.replace(/```[^\n]*\n([\s\S]*?)```/g, (_, code) => {
+    for (const w of code.match(/[A-Za-z_][\w]*(?:::[A-Za-z_]\w*)*/g) || []) if (w.length > 2) codeWords.add(w);
+    return ' ';
+  });
+  const text = `${prose.replace(/^:::.*$/gm, ' ').replace(/[#>*`|]/g, ' ')} ${[...codeWords].join(' ')}`.replace(/\s+/g, ' ');
   return {
     lesson: {
       id,
@@ -262,6 +278,7 @@ export function parseLesson(src, moduleSlug, fileName) {
       exercises: blocks.filter((b) => b.kind === 'exercise'),
       quizzes: blocks.filter((b) => b.kind === 'quiz'),
       examples,
+      headings,
       searchText: `${meta.title || ''} ${text}`.toLowerCase(),
     },
     errors,
