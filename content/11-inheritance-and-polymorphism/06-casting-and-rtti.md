@@ -727,3 +727,241 @@ mustnot \bx\s*==\s*y\b :: Compare the objects' types, not the input strings.
 mustnot \.name\s*\( :: Don't compare type_info::name(); its text is implementation-defined.
 ```
 :::
+
+:::exercise Collision checker {hard}
+A virtual function dispatches on the type of **one** object. Collision tests depend on the types of
+**two**: point vs circle, circle vs rectangle, and so on. This is one of the few places where
+downcasting is a reasonable design. Write `bool hit(const Shape& a, const Shape& b)` that finds out
+both dynamic types with `dynamic_cast` and calls the right geometric test.
+
+Shapes (all coordinates are integers, use exact integer arithmetic):
+
+- `point NAME X Y`
+- `circle NAME X Y R` (centre and radius, `R >= 0`)
+- `rect NAME X1 Y1 X2 Y2`: an axis-aligned rectangle given by two opposite corners, in **any** order.
+
+Two shapes **hit** if they share at least one point; touching edges count. (Point–point: same
+coordinates. Point–circle: distance to the centre ≤ R. Circle–circle: distance between centres ≤ R1 + R2.
+Rect–rect: the x ranges and the y ranges both overlap. Point–rect: inside or on the border.
+Circle–rect: the point of the rectangle **nearest** to the centre is within R.) Compare squared
+distances so you never need a square root.
+
+**Input:** commands until end of input: the three shape commands (defining a name again replaces the
+old shape), and `hit A B`.
+**Output:** for each `hit`, `KINDA/KINDB: hit` or `KINDA/KINDB: miss` (kinds are `point`, `circle`,
+`rect`, in the order the names were given), or `error: no NAME` for the first name that doesn't exist.
+
+**Constraints:** coordinates and radii are at most 10⁶ in absolute value.
+
+```cpp starter
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual std::string kind() const = 0;
+};
+
+// write Point, Circle, Rect and hit() here
+
+int main() {
+    // read commands until end of input
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+
+class Shape {
+public:
+    virtual ~Shape() = default;
+    virtual std::string kind() const = 0;
+};
+
+class Point : public Shape {
+public:
+    long long x, y;
+    Point(long long x_, long long y_) : x(x_), y(y_) {}
+    std::string kind() const override { return "point"; }
+};
+
+class Circle : public Shape {
+public:
+    long long x, y, r;
+    Circle(long long x_, long long y_, long long r_) : x(x_), y(y_), r(r_) {}
+    std::string kind() const override { return "circle"; }
+};
+
+class Rect : public Shape {
+public:
+    long long x1, y1, x2, y2;
+    Rect(long long a, long long b, long long c, long long d)
+        : x1(std::min(a, c)), y1(std::min(b, d)), x2(std::max(a, c)), y2(std::max(b, d)) {}
+    std::string kind() const override { return "rect"; }
+};
+
+long long sq(long long v) { return v * v; }
+
+bool hitPointCircle(const Point& p, const Circle& c) { return sq(p.x - c.x) + sq(p.y - c.y) <= sq(c.r); }
+bool hitPointRect(const Point& p, const Rect& r) { return r.x1 <= p.x && p.x <= r.x2 && r.y1 <= p.y && p.y <= r.y2; }
+bool hitCircleRect(const Circle& c, const Rect& r) {
+    long long nx = std::clamp(c.x, r.x1, r.x2), ny = std::clamp(c.y, r.y1, r.y2);   // nearest point of r
+    return sq(c.x - nx) + sq(c.y - ny) <= sq(c.r);
+}
+
+bool hit(const Shape& a, const Shape& b) {
+    // Put the pair in a canonical order: point < circle < rect.
+    if (auto p = dynamic_cast<const Point*>(&a)) {
+        if (auto q = dynamic_cast<const Point*>(&b)) return p->x == q->x && p->y == q->y;
+        if (auto c = dynamic_cast<const Circle*>(&b)) return hitPointCircle(*p, *c);
+        if (auto r = dynamic_cast<const Rect*>(&b)) return hitPointRect(*p, *r);
+    }
+    if (auto c = dynamic_cast<const Circle*>(&a)) {
+        if (dynamic_cast<const Point*>(&b)) return hit(b, a);
+        if (auto d = dynamic_cast<const Circle*>(&b)) return sq(c->x - d->x) + sq(c->y - d->y) <= sq(c->r + d->r);
+        if (auto r = dynamic_cast<const Rect*>(&b)) return hitCircleRect(*c, *r);
+    }
+    if (auto r = dynamic_cast<const Rect*>(&a)) {
+        if (auto s = dynamic_cast<const Rect*>(&b))
+            return r->x1 <= s->x2 && s->x1 <= r->x2 && r->y1 <= s->y2 && s->y1 <= r->y2;
+        return hit(b, a);
+    }
+    return false;
+}
+
+int main() {
+    std::map<std::string, std::unique_ptr<Shape>> shapes;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "hit") {
+            std::string a, b;
+            std::cin >> a >> b;
+            if (!shapes.count(a)) std::cout << "error: no " << a << '\n';
+            else if (!shapes.count(b)) std::cout << "error: no " << b << '\n';
+            else std::cout << shapes[a]->kind() << '/' << shapes[b]->kind() << ": "
+                           << (hit(*shapes[a], *shapes[b]) ? "hit" : "miss") << '\n';
+            continue;
+        }
+        std::string name;
+        std::cin >> name;
+        long long v[4] = {};
+        int n = cmd == "point" ? 2 : cmd == "circle" ? 3 : 4;
+        for (int i = 0; i < n; ++i) std::cin >> v[i];
+        if (cmd == "point") shapes[name] = std::make_unique<Point>(v[0], v[1]);
+        else if (cmd == "circle") shapes[name] = std::make_unique<Circle>(v[0], v[1], v[2]);
+        else shapes[name] = std::make_unique<Rect>(v[0], v[1], v[2], v[3]);
+    }
+}
+```
+
+```hint
+Avoid writing all nine combinations: handle each unordered pair once, and when the arguments arrive in
+the "wrong" order (say a rect and then a point), just return `hit(b, a)`. `if (auto c =
+dynamic_cast<const Circle*>(&a)) { ... }` both tests the type and gives you a usable pointer.
+```
+
+```hint
+For circle–rectangle, clamp the centre into the rectangle (`std::clamp(cx, x1, x2)` from `<algorithm>`
+and the same for y) to get the nearest point, then compare its squared distance with `R * R`. Checking
+only the bounding box of the circle is wrong near the corners. Normalize the rectangle's corners in its
+constructor with `std::min` / `std::max`.
+```
+
+```stdin
+circle c 0 0 5
+rect r 3 4 10 10
+point p 3 4
+hit c r
+hit p c
+hit r p
+hit p zz
+```
+
+```expected
+circle/rect: hit
+point/circle: hit
+rect/point: hit
+error: no zz
+```
+
+```stdin
+circle c 0 0 5
+rect corner 4 4 10 10
+hit c corner
+hit corner c
+rect touch 5 -3 9 3
+hit touch c
+rect far 10 10 -10 6
+hit far c
+hit c far
+point p 3 4
+point q 4 3
+hit p q
+point q 3 4
+hit q p
+hit q nope
+hit nope q
+```
+
+```expected hidden
+circle/rect: miss
+rect/circle: miss
+rect/circle: hit
+rect/circle: miss
+circle/rect: miss
+point/point: miss
+point/point: hit
+error: no nope
+error: no nope
+```
+
+```stdin
+rect a 0 0 4 4
+rect b 4 4 8 8
+rect c 5 0 9 3
+hit a b
+hit a c
+hit c b
+circle in 2 2 1
+hit in a
+circle big 0 0 100
+hit a big
+circle u 0 10 4
+circle v 0 2 4
+hit u v
+circle v 0 1 4
+hit u v
+circle dot 7 7 0
+hit dot b
+point e 1000000 -1000000
+circle huge -1000000 1000000 2828427
+hit e huge
+circle huge -1000000 1000000 2828428
+hit huge e
+```
+
+```expected hidden
+rect/rect: hit
+rect/rect: miss
+rect/rect: miss
+circle/rect: hit
+rect/circle: hit
+circle/circle: hit
+circle/circle: miss
+circle/rect: hit
+point/circle: miss
+circle/point: hit
+```
+
+```checks
+must dynamic_cast\s*<\s*(const\s+)?\w+\s*\* :: Find out the dynamic types with dynamic_cast.
+must bool\s+hit\s*\(\s*const\s+Shape\s*& :: Write bool hit(const Shape&, const Shape&).
+```
+:::

@@ -752,3 +752,329 @@ must virtual\s+std::string\s+title\s*\(\s*\)\s*const\s*=\s*0 :: Make title pure 
 mustnot virtual\s+void\s+printPayslip :: Keep printPayslip non-virtual: it's the fixed template.
 ```
 :::
+
+:::exercise Stack machine {hard}
+Write an interpreter for a small **stack machine**. Each instruction is an object of a class derived
+from an abstract `Instruction` with a **pure virtual** `execute`; a factory turns each line of the
+program into the right object, and the interpreter loop runs them through the base interface without
+knowing which is which.
+
+The machine has a stack of integers and a program counter `pc` (the index of the next instruction,
+starting at 0). Instructions, numbered from 0 in input order:
+
+| Instruction | Needs | Effect |
+| --- | --- | --- |
+| `push N` | 0 | push `N` |
+| `pop` | 1 | discard the top value |
+| `add`, `sub`, `mul` | 2 | pop `b`, then pop `a`, push `a + b`, `a - b` or `a * b` |
+| `dup` | 1 | push a copy of the top value |
+| `swap` | 2 | exchange the top two values |
+| `print` | 1 | print the top value on its own line (it stays on the stack) |
+| `jmp T` | 0 | continue at instruction `T` |
+| `jz T` | 1 | pop a value; if it is `0`, continue at `T`, otherwise with the next instruction |
+| `halt` | 0 | stop |
+
+Every instruction except a taken jump moves on to `pc + 1`. The program ends when it executes `halt`
+or `pc` reaches the end of the program (jump targets are always between 0 and the number of
+instructions). Then print `stack:` followed by each value bottom to top preceded by a space, or
+`stack: (empty)`.
+
+**Errors** stop the program at once, without printing the stack: if an instruction needs more values
+than the stack holds, print `error: stack underflow at I` (`I` is that instruction's index); if more
+than **10000** instructions have been executed and the program is still running, print
+`error: step limit` instead of executing the 10001st.
+
+**Input:** the program, one instruction per line, until end of input (possibly empty).
+
+**Example:** this countdown prints `3`, `2`, `1`, then `stack: 0`:
+
+```
+push 3
+print
+push 1
+sub
+dup
+jz 7
+jmp 1
+halt
+```
+
+```cpp starter
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+// design Instruction, its derived classes, and the machine here
+
+int main() {
+    // read the program, then run it
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+class Machine {
+public:
+    std::vector<long long> stack;
+    std::size_t pc = 0;         // index of the next instruction
+    bool halted = false;
+
+    bool has(std::size_t n) const { return stack.size() >= n; }
+    long long pop() {
+        long long v = stack.back();
+        stack.pop_back();
+        return v;
+    }
+    void push(long long v) { stack.push_back(v); }
+};
+
+class Instruction {
+public:
+    virtual ~Instruction() = default;
+    virtual std::size_t needs() const { return 0; }    // stack elements required
+    virtual void execute(Machine& m) const = 0;         // runs only if needs() are met
+};
+
+class Push : public Instruction {
+    long long value_;
+public:
+    explicit Push(long long v) : value_(v) {}
+    void execute(Machine& m) const override { m.push(value_); ++m.pc; }
+};
+
+class Pop : public Instruction {
+public:
+    std::size_t needs() const override { return 1; }
+    void execute(Machine& m) const override { m.pop(); ++m.pc; }
+};
+
+class Arith : public Instruction {
+    char op_;
+public:
+    explicit Arith(char op) : op_(op) {}
+    std::size_t needs() const override { return 2; }
+    void execute(Machine& m) const override {
+        long long b = m.pop();
+        long long a = m.pop();
+        m.push(op_ == '+' ? a + b : op_ == '-' ? a - b : a * b);
+        ++m.pc;
+    }
+};
+
+class Dup : public Instruction {
+public:
+    std::size_t needs() const override { return 1; }
+    void execute(Machine& m) const override { m.push(m.stack.back()); ++m.pc; }
+};
+
+class Swap : public Instruction {
+public:
+    std::size_t needs() const override { return 2; }
+    void execute(Machine& m) const override {
+        long long b = m.pop();
+        long long a = m.pop();
+        m.push(b);
+        m.push(a);
+        ++m.pc;
+    }
+};
+
+class Print : public Instruction {
+public:
+    std::size_t needs() const override { return 1; }
+    void execute(Machine& m) const override { std::cout << m.stack.back() << '\n'; ++m.pc; }
+};
+
+class Jump : public Instruction {
+    std::size_t target_;
+public:
+    explicit Jump(std::size_t t) : target_(t) {}
+    void execute(Machine& m) const override { m.pc = target_; }
+};
+
+class JumpIfZero : public Instruction {
+    std::size_t target_;
+public:
+    explicit JumpIfZero(std::size_t t) : target_(t) {}
+    std::size_t needs() const override { return 1; }
+    void execute(Machine& m) const override { m.pc = m.pop() == 0 ? target_ : m.pc + 1; }
+};
+
+class Halt : public Instruction {
+public:
+    void execute(Machine& m) const override { m.halted = true; }
+};
+
+std::unique_ptr<Instruction> parse(const std::string& op, std::istream& in) {
+    if (op == "push") { long long v; in >> v; return std::make_unique<Push>(v); }
+    if (op == "jmp" || op == "jz") {
+        std::size_t t;
+        in >> t;
+        if (op == "jmp") return std::make_unique<Jump>(t);
+        return std::make_unique<JumpIfZero>(t);
+    }
+    if (op == "pop") return std::make_unique<Pop>();
+    if (op == "add") return std::make_unique<Arith>('+');
+    if (op == "sub") return std::make_unique<Arith>('-');
+    if (op == "mul") return std::make_unique<Arith>('*');
+    if (op == "dup") return std::make_unique<Dup>();
+    if (op == "swap") return std::make_unique<Swap>();
+    if (op == "print") return std::make_unique<Print>();
+    return std::make_unique<Halt>();
+}
+
+int main() {
+    std::vector<std::unique_ptr<Instruction>> program;
+    std::string op;
+    while (std::cin >> op) program.push_back(parse(op, std::cin));
+
+    Machine m;
+    long long steps = 0;
+    while (!m.halted && m.pc < program.size()) {
+        if (++steps > 10000) {
+            std::cout << "error: step limit\n";
+            return 0;
+        }
+        const Instruction& ins = *program[m.pc];
+        if (!m.has(ins.needs())) {
+            std::cout << "error: stack underflow at " << m.pc << '\n';
+            return 0;
+        }
+        ins.execute(m);
+    }
+    std::cout << "stack:";
+    if (m.stack.empty()) std::cout << " (empty)";
+    for (long long v : m.stack) std::cout << ' ' << v;
+    std::cout << '\n';
+}
+```
+
+```hint
+Let each instruction report how many stack values it needs (a virtual function with a default of 0),
+so the interpreter loop can check for underflow in **one** place before calling `execute`. Give the
+machine a small class of its own (stack, `pc`, a `halted` flag) and pass it to `execute` by reference.
+```
+
+```hint
+Jumps are just instructions that set `pc` instead of incrementing it. Store the program as
+`std::vector<std::unique_ptr<Instruction>>` and count executed instructions in the loop for the step limit.
+```
+
+```stdin
+push 3
+print
+push 1
+sub
+dup
+jz 7
+jmp 1
+halt
+```
+
+```expected
+3
+2
+1
+stack: 0
+```
+
+```stdin
+push 2
+push 3
+sub
+print
+push 4
+mul
+print
+push 10
+swap
+print
+sub
+print
+add
+```
+
+```expected hidden
+-1
+-4
+-4
+14
+error: stack underflow at 12
+```
+
+```stdin
+
+```
+
+```expected hidden
+stack: (empty)
+```
+
+```stdin
+push 1
+jmp 0
+```
+
+```expected hidden
+error: step limit
+```
+
+```stdin
+push 0
+jz 4
+push 111
+print
+push 5
+push 7
+swap
+dup
+print
+halt
+print
+```
+
+```expected hidden
+5
+stack: 7 5 5
+```
+
+```stdin
+push 9
+pop
+pop
+```
+
+```expected hidden
+error: stack underflow at 2
+```
+
+```stdin
+push 0
+jz 3
+halt
+push -4
+dup
+mul
+print
+push 1
+jz 0
+jmp 11
+push 99
+```
+
+```expected hidden
+16
+stack: 16
+```
+
+```checks
+must virtual\s+\w[\w:<>]*\s+execute\s*\([^)]*\)\s*(const\s*)?=\s*0 :: Make execute a pure virtual function of Instruction.
+must std::unique_ptr\s*<\s*Instruction\s*> :: Hold the instructions through std::unique_ptr<Instruction>.
+must \boverride\b :: Mark the overrides with override.
+```
+:::

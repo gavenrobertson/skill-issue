@@ -720,3 +720,282 @@ must Copier\s*\(\s*int\s+\w+\s*\)\s*:\s*Device\s*\( :: Copier must initialize th
 mustnot Scanner::id :: With one shared Device, call id() directly.
 ```
 :::
+
+:::exercise Smart home hub {hard}
+A smart-home hub controls devices with different **capabilities**. Model each capability as an
+**interface** and let every device class inherit from the abstract base `Device` **plus** the
+interfaces it supports:
+
+- `Device`: a name and a pure virtual `std::string status() const`.
+- `Switchable`: `turnOn()`, `turnOff()`, `isOn() const`.
+- `Dimmable`: `setLevel(int)`; levels are clamped to `0..100`.
+
+| Device | Capabilities | Initial state | `status()` |
+| --- | --- | --- | --- |
+| `lamp` | switchable, dimmable | off, level 100 | `lamp NAME: on LEVEL%` or `lamp NAME: off` |
+| `fan` | switchable | off | `fan NAME: on` or `fan NAME: off` |
+| `speaker` | dimmable (the level is its volume) | volume 50 | `speaker NAME: volume LEVEL` |
+
+The hub stores everything as `std::unique_ptr<Device>` and discovers capabilities at run time by
+**cross-casting** from `Device*` to the interface with `dynamic_cast`.
+
+**Input:** commands until end of input:
+
+| Command | Effect |
+| --- | --- |
+| `add TYPE NAME` | add a device (`error: NAME exists` if the name is taken) |
+| `on NAME`, `off NAME` | switch it (`error: NAME can't switch` if it isn't switchable) |
+| `dim NAME L` | set its level (`error: NAME can't dim` if it isn't dimmable); a lamp remembers its level while off |
+| `status` | every device's `status()`, in the order they were added |
+| `alloff` | turn off every switchable device that is on and print `turned off N` |
+
+For a name that doesn't exist, `on`, `off` and `dim` print `error: no NAME`. Successful commands
+other than `status` and `alloff` print nothing.
+
+```cpp starter
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+// design Device, the Switchable and Dimmable interfaces, and Lamp, Fan, Speaker here
+
+int main() {
+    // read commands until end of input
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+class Device {
+    std::string name_;
+public:
+    explicit Device(std::string name) : name_(std::move(name)) {}
+    virtual ~Device() = default;
+    const std::string& name() const { return name_; }
+    virtual std::string status() const = 0;
+};
+
+class Switchable {                       // interface
+public:
+    virtual ~Switchable() = default;
+    virtual void turnOn() = 0;
+    virtual void turnOff() = 0;
+    virtual bool isOn() const = 0;
+};
+
+class Dimmable {                         // interface
+public:
+    virtual ~Dimmable() = default;
+    virtual void setLevel(int level) = 0;
+};
+
+int clampLevel(int v) { return v < 0 ? 0 : v > 100 ? 100 : v; }
+
+class Lamp : public Device, public Switchable, public Dimmable {
+    bool on_ = false;
+    int level_ = 100;
+public:
+    using Device::Device;
+    void turnOn() override { on_ = true; }
+    void turnOff() override { on_ = false; }
+    bool isOn() const override { return on_; }
+    void setLevel(int level) override { level_ = clampLevel(level); }
+    std::string status() const override {
+        return "lamp " + name() + ": " + (on_ ? "on " + std::to_string(level_) + "%" : "off");
+    }
+};
+
+class Fan : public Device, public Switchable {
+    bool on_ = false;
+public:
+    using Device::Device;
+    void turnOn() override { on_ = true; }
+    void turnOff() override { on_ = false; }
+    bool isOn() const override { return on_; }
+    std::string status() const override { return "fan " + name() + ": " + (on_ ? "on" : "off"); }
+};
+
+class Speaker : public Device, public Dimmable {
+    int volume_ = 50;
+public:
+    using Device::Device;
+    void setLevel(int level) override { volume_ = clampLevel(level); }
+    std::string status() const override { return "speaker " + name() + ": volume " + std::to_string(volume_); }
+};
+
+Device* findDevice(const std::vector<std::unique_ptr<Device>>& devices, const std::string& name) {
+    for (const auto& d : devices)
+        if (d->name() == name) return d.get();
+    return nullptr;
+}
+
+int main() {
+    std::vector<std::unique_ptr<Device>> devices;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "status") {
+            for (const auto& d : devices) std::cout << d->status() << '\n';
+            continue;
+        }
+        if (cmd == "alloff") {
+            int n = 0;
+            for (const auto& d : devices) {
+                if (auto s = dynamic_cast<Switchable*>(d.get()); s && s->isOn()) {   // cross-cast
+                    s->turnOff();
+                    ++n;
+                }
+            }
+            std::cout << "turned off " << n << '\n';
+            continue;
+        }
+        std::string a, name;
+        if (cmd == "add") std::cin >> a;
+        std::cin >> name;
+        Device* d = findDevice(devices, name);
+        if (cmd == "add") {
+            if (d) std::cout << "error: " << name << " exists\n";
+            else if (a == "lamp") devices.push_back(std::make_unique<Lamp>(name));
+            else if (a == "fan") devices.push_back(std::make_unique<Fan>(name));
+            else devices.push_back(std::make_unique<Speaker>(name));
+            continue;
+        }
+        if (!d) {
+            std::cout << "error: no " << name << '\n';
+            if (cmd == "dim") std::cin >> a;
+            continue;
+        }
+        if (cmd == "on" || cmd == "off") {
+            Switchable* s = dynamic_cast<Switchable*>(d);
+            if (!s) std::cout << "error: " << name << " can't switch\n";
+            else if (cmd == "on") s->turnOn();
+            else s->turnOff();
+        } else if (cmd == "dim") {
+            int level;
+            std::cin >> level;
+            Dimmable* m = dynamic_cast<Dimmable*>(d);
+            if (!m) std::cout << "error: " << name << " can't dim\n";
+            else m->setLevel(level);
+        }
+    }
+}
+```
+
+```hint
+`class Lamp : public Device, public Switchable, public Dimmable { ... };` gives a lamp all three bases.
+Interfaces have only pure virtual functions and a virtual destructor, so there is no diamond and no
+shared state to worry about.
+```
+
+```hint
+`dynamic_cast<Switchable*>(device)` where `device` is a `Device*` is a **cross-cast**: it moves sideways
+from one base to another. It returns `nullptr` for a speaker, which is exactly the "can't switch" test.
+For `dim` on an unknown device, remember to still read the level so the input stays in step.
+```
+
+```stdin
+add lamp desk
+add fan ceiling
+add speaker radio
+on desk
+dim desk 40
+on ceiling
+on radio
+dim ceiling 3
+status
+alloff
+status
+```
+
+```expected
+error: radio can't switch
+error: ceiling can't dim
+lamp desk: on 40%
+fan ceiling: on
+speaker radio: volume 50
+turned off 2
+lamp desk: off
+fan ceiling: off
+speaker radio: volume 50
+```
+
+```stdin
+status
+alloff
+add speaker s
+dim s -20
+status
+dim s 150
+status
+off s
+on ghost
+dim ghost 5
+off ghost
+add fan s
+add lamp s
+status
+```
+
+```expected hidden
+turned off 0
+speaker s: volume 0
+speaker s: volume 100
+error: s can't switch
+error: no ghost
+error: no ghost
+error: no ghost
+error: s exists
+error: s exists
+speaker s: volume 100
+```
+
+```stdin
+add lamp a
+add lamp b
+add fan c
+dim a 0
+on a
+on b
+off b
+on c
+on c
+status
+dim b 55
+status
+on b
+status
+alloff
+alloff
+on a
+dim a 101
+status
+```
+
+```expected hidden
+lamp a: on 0%
+lamp b: off
+fan c: on
+lamp a: on 0%
+lamp b: off
+fan c: on
+lamp a: on 0%
+lamp b: on 55%
+fan c: on
+turned off 3
+turned off 0
+lamp a: on 100%
+lamp b: off
+fan c: off
+```
+
+```checks
+must class\s+Lamp\s*:\s*public\s+\w+\s*,\s*public\s+\w+\s*,\s*public\s+\w+ :: Lamp should inherit publicly from Device and both interfaces.
+must dynamic_cast\s*<\s*(const\s+)?Switchable\s*\* :: Discover the Switchable capability with dynamic_cast.
+must dynamic_cast\s*<\s*(const\s+)?Dimmable\s*\* :: Discover the Dimmable capability with dynamic_cast.
+must std::unique_ptr\s*<\s*Device\s*> :: Store the devices as std::unique_ptr<Device>.
+```
+:::

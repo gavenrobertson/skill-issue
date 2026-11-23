@@ -111,7 +111,7 @@ export async function runCode(source, stdin, settings, signal) {
       return { ...r, source, wallTime: Math.round(performance.now() - started) };
     } catch (e) {
       if (e.name === 'AbortError') return { aborted: true };
-      if (e instanceof RetryableError && attempt < 3) {
+      if (e instanceof RetryableError && attempt < 4) {
         try {
           await sleep(1200 * 2 ** attempt, signal);
         } catch {

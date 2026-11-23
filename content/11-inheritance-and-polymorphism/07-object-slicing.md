@@ -706,3 +706,260 @@ must clone\s*\(\s*\)\s*const\s+override :: Override clone() in each shape.
 must make_unique\s*<\s*\w+\s*>\s*\(\s*\*\s*this\s*\) :: Copy the real object with std::make_unique<T>(*this).
 ```
 :::
+
+:::exercise Drawing with undo {hard}
+A drawing program keeps a `Drawing`: a list of shapes held as `std::unique_ptr<Shape>`. To support
+**undo**, `save` stores a complete, independent copy of the drawing, and `undo` brings the most recent
+copy back. That means `Drawing` must be **copyable**, and copying it must copy every shape **as its real
+type**, which only a virtual `clone()` can do.
+
+Shapes: `Circle` (`circle r=R`), `Rect` (`rect WxH`), and `Square`, which **derives from `Rect`** and
+describes itself as `square S`. Scaling by `k` multiplies every length by `k`.
+
+**Input:** commands until end of input:
+
+| Command | Effect |
+| --- | --- |
+| `circle R`, `rect W H`, `square S` | add a shape at the end |
+| `scale I K` | scale shape number `I` (1-based) by `K` |
+| `remove I` | remove shape number `I`; the shapes after it move up |
+| `save` | push a deep copy of the current drawing onto the undo history |
+| `undo` | replace the drawing with the most recently saved copy and drop that copy from the history, or print `nothing to undo` |
+| `print` | print each shape as `I: DESCRIPTION`, or `(empty)` |
+
+For an invalid `I`, `scale` and `remove` print `error: no shape I` and change nothing.
+
+**Example:** `circle 2`, `square 3`, `save`, `scale 1 10`, `print`, `undo`, `print` prints
+
+```
+1: circle r=20
+2: square 3
+1: circle r=2
+2: square 3
+```
+
+```cpp starter
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+// design Shape, Circle, Rect, Square and Drawing here
+
+int main() {
+    // read commands until end of input
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Shape {
+protected:
+    Shape(const Shape&) = default;              // derived classes may copy their base part
+    Shape& operator=(const Shape&) = default;   // outside code can't slice
+public:
+    Shape() = default;
+    virtual ~Shape() = default;
+    virtual std::unique_ptr<Shape> clone() const = 0;
+    virtual void scale(long long k) = 0;
+    virtual std::string describe() const = 0;
+};
+
+class Circle : public Shape {
+    long long r_;
+public:
+    explicit Circle(long long r) : r_(r) {}
+    std::unique_ptr<Shape> clone() const override { return std::make_unique<Circle>(*this); }
+    void scale(long long k) override { r_ *= k; }
+    std::string describe() const override { return "circle r=" + std::to_string(r_); }
+};
+
+class Rect : public Shape {
+protected:
+    long long w_, h_;
+public:
+    Rect(long long w, long long h) : w_(w), h_(h) {}
+    std::unique_ptr<Shape> clone() const override { return std::make_unique<Rect>(*this); }
+    void scale(long long k) override { w_ *= k; h_ *= k; }
+    std::string describe() const override { return "rect " + std::to_string(w_) + "x" + std::to_string(h_); }
+};
+
+class Square : public Rect {
+public:
+    explicit Square(long long s) : Rect(s, s) {}
+    std::unique_ptr<Shape> clone() const override { return std::make_unique<Square>(*this); }
+    std::string describe() const override { return "square " + std::to_string(w_); }
+};
+
+class Drawing {
+    std::vector<std::unique_ptr<Shape>> shapes_;
+public:
+    Drawing() = default;
+    Drawing(const Drawing& other) {
+        for (const auto& s : other.shapes_) shapes_.push_back(s->clone());
+    }
+    Drawing(Drawing&&) noexcept = default;
+    Drawing& operator=(Drawing other) noexcept {   // copy-and-swap (and move, via the by-value parameter)
+        std::swap(shapes_, other.shapes_);
+        return *this;
+    }
+
+    void add(std::unique_ptr<Shape> s) { shapes_.push_back(std::move(s)); }
+    bool valid(std::size_t i) const { return i >= 1 && i <= shapes_.size(); }
+    void scale(std::size_t i, long long k) { shapes_[i - 1]->scale(k); }
+    void remove(std::size_t i) { shapes_.erase(shapes_.begin() + static_cast<std::ptrdiff_t>(i - 1)); }
+    void print() const {
+        if (shapes_.empty()) std::cout << "(empty)\n";
+        for (std::size_t i = 0; i < shapes_.size(); ++i) std::cout << i + 1 << ": " << shapes_[i]->describe() << '\n';
+    }
+};
+
+int main() {
+    Drawing doc;
+    std::vector<Drawing> saved;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "circle") {
+            long long r;
+            std::cin >> r;
+            doc.add(std::make_unique<Circle>(r));
+        } else if (cmd == "rect") {
+            long long w, h;
+            std::cin >> w >> h;
+            doc.add(std::make_unique<Rect>(w, h));
+        } else if (cmd == "square") {
+            long long s;
+            std::cin >> s;
+            doc.add(std::make_unique<Square>(s));
+        } else if (cmd == "scale" || cmd == "remove") {
+            std::size_t i;
+            long long k = 0;
+            std::cin >> i;
+            if (cmd == "scale") std::cin >> k;
+            if (!doc.valid(i)) std::cout << "error: no shape " << i << '\n';
+            else if (cmd == "scale") doc.scale(i, k);
+            else doc.remove(i);
+        } else if (cmd == "save") {
+            saved.push_back(doc);                 // deep copy
+        } else if (cmd == "undo") {
+            if (saved.empty()) {
+                std::cout << "nothing to undo\n";
+            } else {
+                doc = std::move(saved.back());
+                saved.pop_back();
+            }
+        } else if (cmd == "print") {
+            doc.print();
+        }
+    }
+}
+```
+
+```hint
+`Drawing`'s generated copy constructor is deleted (a `unique_ptr` can't be copied), so write your own:
+loop over the other drawing's shapes and `push_back(s->clone())`. For assignment, take the parameter by
+value and swap the vectors (copy-and-swap); that one operator then handles copy *and* move assignment.
+```
+
+```hint
+`Square` inherits `Rect::clone()`, which builds a `Rect`. Unless `Square` overrides `clone()` too, every
+saved square comes back as a rectangle. Every concrete class needs its own `clone()`.
+```
+
+```stdin
+circle 2
+square 3
+save
+scale 1 10
+print
+undo
+print
+```
+
+```expected
+1: circle r=20
+2: square 3
+1: circle r=2
+2: square 3
+```
+
+```stdin
+print
+undo
+save
+square 4
+rect 2 3
+circle 1
+save
+remove 2
+scale 9 2
+remove 0
+scale 2 3
+save
+remove 1
+remove 1
+print
+undo
+print
+undo
+print
+undo
+print
+undo
+```
+
+```expected hidden
+(empty)
+nothing to undo
+error: no shape 9
+error: no shape 0
+(empty)
+1: square 4
+2: circle r=3
+1: square 4
+2: rect 2x3
+3: circle r=1
+(empty)
+nothing to undo
+```
+
+```stdin
+square 1
+save
+save
+scale 1 5
+save
+scale 1 2
+print
+undo
+print
+undo
+print
+scale 1 7
+undo
+print
+rect 6 6
+print
+```
+
+```expected hidden
+1: square 10
+1: square 5
+1: square 1
+1: square 1
+1: square 1
+2: rect 6x6
+```
+
+```checks
+must clone\s*\(\s*\)\s*const\s*=\s*0 :: Declare a pure virtual clone() in Shape.
+must class\s+Square\s*:\s*public\s+Rect :: Square must derive from Rect.
+must Drawing\s*\(\s*const\s+Drawing\s*& :: Give Drawing a copy constructor that clones every shape.
+must ->\s*clone\s*\(\s*\) :: Copy the shapes with clone().
+```
+:::

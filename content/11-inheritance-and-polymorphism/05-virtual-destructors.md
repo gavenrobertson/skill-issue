@@ -552,3 +552,270 @@ must class\s+Leaf\s*:\s*public\s+Middle :: Leaf should derive from Middle.
 must class\s+Middle\s*:\s*public\s+Base :: Middle should derive from Base.
 ```
 :::
+
+:::exercise Scene graph teardown {hard}
+A game keeps its scene as a **tree of nodes**. A `Group` owns its children (through
+`std::unique_ptr<Node>`); `Sprite` and `Text` are leaves. Removing a node destroys its whole subtree,
+and when the program ends, destroying the root tears down everything. Every node is owned and deleted
+**through a `Node` pointer**, so the base class needs the right destructor.
+
+Destructor output:
+
+- `~Group NAME`, printed **first** by a group's destructor, after which it destroys its children,
+  **newest child first**,
+- `~Sprite NAME` and `~Text NAME` for the leaves.
+
+Nodes are found by name: keep a **static** registry in `Node` (name → node), filled by `Node`'s
+constructor and cleaned up by its destructor, so it is always exactly the set of live nodes.
+
+**Input:** commands until end of input. At the start the scene holds just a group named `root`.
+
+| Command | Effect |
+| --- | --- |
+| `add KIND NAME PARENT` | create a `group`, `sprite` or `text` named `NAME` as the newest child of `PARENT`; no output |
+| `remove NAME` | detach `NAME` from its parent and destroy it with its subtree |
+| `count` | print `nodes: N`, the number of live nodes (including `root`) |
+
+**Errors**, checked in this order, print a line and change nothing: for `add`, `error: NAME exists`,
+`error: no PARENT`, `error: PARENT is not a group`; for `remove`, `error: no NAME`,
+`error: cannot remove root`.
+
+After the last command, print `end`; then the root is destroyed.
+
+**Example:** `add group ui root`, `add sprite logo ui`, `add text title ui`, `add sprite bg root`,
+`remove ui` prints
+
+```
+~Group ui
+~Text title
+~Sprite logo
+end
+~Group root
+~Sprite bg
+```
+
+```cpp starter
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
+// design Node, Group, Sprite and Text here
+
+int main() {
+    // create the root group, run the commands, print "end"
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
+class Group;
+
+class Node {
+    inline static std::map<std::string, Node*> registry_;   // every live node, by name
+    std::string name_;
+    Group* parent_;
+
+public:
+    Node(std::string name, Group* parent) : name_(std::move(name)), parent_(parent) { registry_[name_] = this; }
+    virtual ~Node() { registry_.erase(name_); }
+    Node(const Node&) = delete;
+    Node& operator=(const Node&) = delete;
+
+    const std::string& name() const { return name_; }
+    Group* parent() const { return parent_; }
+    virtual Group* asGroup() { return nullptr; }
+
+    static Node* find(const std::string& name) {
+        auto it = registry_.find(name);
+        return it == registry_.end() ? nullptr : it->second;
+    }
+    static std::size_t count() { return registry_.size(); }
+};
+
+class Group : public Node {
+    std::vector<std::unique_ptr<Node>> children_;
+public:
+    using Node::Node;
+    ~Group() override {
+        std::cout << "~Group " << name() << '\n';
+        while (!children_.empty()) children_.pop_back();   // newest child first
+    }
+    Group* asGroup() override { return this; }
+    void add(std::unique_ptr<Node> child) { children_.push_back(std::move(child)); }
+    void remove(Node* child) {
+        for (std::size_t i = 0; i < children_.size(); ++i) {
+            if (children_[i].get() == child) {
+                children_.erase(children_.begin() + static_cast<std::ptrdiff_t>(i));
+                return;
+            }
+        }
+    }
+};
+
+class Sprite : public Node {
+public:
+    using Node::Node;
+    ~Sprite() override { std::cout << "~Sprite " << name() << '\n'; }
+};
+
+class Text : public Node {
+public:
+    using Node::Node;
+    ~Text() override { std::cout << "~Text " << name() << '\n'; }
+};
+
+int main() {
+    auto root = std::make_unique<Group>("root", nullptr);
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "add") {
+            std::string kind, name, parentName;
+            std::cin >> kind >> name >> parentName;
+            Node* p = Node::find(parentName);
+            if (Node::find(name)) std::cout << "error: " << name << " exists\n";
+            else if (!p) std::cout << "error: no " << parentName << '\n';
+            else if (!p->asGroup()) std::cout << "error: " << parentName << " is not a group\n";
+            else {
+                Group* g = p->asGroup();
+                if (kind == "group") g->add(std::make_unique<Group>(name, g));
+                else if (kind == "sprite") g->add(std::make_unique<Sprite>(name, g));
+                else g->add(std::make_unique<Text>(name, g));
+            }
+        } else if (cmd == "remove") {
+            std::string name;
+            std::cin >> name;
+            Node* n = Node::find(name);
+            if (!n) std::cout << "error: no " << name << '\n';
+            else if (!n->parent()) std::cout << "error: cannot remove root\n";
+            else n->parent()->remove(n);
+        } else if (cmd == "count") {
+            std::cout << "nodes: " << Node::count() << '\n';
+        }
+    }
+    std::cout << "end\n";
+}
+```
+
+```hint
+`std::unique_ptr<Node>` deletes through a `Node*`, so `Node` needs a **virtual** destructor, or the
+`~Group` / `~Sprite` lines never print and a group's children are never destroyed. The base destructor
+is also the perfect place to erase the node from the static registry: it runs for every kind of node,
+after the derived destructor.
+```
+
+```hint
+Each node can remember its parent (`Group*`, null for the root). To ask "is this node a group?"
+without a cast, add a virtual `Group* asGroup()` that returns `nullptr` in `Node` and `this` in
+`Group`. A group's destructor prints its line, then pops its children off the back of its vector one by
+one, so the newest dies first.
+```
+
+```stdin
+add group ui root
+add sprite logo ui
+add text title ui
+add sprite bg root
+remove ui
+```
+
+```expected
+~Group ui
+~Text title
+~Sprite logo
+end
+~Group root
+~Sprite bg
+```
+
+```stdin
+count
+add sprite a root
+add text a root
+add sprite b nowhere
+add sprite c a
+remove root
+remove ghost
+add group g root
+add group h g
+add sprite s h
+add text t g
+count
+remove h
+count
+add sprite s g
+count
+```
+
+```expected hidden
+nodes: 1
+error: a exists
+error: no nowhere
+error: a is not a group
+error: cannot remove root
+error: no ghost
+nodes: 6
+~Group h
+~Sprite s
+nodes: 4
+nodes: 5
+end
+~Group root
+~Group g
+~Sprite s
+~Text t
+~Sprite a
+```
+
+```stdin
+add group a root
+add group b a
+add group c b
+add sprite x c
+add text y b
+add sprite z a
+add sprite w root
+remove b
+add group b root
+add text q b
+remove w
+count
+```
+
+```expected hidden
+~Group b
+~Text y
+~Group c
+~Sprite x
+~Sprite w
+nodes: 5
+end
+~Group root
+~Group b
+~Text q
+~Group a
+~Sprite z
+```
+
+```stdin
+remove root
+```
+
+```expected hidden
+error: cannot remove root
+end
+~Group root
+```
+
+```checks
+must virtual\s*~\s*Node :: Give Node a virtual destructor.
+must std::unique_ptr\s*<\s*Node\s*> :: Groups should own their children through std::unique_ptr<Node>.
+must \bstatic\b :: Keep the name registry in a static member of Node.
+```
+:::
