@@ -30,16 +30,18 @@ you'll actually use (each is really an alias for a `basic_...<char>` template, w
 messages sometimes say `std::basic_ostream<char>`):
 
 ```
-                       std::ios_base          (formatting flags, open modes)
-                             │
-                         std::ios             (stream state: good/fail/eof/bad)
-                        ╱         ╲
-              std::istream       std::ostream        <iostream>
-              ╱     │    ╲       ╱    │     ╲
-             ╱      │  std::iostream  │      ╲
-            ╱       │    ╱     ╲      │       ╲
-   std::ifstream    │ std::fstream  std::stringstream   std::ofstream      <fstream> / <sstream>
-          std::istringstream               std::ostringstream
+std::ios_base                       formatting flags, open modes
+└── std::ios                        stream state (good / fail / eof / bad)
+    ├── std::istream                input:  >>  getline  get
+    │   ├── std::ifstream           ...from a file
+    │   ├── std::istringstream      ...from a string
+    │   └── std::iostream           input AND output (derives from both istream and ostream)
+    │       ├── std::fstream        ...a file, both ways
+    │       └── std::stringstream   ...a string, both ways
+    └── std::ostream                output: <<  put  write
+        ├── std::ofstream           ...to a file
+        ├── std::ostringstream      ...to a string
+        └── std::iostream           (the same class as above: multiple inheritance)
 ```
 
 | Class | Direction | Connected to | Header |
