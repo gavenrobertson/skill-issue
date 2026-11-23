@@ -1,14 +1,19 @@
 ---
 title: Capstone Projects & Where to Go Next
-summary: Four multi-part projects that combine classes, templates, containers, streams, exceptions, and polymorphism, followed by a roadmap for continuing your C++ journey.
+summary: Six multi-part projects that combine classes, templates, containers, streams, exceptions, and polymorphism, including an expression interpreter and a small virtual machine, followed by a roadmap for continuing your C++ journey.
 ---
 
 ## Putting it all together
 
 You've learned the language piece by piece. Real programs use all the pieces at once, and the hard part
 stops being syntax and becomes **design**: which classes exist, who owns what, how data flows, how
-errors are reported. These four capstones are bigger than any exercise so far. Each is a complete
+errors are reported. These six capstones are bigger than any exercise so far. Each is a complete
 little program with a precise command language, so the checker can test it.
+
+They are meant to be **hard**, and to take a while: an evening each is normal. Give every one a real
+attempt on your own before you open a hint, and only compare with the solution once yours passes (or once
+you've been stuck for a long time). The hidden tests target the error paths and corner cases described in
+each specification, so test those yourself too.
 
 ### How to approach a project
 
@@ -71,10 +76,62 @@ Depending on the abstract stream interface instead of a concrete file decouples 
 the data goes.
 :::
 
+And two warm-ups that mix ideas from the last modules:
+
+:::quiz
+What does this print?
+
+```cpp
+void f(int&)  { std::cout << "L"; }
+void f(int&&) { std::cout << "R"; }
+
+template <typename T>
+void g(T&& x) {
+    f(x);
+    f(std::forward<T>(x));
+}
+
+int main() {
+    int a = 1;
+    g(a);
+    g(2);
+}
+```
+
+- [ ] `LLRR`
+- [x] `LLLR`
+- [ ] `LRLR`
+- [ ] `RRRR`
+
+Inside `g`, `x` has a name, so `f(x)` always picks the lvalue overload. `std::forward<T>(x)` restores the
+original category: an lvalue for `g(a)` (`T = int&`) and an rvalue for `g(2)` (`T = int`). So the calls
+print `L L`, then `L R`.
+:::
+
+:::quiz
+What does this print?
+
+```cpp
+using namespace std::chrono;
+seconds s{-90};
+std::cout << duration_cast<minutes>(s).count() << ' '
+          << floor<minutes>(s).count() << ' '
+          << ceil<minutes>(s).count();
+```
+
+- [ ] `-2 -2 -1`
+- [x] `-1 -2 -1`
+- [ ] `-1 -1 -1`
+- [ ] `-2 -1 -2`
+
+−90 s is −1.5 min. `duration_cast` truncates **toward zero** (−1), `floor` rounds toward negative infinity
+(−2), and `ceil` toward positive infinity (−1). For negative durations, truncation and `floor` differ.
+:::
+
 The starters only give you a skeleton. Take your time: these are meant to take a while. Use the hints
 when stuck, and compare with the solution afterwards; there are many good designs.
 
-:::exercise Capstone 1: Inventory manager
+:::exercise Capstone 1: Inventory manager {hard}
 Build an inventory manager with **save/load**. Store items in a class `Inventory` that keeps a
 `std::map` from item name to quantity and unit price. Saving and loading must be done by member
 functions `void save(std::ostream& out) const` and `void load(std::istream& in)`, writing and reading a
@@ -90,7 +147,7 @@ Commands, one per line (blank lines are ignored; names are single words):
 | `add <name> <qty> <price>` | If `qty` is a positive integer and `price` a non-negative number: add `qty` to the item (creating it if needed) and set its unit price to `price`; print `added <qty> <name>`. Otherwise print `error: invalid add`. |
 | `remove <name> <qty>` | If `qty` isn't a positive integer: `error: invalid remove`. If the item doesn't exist: `error: unknown item <name>`. If there aren't enough: `error: only <have> <name> in stock`. Otherwise subtract, delete the item if it reaches 0, and print `removed <qty> <name>`. |
 | `report` | For each item in alphabetical order: `<name>: <qty> @ <price> = <qty*price>`, then `total: <sum>`. Money has exactly 2 decimals. With no items, print `(empty)` before the total. |
-| `save` | Save the inventory to the "file" (replacing any earlier save); print `saved <k> items`. |
+| `save` | Save the inventory to the "file" (replacing any earlier save); print `saved <k> items`. Every quantity and price must survive the save/load round trip **exactly**. |
 | `load` | Replace the inventory with the saved one; print `loaded <k> items`. If nothing was saved yet: `error: nothing saved`. |
 | `clear` | Remove all items; print `cleared`. |
 | anything else | `error: unknown command <command>` |
@@ -146,6 +203,7 @@ int main() {
 ```cpp solution
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <sstream>
 #include <string>
@@ -186,6 +244,8 @@ public:
     }
 
     void save(std::ostream& out) const {
+        // enough digits that every double reads back as exactly the same value
+        out << std::setprecision(std::numeric_limits<double>::max_digits10);
         for (const auto& [name, item] : items_) {
             out << name << ',' << item.qty << ',' << item.price << '\n';
         }
@@ -278,9 +338,16 @@ throw an exception and catch it in `main`. Either keeps the printing in one plac
 ```
 
 ```hint
-`save` can simply do `out << name << ',' << item.qty << ',' << item.price << '\n';` for each item. In
-`load`, read each line with `std::getline(in, line)`, then split it with `std::getline(row, field, ',')`
-and convert with `std::stoi` / `std::stod`.
+`save` can do `out << name << ',' << item.qty << ',' << item.price << '\n';` for each item. In `load`,
+read each line with `std::getline(in, line)`, then split it with `std::getline(row, field, ',')` and
+convert with `std::stoi` / `std::stod`.
+```
+
+```hint
+Careful with precision: a stream prints doubles with **6 significant digits** by default, so a price of
+`1234567.89` would be saved as `1.23457e+06` and come back wrong. Write with
+`std::setprecision(std::numeric_limits<double>::max_digits10)` (17 for `double`), which guarantees that
+reading the text back gives the identical value.
 ```
 
 ```hint
@@ -369,6 +436,41 @@ error: invalid add
 error: invalid add
 ```
 
+```stdin
+add big 2 1234567.89
+add tiny 3 0.07
+add third 1 0.3333333333
+save
+clear
+load
+report
+remove big 2
+remove tiny 4
+save
+load
+report
+```
+
+```expected hidden
+added 2 big
+added 3 tiny
+added 1 third
+saved 3 items
+cleared
+loaded 3 items
+big: 2 @ 1234567.89 = 2469135.78
+third: 1 @ 0.33 = 0.33
+tiny: 3 @ 0.07 = 0.21
+total: 2469136.32
+removed 2 big
+error: only 3 tiny in stock
+saved 2 items
+loaded 2 items
+third: 1 @ 0.33 = 0.33
+tiny: 3 @ 0.07 = 0.21
+total: 0.54
+```
+
 ```checks
 must class\s+Inventory :: Put the logic in a class Inventory.
 must std::map\s*< :: Store the items in a std::map.
@@ -378,7 +480,7 @@ must ostringstream|stringstream :: Save into a std::ostringstream.
 ```
 :::
 
-:::exercise Capstone 2: Text adventure
+:::exercise Capstone 2: Text adventure {hard}
 Write the engine for a tiny text adventure. The world is given in the starter: four rooms, their
 descriptions, exits, and items. The player starts in the `hall`. The `garden` door is **locked** unless
 the player carries the `key`.
@@ -687,13 +789,68 @@ Taken: key.
 You carry: book, key
 ```
 
+```stdin
+go
+GO EAST
+look
+n
+w
+w
+take lamp now
+drop lamp
+drop lamp
+take lamp
+north
+take key
+s
+e
+north
+drop key
+look
+s
+n
+take key
+take key
+QUIT
+look
+```
+
+```expected hidden
+Go where?
+You enter the kitchen.
+kitchen: It smells of fresh bread.
+Items: bread
+Exits: north, west
+The door is locked.
+You enter the hall.
+You can't go that way.
+Taken: lamp.
+Dropped: lamp.
+You don't have lamp.
+Taken: lamp.
+You enter the library.
+Taken: key.
+You enter the hall.
+You enter the kitchen.
+You enter the garden.
+Dropped: key.
+garden: Flowers everywhere. You found the way out!
+Items: flower, key
+Exits: south
+You enter the kitchen.
+The door is locked.
+There is no key here.
+There is no key here.
+Bye!
+```
+
 ```checks
 must istringstream|stringstream :: Split each command line with a std::istringstream.
 must tolower :: Make commands case-insensitive with std::tolower.
 ```
 :::
 
-:::exercise Capstone 3: Matrix class template
+:::exercise Capstone 3: Matrix class template {hard}
 Write a class template `Matrix<T>` that stores a `rows × cols` grid in a single `std::vector<T>`
 (row-major), with:
 
@@ -911,6 +1068,62 @@ transpose(A):
 A == B: yes
 ```
 
+```stdin
+1 2
+1 2
+2 1
+1
+2
+```
+
+```expected hidden
+A + B:
+error: dimension mismatch for +
+A * B:
+5
+transpose(A):
+1
+2
+A == B: no
+```
+
+```stdin
+2 3
+1 2 3
+4 5 6
+2 3
+-1 -2 -3
+10 20 30
+```
+
+```expected hidden
+A + B:
+0 0 0
+14 25 36
+A * B:
+error: dimension mismatch for *
+transpose(A):
+1 4
+2 5
+3 6
+A == B: no
+```
+
+```stdin
+2 0
+0 3
+```
+
+```expected hidden
+A + B:
+error: dimension mismatch for +
+A * B:
+0 0 0
+0 0 0
+transpose(A):
+A == B: no
+```
+
 ```checks
 must template\s*<\s*typename\s+\w+\s*>\s*class\s+Matrix :: Make Matrix a class template.
 must operator\s*\+ :: Overload operator+.
@@ -920,7 +1133,7 @@ must throw\s+std::invalid_argument :: Throw std::invalid_argument on dimension m
 ```
 :::
 
-:::exercise Capstone 4: Bank with accounts and exceptions
+:::exercise Capstone 4: Bank with accounts and exceptions {hard}
 Model a bank with **polymorphic** accounts and **exceptions** for every failure.
 
 - An abstract base class `Account` (id, balance in whole dollars as `long long`) with a virtual
@@ -1240,6 +1453,49 @@ interest paid: 5
 a (checking): -500
 b (savings): 555
 error: unknown command foo
+```
+
+```stdin
+open savings s 100
+open checking c 0
+transfer s c 10
+transfer s c 10
+transfer s c 10
+withdraw s 1
+transfer s c 1000
+transfer x s 5
+transfer s x 5
+transfer y z 1
+deposit c
+month
+withdraw s 5
+open checking c -5
+open savings n -5
+withdraw c 531
+withdraw c 530
+report
+```
+
+```expected hidden
+opened savings s
+opened checking c
+transferred 10 from s to c
+transferred 10 from s to c
+transferred 10 from s to c
+error: withdrawal limit reached for s
+error: withdrawal limit reached for s
+error: no account x
+error: no account x
+error: no account y
+error: invalid amount
+interest paid: 0
+withdrew 5 from s
+error: account c already exists
+error: invalid amount
+error: insufficient funds in c
+withdrew 530 from c
+c (checking): -500
+s (savings): 65
 ```
 
 ```checks
