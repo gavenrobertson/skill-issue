@@ -114,6 +114,37 @@ Your program compiles and runs but prints `7` where you expected `8`. What kind 
 It built and ran, but did the wrong thing: a logic error. (It *could* be caused by UB, but the symptom is a wrong result.)
 :::
 
+:::exercise Missing include {easy}
+The program below forgot something at the very top, so the compiler doesn't know what `std::cout`
+is. Fix it so it prints `Found it!`.
+
+```cpp starter broken
+int main() {
+    std::cout << "Found it!\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    std::cout << "Found it!\n";
+}
+```
+
+```hint
+`std::cout` is declared in the `<iostream>` header.
+```
+
+```expected
+Found it!
+```
+
+```checks
+must #include\s*<iostream> :: Include the <iostream> header.
+```
+:::
+
 :::exercise Fix the build {medium}
 This program has **three** compile errors. Fix them all so it prints:
 
@@ -153,36 +184,5 @@ Two semicolons are missing, and C++ is case-sensitive: is it `Cout` or `cout`?
 ```expected
 Debugging is twice as hard as writing the code.
 - Brian Kernighan
-```
-:::
-
-:::exercise Missing include {easy}
-The program below forgot something at the very top, so the compiler doesn't know what `std::cout`
-is. Fix it so it prints `Found it!`.
-
-```cpp starter broken
-int main() {
-    std::cout << "Found it!\n";
-}
-```
-
-```cpp solution
-#include <iostream>
-
-int main() {
-    std::cout << "Found it!\n";
-}
-```
-
-```hint
-`std::cout` is declared in the `<iostream>` header.
-```
-
-```expected
-Found it!
-```
-
-```checks
-must #include\s*<iostream> :: Include the <iostream> header.
 ```
 :::

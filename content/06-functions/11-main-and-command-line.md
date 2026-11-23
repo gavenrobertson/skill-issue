@@ -423,3 +423,246 @@ must int\s+main[\s\S]*return\s+EXIT_SUCCESS\s*; :: End main with return EXIT_SUC
 must int\s+validateAge\s*\(\s*int :: Write int validateAge(int age).
 ```
 :::
+
+:::exercise Option parser {hard}
+Real programs parse their command-line options. Simulate that: the words of the input are the
+arguments `argv[1]`, `argv[2]`, ... of a program, and you parse them like a typical Unix tool.
+
+**Rules**, applied to the words from left to right:
+
+| Word | Meaning |
+| --- | --- |
+| `-v` or `--verbose` | turn verbose mode on |
+| `-n` | the **next** word is the count: it must consist of 1 to 9 digits |
+| `--name=VALUE` | set the name to `VALUE` (everything after the `=`, possibly empty) |
+| `--` | stop parsing options: **every** later word is a file, even if it starts with `-` |
+| `-` on its own | a file (by convention it means standard input) |
+| any other word starting with `-` | an error: unknown option |
+| anything else | a file |
+
+**Output** on success, four lines (defaults: not verbose, count 1, no name, no files):
+
+```
+verbose: no
+count: 1
+name: (none)
+files: (none)
+```
+
+`files:` lists the files separated by single spaces. On an error, print only the error message and stop:
+`error: -n needs a number` (missing or not all digits) or `error: unknown option <word>`.
+
+For `-v -n 3 --name=Ada notes.txt todo.txt`:
+
+```
+verbose: yes
+count: 3
+name: Ada
+files: notes.txt todo.txt
+```
+
+Write the parsing in a function that returns an exit status (`EXIT_SUCCESS` or `EXIT_FAILURE`), but
+have `main` itself always `return EXIT_SUCCESS;` so the grader sees exit code 0.
+
+```cpp starter
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string word;
+    while (std::cin >> word) {
+    }
+    std::cout << "verbose: no\ncount: 1\nname: (none)\nfiles: (none)\n";
+    return EXIT_SUCCESS;
+}
+```
+
+```cpp solution
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
+bool allDigits(const std::string& s) {
+    if (s.empty() || s.size() > 9) {
+        return false;
+    }
+    for (char c : s) {
+        if (c < '0' || c > '9') {
+            return false;
+        }
+    }
+    return true;
+}
+
+int parseArguments() {
+    bool verbose = false;
+    int count = 1;
+    std::string name = "(none)";
+    std::string files;
+    bool optionsDone = false;
+
+    std::string word;
+    while (std::cin >> word) {
+        bool isOption = !optionsDone && word.size() > 1 && word[0] == '-';
+        if (!isOption) {
+            files += (files.empty() ? "" : " ") + word;
+        } else if (word == "--") {
+            optionsDone = true;
+        } else if (word == "-v" || word == "--verbose") {
+            verbose = true;
+        } else if (word == "-n") {
+            std::string value;
+            if (!(std::cin >> value) || !allDigits(value)) {
+                std::cout << "error: -n needs a number\n";
+                return EXIT_FAILURE;
+            }
+            count = std::stoi(value);
+        } else if (word.substr(0, 7) == "--name=") {
+            name = word.substr(7);
+        } else {
+            std::cout << "error: unknown option " << word << '\n';
+            return EXIT_FAILURE;
+        }
+    }
+
+    std::cout << "verbose: " << (verbose ? "yes" : "no") << '\n';
+    std::cout << "count: " << count << '\n';
+    std::cout << "name: " << name << '\n';
+    std::cout << "files: " << (files.empty() ? "(none)" : files) << '\n';
+    return EXIT_SUCCESS;
+}
+
+int main() {
+    int status = parseArguments();
+    if (status != EXIT_SUCCESS) {
+        std::cerr << "(a real program would now return " << status << ")\n";
+    }
+    return EXIT_SUCCESS;
+}
+```
+
+```hint
+Keep a `bool` that becomes true after `--`. While it's true, every word is a file.
+```
+
+```hint
+`word.substr(0, 7) == "--name="` checks the beginning of a word (`substr(pos, len)` copies part of a
+string), and `word.substr(7)` is everything after it. C++20 also has `word.starts_with("--name=")`.
+```
+
+```hint
+For `-n`, read the next word and check that it's 1 to 9 digits **before** converting it with
+`std::stoi`. The next word may also be missing.
+```
+
+```stdin
+-v -n 3 --name=Ada notes.txt todo.txt
+```
+
+```expected
+verbose: yes
+count: 3
+name: Ada
+files: notes.txt todo.txt
+```
+
+```stdin
+```
+
+```expected
+verbose: no
+count: 1
+name: (none)
+files: (none)
+```
+
+```stdin
+a.txt -- -v -n
+```
+
+```expected hidden
+verbose: no
+count: 1
+name: (none)
+files: a.txt -v -n
+```
+
+```stdin
+-n
+```
+
+```expected hidden
+error: -n needs a number
+```
+
+```stdin
+-n 12x a.txt
+```
+
+```expected hidden
+error: -n needs a number
+```
+
+```stdin
+-q
+```
+
+```expected hidden
+error: unknown option -q
+```
+
+```stdin
+- --name= --verbose
+```
+
+```expected hidden
+verbose: yes
+count: 1
+name:
+files: -
+```
+
+```stdin
+-n 007 -n 42 x -v y
+```
+
+```expected hidden
+verbose: yes
+count: 42
+name: (none)
+files: x y
+```
+
+```stdin
+-n 1234567890
+```
+
+```expected hidden
+error: -n needs a number
+```
+
+```stdin
+--name=first --name=second -- --
+```
+
+```expected hidden
+verbose: no
+count: 1
+name: second
+files: --
+```
+
+```stdin
+--count=3
+```
+
+```expected hidden
+error: unknown option --count=3
+```
+
+```checks
+must EXIT_FAILURE :: Return EXIT_FAILURE from your parsing function on errors.
+must int\s+main[\s\S]*return\s+EXIT_SUCCESS\s*; :: main itself should return EXIT_SUCCESS.
+```
+:::

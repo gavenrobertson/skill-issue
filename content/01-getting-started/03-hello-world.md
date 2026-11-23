@@ -18,7 +18,7 @@ int main() {
 Hello, World!
 ```
 
-Seven lines, and every one matters. Let's take it apart.
+Six lines (one of them blank), and every one matters. Let's take it apart.
 
 ## `#include <iostream>`
 

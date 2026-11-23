@@ -527,3 +527,223 @@ must int\s+rectangle\s*\([^)]*\)\s*noexcept :: Mark rectangle noexcept.
 must int\s+box\s*\([^)]*\)\s*noexcept :: Mark box noexcept.
 ```
 :::
+
+:::exercise Strict time parser {hard}
+Add up work shifts given as clock times, rejecting anything that isn't a valid `HH:MM` time.
+
+Write these two functions and use them:
+
+- `[[nodiscard]] bool parseTime(const std::string& text, int& minutes)`: if `text` is **exactly** five
+  characters `HH:MM` (two digits, a colon, two digits) with `HH` from `00` to `23` and `MM` from `00` to
+  `59`, store the minutes since midnight in `minutes` and return `true`. Otherwise return `false` and
+  leave `minutes` alone.
+- `[[noreturn]] void fail(const std::string& text)`: print `invalid time: <text>` and end the program
+  with `std::exit(0)`.
+
+**Input:** pairs of words `start end` until the end of input.
+**Output:**
+
+- For each pair: `<start>-<end>: H:MM`, the length of the shift (hours without padding, minutes with
+  two digits). If `end` is earlier than `start`, the shift runs past midnight. Equal times mean `0:00`.
+- If either time of a pair is invalid, call `fail` with the first invalid one (nothing else is printed
+  for that pair, and nothing after it).
+- After the last pair: `total: H:MM` (hours can be more than 24).
+
+For the input
+
+```
+09:00 17:30
+22:00 06:15
+```
+
+the output is
+
+```
+09:00-17:30: 8:30
+22:00-06:15: 8:15
+total: 16:45
+```
+
+```cpp starter
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string start, end;
+    while (std::cin >> start >> end) {
+        std::cout << start << '-' << end << ": 0:00\n";
+    }
+    std::cout << "total: 0:00\n";
+}
+```
+
+```cpp solution
+#include <cstdlib>
+#include <format>
+#include <iostream>
+#include <string>
+
+bool isDigit(char c) {
+    return c >= '0' && c <= '9';
+}
+
+[[nodiscard]] bool parseTime(const std::string& text, int& minutes) {
+    if (text.size() != 5 || text[2] != ':') {
+        return false;
+    }
+    if (!isDigit(text[0]) || !isDigit(text[1]) || !isDigit(text[3]) || !isDigit(text[4])) {
+        return false;
+    }
+    int h = (text[0] - '0') * 10 + (text[1] - '0');
+    int m = (text[3] - '0') * 10 + (text[4] - '0');
+    if (h > 23 || m > 59) {
+        return false;
+    }
+    minutes = h * 60 + m;
+    return true;
+}
+
+[[noreturn]] void fail(const std::string& text) {
+    std::cout << "invalid time: " << text << '\n';
+    std::exit(0);
+}
+
+std::string formatDuration(int minutes) {
+    return std::format("{}:{:02}", minutes / 60, minutes % 60);
+}
+
+int main() {
+    std::string start, end;
+    int total = 0;
+    while (std::cin >> start >> end) {
+        int a = 0, b = 0;
+        if (!parseTime(start, a)) {
+            fail(start);
+        }
+        if (!parseTime(end, b)) {
+            fail(end);
+        }
+        int length = b - a;
+        if (length < 0) {
+            length += 24 * 60;
+        }
+        total += length;
+        std::cout << start << '-' << end << ": " << formatDuration(length) << '\n';
+    }
+    std::cout << "total: " << formatDuration(total) << '\n';
+}
+```
+
+```hint
+`text.size()` is the length and `text[i]` is the character at position `i` (from 0). A character `c` is a
+digit if `c >= '0' && c <= '9'`, and its value is `c - '0'`.
+```
+
+```hint
+Convert both times to minutes since midnight. If the end is smaller than the start, add 24 * 60.
+```
+
+```hint
+Because `parseTime` is `[[nodiscard]]`, the compiler warns if you call it without using the result.
+Use it directly in the `if`: `if (!parseTime(start, a)) { fail(start); }`.
+```
+
+```stdin
+09:00 17:30
+22:00 06:15
+```
+
+```expected
+09:00-17:30: 8:30
+22:00-06:15: 8:15
+total: 16:45
+```
+
+```stdin
+12:00 12:00
+```
+
+```expected
+12:00-12:00: 0:00
+total: 0:00
+```
+
+```stdin
+08:00 9:30
+```
+
+```expected hidden
+invalid time: 9:30
+```
+
+```stdin
+10:00 11:00
+23:59 24:00
+```
+
+```expected hidden
+10:00-11:00: 1:00
+invalid time: 24:00
+```
+
+```stdin
+```
+
+```expected hidden
+total: 0:00
+```
+
+```stdin
+00:00 23:59
+12:5a 13:00
+```
+
+```expected hidden
+00:00-23:59: 23:59
+invalid time: 12:5a
+```
+
+```stdin
+07:60 08:00
+```
+
+```expected hidden
+invalid time: 07:60
+```
+
+```stdin
+23:00 01:00
+23:00 01:00
+00:00 23:59
+```
+
+```expected hidden
+23:00-01:00: 2:00
+23:00-01:00: 2:00
+00:00-23:59: 23:59
+total: 27:59
+```
+
+```stdin
+1200 13:00
+```
+
+```expected hidden
+invalid time: 1200
+```
+
+```stdin
+12:00 13:000
+```
+
+```expected hidden
+invalid time: 13:000
+```
+
+```checks
+must \[\[\s*nodiscard\s*\]\]\s*bool\s+parseTime\s*\(\s*const\s+std::string\s*&\s*\w+\s*,\s*int\s*& :: Write [[nodiscard]] bool parseTime(const std::string& text, int& minutes).
+must \[\[\s*noreturn\s*\]\]\s*void\s+fail :: Write [[noreturn]] void fail(...).
+must exit\s*\( :: End the program with std::exit in fail.
+```
+:::

@@ -442,6 +442,62 @@ must std::oct :: Use std::oct.
 ```
 :::
 
+:::exercise Raw path {easy}
+Read a user name (a single word) and print that user's Documents folder as a Windows path:
+
+**Input:** a single word `name`.
+**Output:** `C:\Users\<name>\Documents`, newline. For `ada` print `C:\Users\ada\Documents`.
+
+Write the fixed parts of the path as **raw string literals** (`R"(...)"`), so you don't have to escape
+the backslashes. (Read the name with `std::string name; std::cin >> name;`, which needs `#include <string>`.)
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string name;
+    std::cin >> name;
+    std::cout << "C:Users" << name << "Documents" << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string name;
+    std::cin >> name;
+    std::cout << R"(C:\Users\)" << name << R"(\Documents)" << '\n';
+}
+```
+
+```hint
+Inside `R"( ... )"` a backslash is just a backslash: `R"(C:\Users\)"`.
+```
+
+```stdin
+ada
+```
+
+```expected
+C:\Users\ada\Documents
+```
+
+```stdin
+x
+```
+
+```expected hidden
+C:\Users\x\Documents
+```
+
+```checks
+must R" :: Use raw string literals for the path parts.
+```
+:::
+
 :::exercise Millions {medium}
 Read a number of millions `m` and print the full number. Write the constant one million **with
 digit separators** (`1'000'000`), and make sure large answers don't overflow an `int` (use a suffix
@@ -512,62 +568,6 @@ int main() {
 
 ```checks
 must 1'000'000 :: Write one million with digit separators: 1'000'000
-```
-:::
-
-:::exercise Raw path {easy}
-Read a user name (a single word) and print that user's Documents folder as a Windows path:
-
-**Input:** a single word `name`.
-**Output:** `C:\Users\<name>\Documents`, newline. For `ada` print `C:\Users\ada\Documents`.
-
-Write the fixed parts of the path as **raw string literals** (`R"(...)"`), so you don't have to escape
-the backslashes. (Read the name with `std::string name; std::cin >> name;`, which needs `#include <string>`.)
-
-```cpp starter
-#include <iostream>
-#include <string>
-
-int main() {
-    std::string name;
-    std::cin >> name;
-    std::cout << "C:Users" << name << "Documents" << '\n';
-}
-```
-
-```cpp solution
-#include <iostream>
-#include <string>
-
-int main() {
-    std::string name;
-    std::cin >> name;
-    std::cout << R"(C:\Users\)" << name << R"(\Documents)" << '\n';
-}
-```
-
-```hint
-Inside `R"( ... )"` a backslash is just a backslash: `R"(C:\Users\)"`.
-```
-
-```stdin
-ada
-```
-
-```expected
-C:\Users\ada\Documents
-```
-
-```stdin
-x
-```
-
-```expected hidden
-C:\Users\x\Documents
-```
-
-```checks
-must R" :: Use raw string literals for the path parts.
 ```
 :::
 

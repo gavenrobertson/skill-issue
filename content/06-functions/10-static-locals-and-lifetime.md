@@ -577,3 +577,201 @@ must void\s+deposit\s*\(\s*int\s*&\s*\w+\s*,\s*int :: Write void deposit(int& ba
 must bool\s+withdraw\s*\(\s*int\s*&\s*\w+\s*,\s*int :: Write bool withdraw(int& balance, int amount).
 ```
 :::
+
+:::exercise Trend tracker {hard}
+Write `std::string trend(int x)` that is called once for every number of a data stream and describes how
+the stream is moving. It must remember what it has seen in **static local** variables only: no globals,
+and no extra parameters.
+
+For each call it returns:
+
+- `start` for the very first number,
+- `up N` if `x` is greater than the previous number, where `N` counts the rises in a row ending here
+  (1, 2, 3, ...),
+- `down N` likewise if `x` is smaller,
+- `flat` if `x` equals the previous number; this also ends any streak.
+
+If a rise comes directly after a falling streak of **3 or more**, or a fall directly after a rising
+streak of 3 or more, append ` (reversal)`.
+
+**Input:** integers until the end of input.
+**Output:** one line per number: `<x>: <trend(x)>`.
+
+For `1 2 3 4 2 2 5 1 0`:
+
+```
+1: start
+2: up 1
+3: up 2
+4: up 3
+2: down 1 (reversal)
+2: flat
+5: up 1
+1: down 1
+0: down 2
+```
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+std::string trend(int x) {
+    int previous = 0;
+    std::string result = x > previous ? "up" : "down";
+    previous = x;
+    return result;
+}
+
+int main() {
+    int x = 0;
+    while (std::cin >> x) {
+        std::cout << x << ": " << trend(x) << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+std::string trend(int x) {
+    static bool first = true;
+    static int previous = 0;
+    static int streak = 0;      // > 0: rises in a row, < 0: falls in a row, 0: none
+
+    std::string result;
+    if (first) {
+        first = false;
+        result = "start";
+    } else if (x > previous) {
+        bool reversal = streak <= -3;
+        streak = streak > 0 ? streak + 1 : 1;
+        result = "up " + std::to_string(streak) + (reversal ? " (reversal)" : "");
+    } else if (x < previous) {
+        bool reversal = streak >= 3;
+        streak = streak < 0 ? streak - 1 : -1;
+        result = "down " + std::to_string(-streak) + (reversal ? " (reversal)" : "");
+    } else {
+        streak = 0;
+        result = "flat";
+    }
+    previous = x;
+    return result;
+}
+
+int main() {
+    int x = 0;
+    while (std::cin >> x) {
+        std::cout << x << ": " << trend(x) << '\n';
+    }
+}
+```
+
+```hint
+You need to remember three things between calls: whether this is the first call, the previous number,
+and the current streak. One signed `int` can hold the streak: positive for rises, negative for falls.
+```
+
+```hint
+Decide whether it's a reversal **before** you update the streak.
+```
+
+```stdin
+1 2 3 4 2 2 5 1 0
+```
+
+```expected
+1: start
+2: up 1
+3: up 2
+4: up 3
+2: down 1 (reversal)
+2: flat
+5: up 1
+1: down 1
+0: down 2
+```
+
+```stdin
+5
+```
+
+```expected
+5: start
+```
+
+```stdin
+-1 -2 -3 -4 -3
+```
+
+```expected hidden
+-1: start
+-2: down 1
+-3: down 2
+-4: down 3
+-3: up 1 (reversal)
+```
+
+```stdin
+7 7 7
+```
+
+```expected hidden
+7: start
+7: flat
+7: flat
+```
+
+```stdin
+1 2 3 3 2
+```
+
+```expected hidden
+1: start
+2: up 1
+3: up 2
+3: flat
+2: down 1
+```
+
+```stdin
+```
+
+```expected hidden
+```
+
+```stdin
+10 20 30 40 50 40 30 20 30 40
+```
+
+```expected hidden
+10: start
+20: up 1
+30: up 2
+40: up 3
+50: up 4
+40: down 1 (reversal)
+30: down 2
+20: down 3
+30: up 1 (reversal)
+40: up 2
+```
+
+```stdin
+0 1 0 1 0
+```
+
+```expected hidden
+0: start
+1: up 1
+0: down 1
+1: up 1
+0: down 1
+```
+
+```checks
+must static\s+(int|bool|long) :: Keep the state in static local variables.
+mustnot ^(static\s+)?(int|bool|long|std::string)\s+\w+\s*(=[^;]*)?; :: No global variables.
+must std::string\s+trend\s*\(\s*int\s+\w+\s*\) :: Write std::string trend(int x) with just one parameter.
+```
+:::

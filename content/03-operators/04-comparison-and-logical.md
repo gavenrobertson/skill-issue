@@ -383,6 +383,99 @@ must boolalpha :: Use std::boolalpha.
 ```
 :::
 
+:::exercise In range {easy}
+Read three integers `lo`, `hi` and `x`, and print whether `lo ≤ x ≤ hi` (both ends included). Careful:
+`lo <= x <= hi` compiles but is wrong.
+
+**Input:** three integers `lo hi x` (with `lo ≤ hi`).
+**Output:** `true` or `false`, newline. For `1 10 5` print `true`; for `1 10 20` print `false`.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int lo{}, hi{}, x{};
+    std::cin >> lo >> hi >> x;
+    std::cout << std::boolalpha << (lo <= x) << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    int lo{}, hi{}, x{};
+    std::cin >> lo >> hi >> x;
+    std::cout << std::boolalpha << (lo <= x && x <= hi) << '\n';
+}
+```
+
+```hint
+Two separate comparisons, joined with `&&`.
+```
+
+```stdin
+1 10 5
+```
+
+```expected
+true
+```
+
+```stdin
+1 10 20
+```
+
+```expected
+false
+```
+
+```stdin
+1 10 10
+```
+
+```expected hidden
+true
+```
+
+```stdin
+-5 5 -6
+```
+
+```expected hidden
+false
+```
+
+```stdin
+5 5 5
+```
+
+```expected hidden
+true
+```
+
+```stdin
+-10 -1 0
+```
+
+```expected hidden
+false
+```
+
+```stdin
+-10 -1 -10
+```
+
+```expected hidden
+true
+```
+
+```checks
+must &&|\band\b :: Combine the two comparisons with &&.
+mustnot <=\s*\w+\s*<= :: lo <= x <= hi doesn't mean what it looks like.
+```
+:::
+
 :::exercise Leap year {medium}
 A year is a leap year if it's divisible by 4, **except** years divisible by 100, which are leap years
 only if they're also divisible by 400. Read a year and print whether it's a leap year, as a single
@@ -489,99 +582,6 @@ false
 must &&|\band\b :: Use && (logical AND).
 must \|\||\bor\b :: Use || (logical OR).
 mustnot \bif\b :: Use a single logical expression, not if.
-```
-:::
-
-:::exercise In range {easy}
-Read three integers `lo`, `hi` and `x`, and print whether `lo ≤ x ≤ hi` (both ends included). Careful:
-`lo <= x <= hi` compiles but is wrong.
-
-**Input:** three integers `lo hi x` (with `lo ≤ hi`).
-**Output:** `true` or `false`, newline. For `1 10 5` print `true`; for `1 10 20` print `false`.
-
-```cpp starter
-#include <iostream>
-
-int main() {
-    int lo{}, hi{}, x{};
-    std::cin >> lo >> hi >> x;
-    std::cout << std::boolalpha << (lo <= x) << '\n';
-}
-```
-
-```cpp solution
-#include <iostream>
-
-int main() {
-    int lo{}, hi{}, x{};
-    std::cin >> lo >> hi >> x;
-    std::cout << std::boolalpha << (lo <= x && x <= hi) << '\n';
-}
-```
-
-```hint
-Two separate comparisons, joined with `&&`.
-```
-
-```stdin
-1 10 5
-```
-
-```expected
-true
-```
-
-```stdin
-1 10 20
-```
-
-```expected
-false
-```
-
-```stdin
-1 10 10
-```
-
-```expected hidden
-true
-```
-
-```stdin
--5 5 -6
-```
-
-```expected hidden
-false
-```
-
-```stdin
-5 5 5
-```
-
-```expected hidden
-true
-```
-
-```stdin
--10 -1 0
-```
-
-```expected hidden
-false
-```
-
-```stdin
--10 -1 -10
-```
-
-```expected hidden
-true
-```
-
-```checks
-must &&|\band\b :: Combine the two comparisons with &&.
-mustnot <=\s*\w+\s*<= :: lo <= x <= hi doesn't mean what it looks like.
 ```
 :::
 

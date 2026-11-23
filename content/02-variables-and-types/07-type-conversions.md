@@ -367,6 +367,79 @@ Both compile to the same machine code for a simple numeric conversion. The benef
 comparison; `std::cmp_less(x, y)` gives the mathematically correct `true`.
 :::
 
+:::exercise Letter codes {easy}
+Read one character. Print its character code, a space, and **the next character** in the code table.
+Use `static_cast` for both conversions.
+
+**Input:** a single (non-whitespace) character `c`.
+**Output:** `<code of c> <character after c>`, newline. For `A` print `65 B`.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    char c{};
+    std::cin >> c;
+    std::cout << c << ' ' << c + 1 << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    char c{};
+    std::cin >> c;
+    std::cout << static_cast<int>(c) << ' ' << static_cast<char>(c + 1) << '\n';
+}
+```
+
+```hint
+`std::cout << c` prints the character. `static_cast<int>(c)` prints the code.
+```
+
+```hint
+`c + 1` is an `int` (integral promotion), so it prints as a number. Cast it back with `static_cast<char>(c + 1)`.
+```
+
+```stdin
+A
+```
+
+```expected
+65 B
+```
+
+```stdin
+z
+```
+
+```expected hidden
+122 {
+```
+
+```stdin
+0
+```
+
+```expected hidden
+48 1
+```
+
+```stdin
+9
+```
+
+```expected hidden
+57 :
+```
+
+```checks
+must static_cast\s*<\s*int\s*> :: Convert to int with static_cast<int>.
+must static_cast\s*<\s*char\s*> :: Convert back to char with static_cast<char>.
+```
+:::
+
 :::exercise True average {medium}
 Read two integers and print their **exact** average. Use `static_cast<double>` on an operand so the
 division happens in floating point.
@@ -459,79 +532,6 @@ overflow first. Convert an operand before adding: `(static_cast<double>(a) + b) 
 ```checks
 must static_cast\s*<\s*double\s*> :: Use static_cast<double>.
 mustnot \(\s*double\s*\) :: Don't use a C-style cast.
-```
-:::
-
-:::exercise Letter codes {easy}
-Read one character. Print its character code, a space, and **the next character** in the code table.
-Use `static_cast` for both conversions.
-
-**Input:** a single (non-whitespace) character `c`.
-**Output:** `<code of c> <character after c>`, newline. For `A` print `65 B`.
-
-```cpp starter
-#include <iostream>
-
-int main() {
-    char c{};
-    std::cin >> c;
-    std::cout << c << ' ' << c + 1 << '\n';
-}
-```
-
-```cpp solution
-#include <iostream>
-
-int main() {
-    char c{};
-    std::cin >> c;
-    std::cout << static_cast<int>(c) << ' ' << static_cast<char>(c + 1) << '\n';
-}
-```
-
-```hint
-`std::cout << c` prints the character. `static_cast<int>(c)` prints the code.
-```
-
-```hint
-`c + 1` is an `int` (integral promotion), so it prints as a number. Cast it back with `static_cast<char>(c + 1)`.
-```
-
-```stdin
-A
-```
-
-```expected
-65 B
-```
-
-```stdin
-z
-```
-
-```expected hidden
-122 {
-```
-
-```stdin
-0
-```
-
-```expected hidden
-48 1
-```
-
-```stdin
-9
-```
-
-```expected hidden
-57 :
-```
-
-```checks
-must static_cast\s*<\s*int\s*> :: Convert to int with static_cast<int>.
-must static_cast\s*<\s*char\s*> :: Convert back to char with static_cast<char>.
 ```
 :::
 

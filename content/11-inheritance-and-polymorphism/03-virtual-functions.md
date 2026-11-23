@@ -780,3 +780,296 @@ must class\s+SmsNotifier\s+final :: Declare SmsNotifier final.
 must format\s*\([^)]*\)\s*const\s+override :: Override format with override.
 ```
 :::
+
+:::exercise Month-end at the bank {hard}
+Design a small account hierarchy where each kind of account **overrides** the rules it changes and
+**reuses** the base version for the rest.
+
+- `Account` (kind `basic`): holds a private balance. A withdrawal succeeds only if it doesn't make the
+  balance negative. Month-end does nothing.
+- `Savings : Account` (kind `savings`): at most **2** successful withdrawals per month (further ones are
+  refused); otherwise the basic rule applies. At month-end it earns interest of `balance / 100`
+  (integer division) and its withdrawal count resets.
+- `Checking : Account` (kind `checking`): may go overdrawn down to **-500**. Each withdrawal that leaves
+  the balance below zero costs an extra fee of **25** (the fee may push it below -500). At month-end it
+  pays a maintenance fee of **5** unless the balance is at least 1000.
+- `Premium : Checking`, declared **`final`** (kind `premium`): overdraft limit **-2000** and **no**
+  overdraft fee. At month-end it does everything a `Checking` account does, then gets a bonus of **10**.
+
+All accounts live in one container of base-class pointers and are handled only through the base
+interface: `withdraw`, `monthEnd` and `kind` must be **virtual**.
+
+**Input:** commands until end of input (all amounts are positive integers):
+
+| Command | Output |
+| --- | --- |
+| `open KIND NAME AMOUNT` | nothing |
+| `deposit NAME X` | `NAME: BALANCE` |
+| `withdraw NAME X` | `NAME: BALANCE`, or `NAME: withdrawal refused` |
+| `month` | nothing: month-end for every account, in opening order |
+| `report` | `KIND NAME BALANCE` for every account, in opening order |
+
+For an unknown name, `deposit` and `withdraw` print `no account NAME`.
+
+```cpp starter
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+// design Account, Savings, Checking and Premium here
+
+int main() {
+    // read commands until end of input
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
+
+class Account {
+    std::string name_;
+    long long balance_;
+
+protected:
+    void adjust(long long delta) { balance_ += delta; }   // for fees and interest
+
+public:
+    Account(std::string name, long long balance) : name_(std::move(name)), balance_(balance) {}
+    virtual ~Account() = default;
+
+    const std::string& name() const { return name_; }
+    long long balance() const { return balance_; }
+    void deposit(long long x) { balance_ += x; }
+
+    virtual std::string kind() const { return "basic"; }
+    virtual bool withdraw(long long x) {
+        if (x > balance_) return false;
+        balance_ -= x;
+        return true;
+    }
+    virtual void monthEnd() {}
+};
+
+class Savings : public Account {
+    int withdrawals_ = 0;
+public:
+    using Account::Account;
+    std::string kind() const override { return "savings"; }
+    bool withdraw(long long x) override {
+        if (withdrawals_ >= 2) return false;
+        if (!Account::withdraw(x)) return false;
+        ++withdrawals_;
+        return true;
+    }
+    void monthEnd() override {
+        adjust(balance() / 100);
+        withdrawals_ = 0;
+    }
+};
+
+class Checking : public Account {
+protected:
+    virtual long long overdraftLimit() const { return 500; }
+    virtual long long overdraftFee() const { return 25; }
+public:
+    using Account::Account;
+    std::string kind() const override { return "checking"; }
+    bool withdraw(long long x) override {
+        if (balance() - x < -overdraftLimit()) return false;
+        adjust(-x);
+        if (balance() < 0) adjust(-overdraftFee());
+        return true;
+    }
+    void monthEnd() override {
+        if (balance() < 1000) adjust(-5);
+    }
+};
+
+class Premium final : public Checking {
+protected:
+    long long overdraftLimit() const override { return 2000; }
+    long long overdraftFee() const override { return 0; }
+public:
+    using Checking::Checking;
+    std::string kind() const override { return "premium"; }
+    void monthEnd() override {
+        Checking::monthEnd();
+        adjust(10);
+    }
+};
+
+std::unique_ptr<Account> makeAccount(const std::string& kind, const std::string& name, long long amount) {
+    if (kind == "savings") return std::make_unique<Savings>(name, amount);
+    if (kind == "checking") return std::make_unique<Checking>(name, amount);
+    if (kind == "premium") return std::make_unique<Premium>(name, amount);
+    return std::make_unique<Account>(name, amount);
+}
+
+Account* findAccount(const std::vector<std::unique_ptr<Account>>& accounts, const std::string& name) {
+    for (const auto& a : accounts)
+        if (a->name() == name) return a.get();
+    return nullptr;
+}
+
+int main() {
+    std::vector<std::unique_ptr<Account>> accounts;
+
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "open") {
+            std::string kind, name;
+            long long amount;
+            std::cin >> kind >> name >> amount;
+            accounts.push_back(makeAccount(kind, name, amount));
+        } else if (cmd == "deposit" || cmd == "withdraw") {
+            std::string name;
+            long long x;
+            std::cin >> name >> x;
+            Account* a = findAccount(accounts, name);
+            if (!a) {
+                std::cout << "no account " << name << '\n';
+            } else if (cmd == "deposit") {
+                a->deposit(x);
+                std::cout << name << ": " << a->balance() << '\n';
+            } else if (a->withdraw(x)) {
+                std::cout << name << ": " << a->balance() << '\n';
+            } else {
+                std::cout << name << ": withdrawal refused\n";
+            }
+        } else if (cmd == "month") {
+            for (auto& a : accounts) a->monthEnd();
+        } else if (cmd == "report") {
+            for (const auto& a : accounts) std::cout << a->kind() << ' ' << a->name() << ' ' << a->balance() << '\n';
+        }
+    }
+}
+```
+
+```hint
+Store the accounts as `std::vector<std::unique_ptr<Account>>` and create them with
+`std::make_unique<Savings>(name, amount)` and so on: a `unique_ptr<Savings>` converts to a
+`unique_ptr<Account>`. Give `Account` a `virtual ~Account() = default;` (the "Virtual Destructors"
+lesson explains why) and a **protected** `adjust(delta)` so derived classes can apply fees and interest
+without the balance being public.
+```
+
+```hint
+Reuse instead of repeating: `Savings::withdraw` checks its counter and then calls `Account::withdraw(x)`;
+`Premium::monthEnd` calls `Checking::monthEnd()` and adds the bonus. For `Premium`'s different
+overdraft rules, let `Checking` ask two small **virtual** functions for its limit and fee, and override
+just those in `Premium`.
+```
+
+```stdin
+open savings sam 1000
+open checking cat 100
+open premium pat 0
+open basic bo 50
+withdraw sam 100
+withdraw sam 100
+withdraw sam 100
+withdraw cat 300
+withdraw cat 300
+withdraw pat 1500
+withdraw bo 60
+month
+report
+withdraw sam 100
+```
+
+```expected
+sam: 900
+sam: 800
+sam: withdrawal refused
+cat: -225
+cat: withdrawal refused
+pat: -1500
+bo: withdrawal refused
+savings sam 808
+checking cat -230
+premium pat -1495
+basic bo 50
+sam: 708
+```
+
+```stdin
+deposit ghost 5
+withdraw ghost 5
+open checking c 1000
+open premium p 1000
+open savings s 99
+month
+report
+withdraw c 1000
+withdraw c 500
+withdraw p 3011
+withdraw p 1
+deposit p 5000
+month
+report
+```
+
+```expected hidden
+no account ghost
+no account ghost
+checking c 1000
+premium p 1010
+savings s 99
+c: 0
+c: -525
+p: withdrawal refused
+p: 1009
+p: 6009
+checking c -530
+premium p 6019
+savings s 99
+```
+
+```stdin
+open savings s 500
+withdraw s 600
+withdraw s 500
+withdraw s 1
+deposit s 300
+withdraw s 100
+withdraw s 100
+month
+withdraw s 50
+report
+open basic b 0
+withdraw b 1
+deposit b 1
+withdraw b 1
+month
+report
+```
+
+```expected hidden
+s: withdrawal refused
+s: 0
+s: withdrawal refused
+s: 300
+s: 200
+s: withdrawal refused
+s: 152
+savings s 152
+b: withdrawal refused
+b: 1
+b: 0
+savings s 153
+basic b 0
+```
+
+```checks
+must virtual\s+bool\s+withdraw :: Make withdraw virtual in Account.
+must virtual\s+void\s+monthEnd :: Make monthEnd virtual in Account.
+must class\s+Premium\s+final\s*:\s*public\s+Checking :: Premium must be a final class derived from Checking.
+must Account::withdraw\s*\( :: Reuse the base rule with Account::withdraw(...).
+must Checking::monthEnd\s*\( :: Premium's month-end should call Checking::monthEnd().
+must \boverride\b :: Mark overrides with override.
+```
+:::

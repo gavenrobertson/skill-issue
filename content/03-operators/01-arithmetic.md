@@ -203,8 +203,9 @@ int main() {
 
 ## Dividing by zero
 
-- **Integer** division or remainder by zero (`x / 0`, `x % 0`) is **undefined behavior**. On most
-  machines the program crashes immediately ("Floating point exception" on Linux, oddly).
+- **Integer** division or remainder by zero (`x / 0`, `x % 0`) is **undefined behavior**. On x86 PCs
+  (like the machine that runs your code here) the program usually crashes on the spot, reported as
+  "Floating point exception" on Linux, oddly. Other CPUs may just produce a garbage result.
 - **Floating-point** division by zero follows the IEEE 754 standard, used by practically every
   computer: a nonzero value divided by `0.0` gives **infinity** (`inf` or `-inf`), and `0.0 / 0.0` gives
   **NaN** ("not a number"). Any arithmetic involving NaN gives NaN.
@@ -363,6 +364,92 @@ must % :: Use the % operator.
 ```
 :::
 
+:::exercise Celsius to Fahrenheit {easy}
+Read a whole-number temperature in Celsius and print it in Fahrenheit using `F = C × 9 / 5 + 32`. The
+result can have a fractional part, so make sure you're not doing integer division.
+
+**Input:** one integer `c`.
+**Output:** the Fahrenheit value with plain `std::cout <<`, newline. For `37` print `98.6`; for `100` print `212`.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int c{};
+    std::cin >> c;
+    std::cout << c * 9 / 5 + 32 << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    int c{};
+    std::cin >> c;
+    double f = c * 9.0 / 5 + 32;
+    std::cout << f << '\n';
+}
+```
+
+```hint
+With input `37` the starter prints `98`: `37 * 9 / 5` is integer division.
+```
+
+```hint
+Make one operand a `double`, for example `9.0` instead of `9`.
+```
+
+```stdin
+100
+```
+
+```expected
+212
+```
+
+```stdin
+37
+```
+
+```expected
+98.6
+```
+
+```stdin
+-40
+```
+
+```expected hidden
+-40
+```
+
+```stdin
+1
+```
+
+```expected hidden
+33.8
+```
+
+```stdin
+-273
+```
+
+```expected hidden
+-459.4
+```
+
+```stdin
+0
+```
+
+```expected hidden
+32
+```
+
+:::
+
 :::exercise Make change {medium}
 Read an amount in cents and give change using as many **quarters** (25¢) as possible, then **dimes**
 (10¢), then **nickels** (5¢), then **pennies** (1¢). Use `/` and `%`.
@@ -461,92 +548,6 @@ After taking out the quarters, what's left is `cents % 25`. Repeat the same idea
 ```checks
 must % :: Use % to find the remaining cents.
 ```
-:::
-
-:::exercise Celsius to Fahrenheit {easy}
-Read a whole-number temperature in Celsius and print it in Fahrenheit using `F = C × 9 / 5 + 32`. The
-result can have a fractional part, so make sure you're not doing integer division.
-
-**Input:** one integer `c`.
-**Output:** the Fahrenheit value with plain `std::cout <<`, newline. For `37` print `98.6`; for `100` print `212`.
-
-```cpp starter
-#include <iostream>
-
-int main() {
-    int c{};
-    std::cin >> c;
-    std::cout << c * 9 / 5 + 32 << '\n';
-}
-```
-
-```cpp solution
-#include <iostream>
-
-int main() {
-    int c{};
-    std::cin >> c;
-    double f = c * 9.0 / 5 + 32;
-    std::cout << f << '\n';
-}
-```
-
-```hint
-With input `37` the starter prints `98`: `37 * 9 / 5` is integer division.
-```
-
-```hint
-Make one operand a `double`, for example `9.0` instead of `9`.
-```
-
-```stdin
-100
-```
-
-```expected
-212
-```
-
-```stdin
-37
-```
-
-```expected
-98.6
-```
-
-```stdin
--40
-```
-
-```expected hidden
--40
-```
-
-```stdin
-1
-```
-
-```expected hidden
-33.8
-```
-
-```stdin
--273
-```
-
-```expected hidden
--459.4
-```
-
-```stdin
-0
-```
-
-```expected hidden
-32
-```
-
 :::
 
 :::exercise Wrap around {hard}
