@@ -1,0 +1,4 @@
+{
+  "title": "Inheritance & Polymorphism",
+  "description": "Base and derived classes, access in inheritance, virtual functions, abstract interfaces, virtual destructors, the four C++ casts and RTTI, object slicing, and multiple inheritance."
+}

@@ -1,0 +1,4 @@
+{
+  "title": "Classes & Objects",
+  "description": "Object-oriented programming in C++: classes, access control, constructors and destructors, RAII, const and static members, friends, operator overloading, and copy and move semantics."
+}

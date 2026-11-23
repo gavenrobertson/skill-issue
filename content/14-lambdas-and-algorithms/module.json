@@ -1,0 +1,4 @@
+{
+  "title": "Lambdas, Algorithms & Ranges",
+  "description": "Write small functions inline with lambdas, then put them to work with the standard algorithms: sorting, searching, counting, transforming, numeric folds, and C++20 ranges and views."
+}

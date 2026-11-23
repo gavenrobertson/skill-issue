@@ -1,0 +1,4 @@
+{
+  "title": "Input & Output",
+  "description": "Printing with std::cout, reading with std::cin and std::getline, handling bad input and end of input, formatting with <iomanip> and std::format, and C-style printf/scanf."
+}

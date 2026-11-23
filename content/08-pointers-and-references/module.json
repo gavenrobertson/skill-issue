@@ -1,0 +1,4 @@
+{
+  "title": "Pointers & References",
+  "description": "How memory works, pointers and pointer arithmetic, const with pointers, references, dynamic memory, smart pointers, and a first look at rvalue references."
+}

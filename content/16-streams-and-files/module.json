@@ -1,0 +1,4 @@
+{
+  "title": "Streams & Files",
+  "description": "The iostream family in depth: string streams for parsing and building text, reading and writing files, stream state, error recovery, and std::filesystem."
+}

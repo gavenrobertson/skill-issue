@@ -1,0 +1,4 @@
+{
+  "title": "Arrays & Strings",
+  "description": "Store many values at once with C arrays, std::array and std::vector, and work with text using std::string, characters, C strings and std::string_view."
+}

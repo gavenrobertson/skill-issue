@@ -1,0 +1,4 @@
+{
+  "title": "Structs, Enums & Compound Types",
+  "description": "Group data with structs, name choices with enums, and use the standard vocabulary types: pair, tuple, optional, variant. Plus type aliases, structured bindings, and memory layout."
+}

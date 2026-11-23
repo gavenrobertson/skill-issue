@@ -1,0 +1,4 @@
+{
+  "title": "Variables & Types",
+  "description": "Storing data: variables, the built-in types, literals, every way to initialize, auto, const and constexpr, and converting between types."
+}

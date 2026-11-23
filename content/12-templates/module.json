@@ -1,0 +1,4 @@
+{
+  "title": "Templates & Generic Programming",
+  "description": "Write code once for many types: function and class templates, non-type parameters, specialization, variadic templates and folds, type traits, if constexpr and C++20 concepts."
+}

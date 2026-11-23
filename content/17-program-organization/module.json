@@ -1,0 +1,4 @@
+{
+  "title": "Organizing Programs",
+  "description": "Namespaces, the preprocessor, headers and multi-file builds, linkage and storage duration, and the undefined behavior every C++ programmer must learn to avoid."
+}

@@ -1,0 +1,4 @@
+{
+  "title": "Error Handling & Exceptions",
+  "description": "Strategies for dealing with failure: return codes, std::optional, exceptions, the standard exception hierarchy, custom exceptions, noexcept and exception safety, and assertions."
+}

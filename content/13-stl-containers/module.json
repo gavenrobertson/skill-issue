@@ -1,0 +1,4 @@
+{
+  "title": "STL Containers & Iterators",
+  "description": "The standard library's containers and the iterators that connect them to algorithms: vector in depth, deque and lists, sets and maps, hash containers, adaptors, std::span, and how to choose."
+}
