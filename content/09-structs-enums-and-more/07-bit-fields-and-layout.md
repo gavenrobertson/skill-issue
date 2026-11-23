@@ -378,7 +378,7 @@ Put the members with the biggest alignment first: `double`, then `int`, then the
 ```
 
 ```expected
-16 records = 16 bytes
+1 records = 16 bytes
 ```
 
 ```stdin
@@ -459,8 +459,8 @@ A bit-field member is declared as `unsigned day : 5;`.
 ```
 
 ```hint
-Brace-initializing bit-fields from variables is a narrowing conversion (`unsigned` into 5 bits), so assign
-the members one by one instead: `date.day = d;`.
+Everything else stays the same: you can still write `Date date{d, m, y};` or assign `date.day = d;`.
+With the bit-fields, all 21 bits fit in one `unsigned`, so `sizeof(Date)` becomes 4.
 ```
 
 ```stdin

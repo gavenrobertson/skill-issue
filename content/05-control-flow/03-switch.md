@@ -178,7 +178,7 @@ int main() {
     int x = 2;
     int limit = 5;
     switch (x) {
-        case limit:              // error: 'limit' is not a constant expression
+        case limit:              // error: the value of 'limit' is not usable in a constant expression
             std::cout << "limit\n";
             break;
     }

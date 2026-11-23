@@ -163,6 +163,7 @@ A loop that walks a pointer through an array:
 
 ```cpp run
 #include <iostream>
+#include <iterator>
 
 int main() {
     int data[5]{3, 1, 4, 1, 5};
@@ -204,7 +205,7 @@ The **half-open range** `[begin, end)` is everywhere in C++: `begin` points at t
 points *one past* the last, and the loop runs while `it != end`. An empty range is simply
 `begin == end`. The standard library's iterators (`v.begin()`, `v.end()`) follow exactly this pattern,
 so pointers are your first taste of iterators. Note that `std::begin`/`std::end` live in `<iterator>`
-(they're also pulled in by `<iostream>`, `<vector>`, `<string>`, and most container headers).
+(container headers like `<vector>`, `<array>`, and `<string>` also provide them).
 
 ## Passing arrays to functions
 

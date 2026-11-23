@@ -207,7 +207,7 @@ The ternary produces a single value, so both branches must be convertible to a c
 
 int main() {
     int n = 3;
-    std::cout << (n > 0 ? n : "none") << '\n';   // error: int vs. string literal
+    std::cout << (n > 0 ? n : "none") << '\n';   // error: operands to '?:' have different types
 }
 ```
 

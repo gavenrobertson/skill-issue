@@ -103,7 +103,7 @@ You **can't** loop over something that isn't a sequence:
 
 int main() {
     int n = 5;
-    for (int x : n) {          // error: an int has no begin/end
+    for (int x : n) {          // error: 'begin' was not declared in this scope
         std::cout << x;
     }
 }
