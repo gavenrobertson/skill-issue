@@ -98,7 +98,7 @@ special bool printer
 ```
 
 `Printer<int>` has no `note` member; only the `bool` specialization does. The standard library does
-exactly this with `std::vector<bool>`, which is a full specialization that stores bits instead of `bool`s
+exactly this with `std::vector<bool>`, which is a (partial) specialization that stores bits instead of `bool`s
 (we'll meet its quirks in the next module).
 
 You can also specialize a single member function of a class template without rewriting the whole class:

@@ -66,7 +66,8 @@ int sum_digits(const std::string& s) {
 int main() {
     for (std::string s : {"123", "4x6", "99"}) {
         try {
-            std::cout << s << " -> " << sum_digits(s) << '\n';
+            int total = sum_digits(s);                 // may throw
+            std::cout << s << " -> " << total << '\n';  // skipped if it did
         } catch (const std::invalid_argument& e) {
             std::cout << s << " -> error (" << e.what() << ")\n";
         }
@@ -80,8 +81,12 @@ int main() {
 99 -> 18
 ```
 
-Note that for `4x6`, `"4x6 -> "` had already been printed before the throw, so the error message
-continues the same line. Output that happened before the throw is not undone.
+For `4x6`, `parse_digit` threw on the `x`. That ended `parse_digit`, then `sum_digits` (in the
+middle of its loop), and the rest of the `try` block, and landed in the handler in `main`. Note that
+anything that already happened before the throw (output printed, variables changed) is **not**
+undone. That's why the result is stored first and printed afterwards: with
+`std::cout << s << " -> " << sum_digits(s)`, the `"4x6 -> "` part would already be printed when the
+exception hits (since C++17, a `<<` chain is evaluated left to right).
 
 ## What can be thrown
 
@@ -689,7 +694,8 @@ int main() {
     int x;
     while (std::cin >> x) {
         try {
-            std::cout << "sqrt: " << process(x) << '\n';
+            int r = process(x);
+            std::cout << "sqrt: " << r << '\n';
         } catch (const std::domain_error& e) {
             std::cout << "handled: " << e.what() << '\n';
         }

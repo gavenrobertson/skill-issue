@@ -102,7 +102,7 @@ int r = rollDie();            // the () are required to call it
 ```
 
 > **Pitfall:** Writing `rollDie` without `()` doesn't call the function. In an expression like
-> `std::cout << rollDie;` GCC warns that the function's address will always be true, and prints `1`.
+> `std::cout << rollDie;` GCC warns `the address of 'int rollDie()' will never be NULL`, and it prints `1`.
 
 ## `void` functions
 
@@ -247,7 +247,7 @@ function:
 
 ```cpp compile-error
 int main() {
-    int helper() { return 1; }   // error: function definition is not allowed here
+    int helper() { return 1; }   // error: a function-definition is not allowed here before '{' token
 }
 ```
 

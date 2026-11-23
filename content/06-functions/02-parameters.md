@@ -143,7 +143,7 @@ Trying to change it is a compile error, which is exactly the point:
 #include <string>
 
 void shout(const std::string& text) {
-    text += "!";   // error: passing 'const std::string' as 'this' argument discards qualifiers
+    text += "!";   // error: no match for 'operator+=' (operand types are 'const std::string' and ...)
 }
 
 int main() {

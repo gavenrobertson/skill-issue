@@ -117,7 +117,7 @@ Key rules:
 Without `override`, a tiny signature mismatch silently creates a **new, unrelated function** instead of
 an override. Everything compiles, and the base version keeps getting called:
 
-```cpp run
+```cpp run warns
 #include <iostream>
 
 class Base {
@@ -141,6 +141,9 @@ int main() {
 ```output
 Base::show
 ```
+
+Recent GCC versions happen to warn here (`'virtual void Base::show() const' was hidden`), but a warning
+is easy to miss and not every compiler or situation produces one.
 
 Write **`override`** after the parameter list (and after `const`) on every overriding function. It asks
 the compiler to *check* that it really overrides something, turning the silent bug into an error:
