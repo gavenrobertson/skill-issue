@@ -489,117 +489,6 @@ must erase_if|remove_if :: Use std::erase_if (or erase with std::remove_if).
 ```
 :::
 
-:::exercise Insert and erase by position {medium}
-Read a vector of integers, insert a value at a given index, then erase the element at another index (in
-the updated vector). Use the vector's `insert` and `erase` member functions with iterators.
-
-**Input:** `n` and `n` integers; then `p v` (insert `v` so that it ends up at index `p`, where
-`0 <= p <= n`); then `q` (erase the element at index `q` of the vector after the insertion).
-**Output:** the final vector, values separated by single spaces.
-
-```cpp starter
-#include <iostream>
-#include <vector>
-
-int main() {
-    int n;
-    std::cin >> n;
-    std::vector<int> v(n);
-    for (int& x : v) std::cin >> x;
-    int p, value, q;
-    std::cin >> p >> value >> q;
-    v.push_back(value);
-    for (int x : v) std::cout << x << ' ';
-    std::cout << '\n';
-}
-```
-
-```cpp solution
-#include <iostream>
-#include <vector>
-
-int main() {
-    int n;
-    std::cin >> n;
-    std::vector<int> v(n);
-    for (int& x : v) std::cin >> x;
-    int p, value, q;
-    std::cin >> p >> value >> q;
-    v.insert(v.begin() + p, value);
-    v.erase(v.begin() + q);
-    for (std::size_t i = 0; i < v.size(); ++i) {
-        if (i > 0) std::cout << ' ';
-        std::cout << v[i];
-    }
-    std::cout << '\n';
-}
-```
-
-```hint
-`v.begin() + p` is an iterator to index `p`. `insert` puts the new value **before** that position, so it
-ends up at index `p`.
-```
-
-```stdin
-4
-10 20 30 40
-2 25
-0
-```
-
-```expected
-20 25 30 40
-```
-
-```stdin
-2
-1 2
-2 3
-1
-```
-
-```expected hidden
-1 3
-```
-
-```stdin
-0
-0 9
-0
-```
-
-```expected hidden
-
-```
-
-```stdin
-3
-1 2 3
-3 4
-3
-```
-
-```expected hidden
-1 2 3
-```
-
-```stdin
-3
-1 2 3
-0 9
-3
-```
-
-```expected hidden
-9 1 2
-```
-
-```checks
-must \.insert\s*\( :: Use v.insert.
-must \.erase\s*\( :: Use v.erase.
-```
-:::
-
 :::exercise Sort and deduplicate {easy}
 Read `n` integers, sort them, and remove duplicates using `std::unique` followed by `erase`. (`std::unique`
 works like `std::remove`: it only removes **adjacent** duplicates and returns the new logical end, which is
@@ -795,6 +684,117 @@ no adults
 must \.reserve\s*\( :: Call reserve before adding the people.
 must \.emplace_back\s*\( :: Add people with emplace_back.
 mustnot emplace_back\s*\(\s*Person :: Pass the constructor arguments directly instead of building a Person first.
+```
+:::
+
+:::exercise Insert and erase by position {medium}
+Read a vector of integers, insert a value at a given index, then erase the element at another index (in
+the updated vector). Use the vector's `insert` and `erase` member functions with iterators.
+
+**Input:** `n` and `n` integers; then `p v` (insert `v` so that it ends up at index `p`, where
+`0 <= p <= n`); then `q` (erase the element at index `q` of the vector after the insertion).
+**Output:** the final vector, values separated by single spaces.
+
+```cpp starter
+#include <iostream>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> v(n);
+    for (int& x : v) std::cin >> x;
+    int p, value, q;
+    std::cin >> p >> value >> q;
+    v.push_back(value);
+    for (int x : v) std::cout << x << ' ';
+    std::cout << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> v(n);
+    for (int& x : v) std::cin >> x;
+    int p, value, q;
+    std::cin >> p >> value >> q;
+    v.insert(v.begin() + p, value);
+    v.erase(v.begin() + q);
+    for (std::size_t i = 0; i < v.size(); ++i) {
+        if (i > 0) std::cout << ' ';
+        std::cout << v[i];
+    }
+    std::cout << '\n';
+}
+```
+
+```hint
+`v.begin() + p` is an iterator to index `p`. `insert` puts the new value **before** that position, so it
+ends up at index `p`.
+```
+
+```stdin
+4
+10 20 30 40
+2 25
+0
+```
+
+```expected
+20 25 30 40
+```
+
+```stdin
+2
+1 2
+2 3
+1
+```
+
+```expected hidden
+1 3
+```
+
+```stdin
+0
+0 9
+0
+```
+
+```expected hidden
+
+```
+
+```stdin
+3
+1 2 3
+3 4
+3
+```
+
+```expected hidden
+1 2 3
+```
+
+```stdin
+3
+1 2 3
+0 9
+3
+```
+
+```expected hidden
+9 1 2
+```
+
+```checks
+must \.insert\s*\( :: Use v.insert.
+must \.erase\s*\( :: Use v.erase.
 ```
 :::
 

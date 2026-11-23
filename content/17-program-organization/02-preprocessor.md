@@ -779,3 +779,207 @@ must #define\s+SHOW\s*\(\s*(\w+)\s*\)(?:[^\n]|\\\n)*#\s*\1\b :: Use the # operat
 must SHOW\s*\(\s*a\s*<\s*b\s*\) :: Use SHOW(a < b) in main.
 ```
 :::
+
+:::exercise Generate it with an X-macro {medium}
+One job macros still do better than the rest of the language (before C++26 reflection) is **keeping
+several lists in sync**. The **X-macro** technique writes a list once, as a macro that takes another
+macro `X` as its parameter:
+
+```cpp
+#define FRUIT_LIST(X) X(apple) X(pear) X(plum)
+
+#define AS_ENUMERATOR(name) name,
+enum class Fruit { FRUIT_LIST(AS_ENUMERATOR) };        // apple, pear, plum,
+#undef AS_ENUMERATOR
+
+#define AS_STRING(name) #name,
+const char* fruitNames[] = { FRUIT_LIST(AS_STRING) };  // "apple", "pear", "plum",
+#undef AS_STRING
+```
+
+Each expansion of `FRUIT_LIST` "applies" a different `X` to every entry, so the enum and the name table
+can never get out of step.
+
+The starter defines `COLOR_LIST(X)`, where each entry is `X(name, rgb)`. From that list **only**,
+generate:
+
+- `enum class Color` with one enumerator per entry, in list order;
+- `constexpr std::size_t colorCount`, the number of entries;
+- `constexpr const char* name(Color)` and `constexpr unsigned rgb(Color)`;
+- `std::optional<Color> parse(std::string_view)`, which recognizes the exact (lowercase) names.
+
+`#undef` each helper macro after use. Don't write any color by hand: adding `X(purple, 0x800080)` to the
+list must be the only change needed to support a new color.
+
+**Input:** words until the end of input. **Output:** first `<count> colors`, then for each word either
+`<name> = #RRGGBB (index <i>)` (six uppercase hex digits; `i` is the position in the list, from 0) or
+`unknown color: <word>`.
+
+```cpp starter
+#include <cstddef>
+#include <iomanip>
+#include <iostream>
+#include <optional>
+#include <string>
+#include <string_view>
+
+// The single source of truth: every color appears exactly once, here.
+#define COLOR_LIST(X)        \
+    X(red, 0xFF0000)         \
+    X(green, 0x00FF00)       \
+    X(blue, 0x0000FF)        \
+    X(orange, 0xFFA500)      \
+    X(teal, 0x008080)        \
+    X(black, 0x000000)
+
+// TODO: generate enum class Color, colorCount, name(), rgb() and parse() from COLOR_LIST
+
+int main() {
+    std::string word;
+    while (std::cin >> word) {
+        std::cout << "unknown color: " << word << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <cstddef>
+#include <iomanip>
+#include <iostream>
+#include <optional>
+#include <string>
+#include <string_view>
+
+// The single source of truth: every color appears exactly once, here.
+#define COLOR_LIST(X)        \
+    X(red, 0xFF0000)         \
+    X(green, 0x00FF00)       \
+    X(blue, 0x0000FF)        \
+    X(orange, 0xFFA500)      \
+    X(teal, 0x008080)        \
+    X(black, 0x000000)
+
+enum class Color {
+#define AS_ENUMERATOR(name, rgb) name,
+    COLOR_LIST(AS_ENUMERATOR)
+#undef AS_ENUMERATOR
+};
+
+constexpr std::size_t colorCount = 0
+#define AS_ONE(name, rgb) +1
+    COLOR_LIST(AS_ONE)
+#undef AS_ONE
+    ;
+
+constexpr const char* name(Color c) {
+    switch (c) {
+#define AS_CASE(name, rgb) \
+    case Color::name:      \
+        return #name;
+        COLOR_LIST(AS_CASE)
+#undef AS_CASE
+    }
+    return "?";
+}
+
+constexpr unsigned rgb(Color c) {
+    switch (c) {
+#define AS_CASE(name, value) \
+    case Color::name:        \
+        return value;
+        COLOR_LIST(AS_CASE)
+#undef AS_CASE
+    }
+    return 0;
+}
+
+std::optional<Color> parse(std::string_view text) {
+#define AS_CHECK(name, rgb) \
+    if (text == #name) return Color::name;
+    COLOR_LIST(AS_CHECK)
+#undef AS_CHECK
+    return std::nullopt;
+}
+
+static_assert(colorCount == 6);
+
+int main() {
+    std::cout << colorCount << " colors\n";
+    std::string word;
+    while (std::cin >> word) {
+        if (auto c = parse(word)) {
+            std::cout << name(*c) << " = #" << std::hex << std::uppercase << std::setw(6) << std::setfill('0')
+                      << rgb(*c) << std::dec << " (index " << static_cast<int>(*c) << ")\n";
+        } else {
+            std::cout << "unknown color: " << word << '\n';
+        }
+    }
+}
+```
+
+```hint
+For the count, expand every entry to `+1`: `constexpr std::size_t colorCount = 0 COLOR_LIST(AS_ONE);`
+with `#define AS_ONE(name, rgb) +1`.
+```
+
+```hint
+For `name` and `rgb`, generate the `case` labels of a `switch`:
+`#define AS_CASE(name, rgb) case Color::name: return #name;` (and a second version returning `rgb`).
+A multi-line macro needs a `\` at the end of each line but the last.
+```
+
+```hint
+Print the hex value with `std::hex << std::uppercase << std::setw(6) << std::setfill('0')`, and switch
+back with `std::dec` before printing the index.
+```
+
+```stdin
+teal red Red black purple
+```
+
+```expected
+6 colors
+teal = #008080 (index 4)
+red = #FF0000 (index 0)
+unknown color: Red
+black = #000000 (index 5)
+unknown color: purple
+```
+
+```stdin
+orange blue green blue
+```
+
+```expected
+6 colors
+orange = #FFA500 (index 3)
+blue = #0000FF (index 2)
+green = #00FF00 (index 1)
+blue = #0000FF (index 2)
+```
+
+```stdin
+REDteal tealred  teal
+	black
+```
+
+```expected hidden
+6 colors
+unknown color: REDteal
+unknown color: tealred
+teal = #008080 (index 4)
+black = #000000 (index 5)
+```
+
+```expected hidden
+6 colors
+```
+
+```checks
+must (COLOR_LIST\s*\(\s*\w+\s*\)[\s\S]*){4} :: Expand COLOR_LIST at least three times to generate the code.
+must enum\s+class\s+Color :: Generate an enum class Color.
+must #\s*undef :: #undef the helper macros after use.
+must std::optional :: parse() should return std::optional<Color>.
+mustnot Color::(red|green|blue|orange|teal|black)\b :: Don't write the colors by hand: generate everything from COLOR_LIST.
+```
+:::

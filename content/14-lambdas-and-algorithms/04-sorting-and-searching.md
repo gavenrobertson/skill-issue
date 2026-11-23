@@ -466,6 +466,93 @@ must std::sort|std::ranges::sort :: Sort with std::sort.
 ```
 :::
 
+:::exercise First negative {easy}
+Read `n` integers and print the **index** (0-based) of the first negative number, using
+`std::find_if`. If there is no negative number, print `none`.
+
+**Input:** `n`, then `n` integers.
+**Output:** the index, or `none`, followed by a newline.
+
+```cpp starter
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> v(n);
+    for (int& x : v) std::cin >> x;
+
+    std::cout << "none\n";
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> v(n);
+    for (int& x : v) std::cin >> x;
+
+    auto it = std::find_if(v.begin(), v.end(), [](int x) { return x < 0; });
+    if (it == v.end()) {
+        std::cout << "none\n";
+    } else {
+        std::cout << (it - v.begin()) << '\n';
+    }
+}
+```
+
+```hint
+`std::find_if` returns an iterator. Compare it with `v.end()` first; if it's a real match,
+`it - v.begin()` is its index.
+```
+
+```stdin
+5
+4 0 7 -2 -9
+```
+
+```expected
+3
+```
+
+```stdin
+3
+1 2 3
+```
+
+```expected
+none
+```
+
+```stdin
+2
+-1 5
+```
+
+```expected hidden
+0
+```
+
+```stdin
+0
+```
+
+```expected hidden
+none
+```
+
+```checks
+must find_if :: Use std::find_if.
+```
+:::
+
 :::exercise Leaderboard {medium}
 Read `n` players, each a name and a score. Print them sorted by score **descending**; players with
 equal scores are ordered by name **alphabetically**.
@@ -571,93 +658,6 @@ al -1
 ```checks
 must std::sort|std::stable_sort :: Use std::sort (or std::stable_sort) with a comparator.
 must \[[^\]]*\]\s*\(\s*const\s+Player\s*& :: Write the comparator as a lambda taking const Player&.
-```
-:::
-
-:::exercise First negative {easy}
-Read `n` integers and print the **index** (0-based) of the first negative number, using
-`std::find_if`. If there is no negative number, print `none`.
-
-**Input:** `n`, then `n` integers.
-**Output:** the index, or `none`, followed by a newline.
-
-```cpp starter
-#include <algorithm>
-#include <iostream>
-#include <vector>
-
-int main() {
-    int n;
-    std::cin >> n;
-    std::vector<int> v(n);
-    for (int& x : v) std::cin >> x;
-
-    std::cout << "none\n";
-}
-```
-
-```cpp solution
-#include <algorithm>
-#include <iostream>
-#include <vector>
-
-int main() {
-    int n;
-    std::cin >> n;
-    std::vector<int> v(n);
-    for (int& x : v) std::cin >> x;
-
-    auto it = std::find_if(v.begin(), v.end(), [](int x) { return x < 0; });
-    if (it == v.end()) {
-        std::cout << "none\n";
-    } else {
-        std::cout << (it - v.begin()) << '\n';
-    }
-}
-```
-
-```hint
-`std::find_if` returns an iterator. Compare it with `v.end()` first; if it's a real match,
-`it - v.begin()` is its index.
-```
-
-```stdin
-5
-4 0 7 -2 -9
-```
-
-```expected
-3
-```
-
-```stdin
-3
-1 2 3
-```
-
-```expected
-none
-```
-
-```stdin
-2
--1 5
-```
-
-```expected hidden
-0
-```
-
-```stdin
-0
-```
-
-```expected hidden
-none
-```
-
-```checks
-must find_if :: Use std::find_if.
 ```
 :::
 

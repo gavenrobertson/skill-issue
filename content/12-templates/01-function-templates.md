@@ -526,6 +526,83 @@ mustnot std::swap :: Implement the swap yourself instead of calling std::swap.
 ```
 :::
 
+:::exercise Print a pair of anything {easy}
+Write `printPair` as an **abbreviated function template** (C++20 `auto` parameters) that prints its two
+arguments as `(first, second)`.
+
+**Input:** an integer and a word on the first line; a decimal number and a character on the second.
+**Output:** `(int, word)` on one line and `(decimal, char)` on the next, exactly in that format with a
+comma and a space.
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+void printPair(int a, const std::string& b) {
+    std::cout << a << ", " << b << '\n';
+}
+
+int main() {
+    int i;
+    std::string w;
+    double d;
+    char c;
+    std::cin >> i >> w >> d >> c;
+    printPair(i, w);
+    // printPair(d, c);
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+void printPair(const auto& a, const auto& b) {
+    std::cout << '(' << a << ", " << b << ")\n";
+}
+
+int main() {
+    int i;
+    std::string w;
+    double d;
+    char c;
+    std::cin >> i >> w >> d >> c;
+    printPair(i, w);
+    printPair(d, c);
+}
+```
+
+```hint
+Write the parameters as `const auto& a, const auto& b`. Each `auto` becomes its own template parameter,
+so the two arguments can be different types.
+```
+
+```stdin
+3 hello
+2.5 x
+```
+
+```expected
+(3, hello)
+(2.5, x)
+```
+
+```stdin
+-1 a
+0 Z
+```
+
+```expected hidden
+(-1, a)
+(0, Z)
+```
+
+```checks
+must printPair\s*\(\s*(const\s+)?auto :: Use auto parameters (an abbreviated function template).
+mustnot template\s*< :: Use the abbreviated auto syntax instead of writing template <...>.
+```
+:::
+
 :::exercise Count matches {medium}
 Write a function template `countEqual(const std::vector<T>& v, const T& target)` that returns how many
 elements of `v` equal `target`. Use it once with integers and once with words.
@@ -645,83 +722,6 @@ to
 ```checks
 must template\s*< :: Make countEqual a template.
 mustnot countEqual\s*\(\s*const\s+std::vector\s*<\s*int :: The template should work on std::vector<T>, not just std::vector<int>.
-```
-:::
-
-:::exercise Print a pair of anything {easy}
-Write `printPair` as an **abbreviated function template** (C++20 `auto` parameters) that prints its two
-arguments as `(first, second)`.
-
-**Input:** an integer and a word on the first line; a decimal number and a character on the second.
-**Output:** `(int, word)` on one line and `(decimal, char)` on the next, exactly in that format with a
-comma and a space.
-
-```cpp starter
-#include <iostream>
-#include <string>
-
-void printPair(int a, const std::string& b) {
-    std::cout << a << ", " << b << '\n';
-}
-
-int main() {
-    int i;
-    std::string w;
-    double d;
-    char c;
-    std::cin >> i >> w >> d >> c;
-    printPair(i, w);
-    // printPair(d, c);
-}
-```
-
-```cpp solution
-#include <iostream>
-#include <string>
-
-void printPair(const auto& a, const auto& b) {
-    std::cout << '(' << a << ", " << b << ")\n";
-}
-
-int main() {
-    int i;
-    std::string w;
-    double d;
-    char c;
-    std::cin >> i >> w >> d >> c;
-    printPair(i, w);
-    printPair(d, c);
-}
-```
-
-```hint
-Write the parameters as `const auto& a, const auto& b`. Each `auto` becomes its own template parameter,
-so the two arguments can be different types.
-```
-
-```stdin
-3 hello
-2.5 x
-```
-
-```expected
-(3, hello)
-(2.5, x)
-```
-
-```stdin
--1 a
-0 Z
-```
-
-```expected hidden
-(-1, a)
-(0, Z)
-```
-
-```checks
-must printPair\s*\(\s*(const\s+)?auto :: Use auto parameters (an abbreviated function template).
-mustnot template\s*< :: Use the abbreviated auto syntax instead of writing template <...>.
 ```
 :::
 

@@ -935,3 +935,271 @@ must std::jthread :: Use std::jthread for the workers.
 must std::(lock_guard|scoped_lock|unique_lock) :: Lock the mutex with an RAII lock.
 ```
 :::
+
+:::exercise Tiny thread pool {hard}
+Starting a new thread per task is expensive. Real programs keep a **thread pool**: a fixed set of worker
+threads that take tasks from a shared queue. Build one with the tools from this lesson.
+
+Write `class ThreadPool`:
+
+- `explicit ThreadPool(std::size_t threads)` starts the workers.
+- `template <typename F> auto submit(F f) -> std::future<decltype(f())>` queues `f` and returns a future
+  for its result. If `f` throws, the exception must come out of that future's `.get()`.
+- The destructor lets the workers finish **every** queued task, then stops and joins them.
+
+Use a `std::queue<std::function<void()>>`, a `std::mutex`, and a `std::condition_variable` (workers sleep
+while the queue is empty). Wrap each task in a `std::packaged_task` (or use a `std::promise`) to connect
+it to its future. Don't use `std::async`.
+
+**Input:** the number of worker threads (1 to 8) on the first line, then one task per line (blank lines
+ignored):
+
+| Task | Result |
+| --- | --- |
+| `sum A B` | `A + (A+1) + ... + B` (`0` if `A > B`) |
+| `fact N` | `N!`; throws `std::domain_error("negative factorial")` for `N < 0` and `std::overflow_error("too big")` for `N > 20` |
+| `primes A B` | how many primes are in `[A, B]` |
+| anything else | throws `std::invalid_argument("unknown task")` |
+
+Submit **all** tasks to the pool first, then print the results in submission order: `#<i>: <result>`,
+or `#<i>: error: <what()>` when the task threw. Finally, after the pool is destroyed, print
+`tasks: <count>`. The output doesn't depend on the number of threads or on which thread ran what.
+
+```cpp starter
+#include <condition_variable>
+#include <functional>
+#include <future>
+#include <iostream>
+#include <mutex>
+#include <queue>
+#include <string>
+#include <thread>
+#include <vector>
+
+class ThreadPool {
+    // TODO
+};
+
+int main() {
+    std::size_t threads = 1;
+    std::cin >> threads;
+    // submit every task, then print the results in order
+}
+```
+
+```cpp solution
+#include <condition_variable>
+#include <functional>
+#include <future>
+#include <iostream>
+#include <memory>
+#include <mutex>
+#include <queue>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <vector>
+
+class ThreadPool {
+public:
+    explicit ThreadPool(std::size_t threads) {
+        for (std::size_t i = 0; i < threads; ++i) workers_.emplace_back([this] { work(); });
+    }
+
+    // Finishes every queued task, then stops and joins the workers.
+    ~ThreadPool() {
+        {
+            std::lock_guard<std::mutex> lock(m_);
+            stopping_ = true;
+        }
+        cv_.notify_all();
+        for (auto& t : workers_) t.join();
+    }
+
+    ThreadPool(const ThreadPool&) = delete;
+    ThreadPool& operator=(const ThreadPool&) = delete;
+
+    template <typename F>
+    auto submit(F f) -> std::future<decltype(f())> {
+        // std::function must be copyable, std::packaged_task isn't: share it.
+        auto task = std::make_shared<std::packaged_task<decltype(f())()>>(std::move(f));
+        auto result = task->get_future();
+        {
+            std::lock_guard<std::mutex> lock(m_);
+            queue_.push([task] { (*task)(); });
+        }
+        cv_.notify_one();
+        return result;
+    }
+
+private:
+    void work() {
+        while (true) {
+            std::function<void()> job;
+            {
+                std::unique_lock<std::mutex> lock(m_);
+                cv_.wait(lock, [this] { return stopping_ || !queue_.empty(); });
+                if (queue_.empty()) return;   // stopping and nothing left to do
+                job = std::move(queue_.front());
+                queue_.pop();
+            }
+            job();   // run outside the lock; a packaged_task stores exceptions in its future
+        }
+    }
+
+    std::vector<std::thread> workers_;
+    std::queue<std::function<void()>> queue_;
+    std::mutex m_;
+    std::condition_variable cv_;
+    bool stopping_ = false;
+};
+
+long long runTask(const std::string& line) {
+    std::istringstream in(line);
+    std::string kind;
+    long long a = 0, b = 0;
+    in >> kind;
+    if (kind == "sum" && in >> a >> b) {
+        long long total = 0;
+        for (long long i = a; i <= b; ++i) total += i;
+        return total;
+    }
+    if (kind == "fact" && in >> a) {
+        if (a < 0) throw std::domain_error("negative factorial");
+        if (a > 20) throw std::overflow_error("too big");
+        long long r = 1;
+        for (long long i = 2; i <= a; ++i) r *= i;
+        return r;
+    }
+    if (kind == "primes" && in >> a >> b) {
+        long long count = 0;
+        for (long long n = std::max(a, 2LL); n <= b; ++n) {
+            bool prime = true;
+            for (long long d = 2; d * d <= n && prime; ++d) prime = n % d != 0;
+            count += prime;
+        }
+        return count;
+    }
+    throw std::invalid_argument("unknown task");
+}
+
+int main() {
+    std::size_t threads = 1;
+    std::cin >> threads;
+    std::cin.ignore();   // the rest of the first line
+
+    std::vector<std::future<long long>> results;
+    {
+        ThreadPool pool(threads);
+        std::string line;
+        while (std::getline(std::cin, line)) {
+            if (line.find_first_not_of(" \t") == std::string::npos) continue;
+            results.push_back(pool.submit([line] { return runTask(line); }));
+        }
+        for (std::size_t i = 0; i < results.size(); ++i) {
+            try {
+                const long long value = results[i].get();   // rethrows the task's exception
+                std::cout << '#' << i + 1 << ": " << value << '\n';
+            } catch (const std::exception& e) {
+                std::cout << '#' << i + 1 << ": error: " << e.what() << '\n';
+            }
+        }
+    }   // the pool shuts down here
+    std::cout << "tasks: " << results.size() << '\n';
+}
+```
+
+```hint
+A worker loops: lock, `cv.wait(lock, [&] { return stopping || !queue.empty(); })`, and if the queue is
+empty at that point it must be shutdown time, so return. Otherwise pop a job, **unlock**, and run it.
+Running jobs while holding the lock would make the pool single-threaded.
+```
+
+```hint
+`std::packaged_task<R()>` runs a callable and stores its result **or its exception** for the matching
+`std::future<R>`. It's move-only, but `std::function` needs a copyable callable, so hold the task in a
+`std::shared_ptr` and queue `[task] { (*task)(); }`.
+```
+
+```hint
+Call `.get()` before printing anything for that task: `std::cout << "#1: " << f.get()` would already have
+printed `#1: ` when `get()` throws.
+```
+
+```stdin
+4
+sum 1 100
+fact 20
+fact 21
+primes 1 100000
+```
+
+```expected
+#1: 5050
+#2: 2432902008176640000
+#3: error: too big
+#4: 9592
+tasks: 4
+```
+
+```stdin
+1
+fly 1 2
+sum 5 1
+fact -1
+primes 0 1
+sum -10 10
+fact
+fact 0
+```
+
+```expected
+#1: error: unknown task
+#2: 0
+#3: error: negative factorial
+#4: 0
+#5: 0
+#6: error: unknown task
+#7: 1
+tasks: 7
+```
+
+```stdin
+3
+primes 1 50000
+primes 50001 100000
+sum 1 1000000
+fact 13
+nonsense
+primes 2 2
+
+sum -5 -5
+```
+
+```expected hidden
+#1: 5133
+#2: 4459
+#3: 500000500000
+#4: 6227020800
+#5: error: unknown task
+#6: 1
+#7: -5
+tasks: 7
+```
+
+```stdin
+8
+```
+
+```expected hidden
+tasks: 0
+```
+
+```checks
+must std::condition_variable :: Let idle workers wait on a std::condition_variable.
+must packaged_task|promise :: Connect tasks to futures with std::packaged_task or std::promise.
+must std::(mutex|scoped_lock|lock_guard|unique_lock) :: Protect the queue with a mutex.
+mustnot std::async :: Build the pool yourself instead of using std::async.
+```
+:::

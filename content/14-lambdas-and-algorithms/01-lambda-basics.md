@@ -690,7 +690,7 @@ function is visible inside a lambda without capturing anything.
 
 ```checks
 must std::sort|std::ranges::sort :: Sort with std::sort.
-must sort\s*\([^;]*\[\s*\]\s*\( :: Pass a lambda as the comparator.
+must sort\s*\([^;]*\[[^\]]*\]\s*\( :: Pass a lambda as the comparator.
 ```
 :::
 

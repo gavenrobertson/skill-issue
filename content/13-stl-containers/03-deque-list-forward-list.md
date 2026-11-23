@@ -434,133 +434,6 @@ must pop_front\s*\( :: Use pop_front.
 ```
 :::
 
-:::exercise Splice the lists {medium}
-Read two lists of integers, `a` and `b`, and a number `k`. Move **all** elements of `b` into `a` so that
-they come right after the first `k` elements of `a` (`0 <= k <= size of a`), using `splice` (no copying
-element by element).
-
-**Input:** `n` and `n` integers for `a`; `m` and `m` integers for `b`; then `k`.
-**Output:** the contents of `a` separated by single spaces on the first line, then `b size: S` on the
-second line.
-
-```cpp starter
-#include <iostream>
-#include <iterator>
-#include <list>
-
-std::list<int> readList() {
-    int n;
-    std::cin >> n;
-    std::list<int> l;
-    for (int i = 0; i < n; ++i) {
-        int x;
-        std::cin >> x;
-        l.push_back(x);
-    }
-    return l;
-}
-
-int main() {
-    std::list<int> a = readList();
-    std::list<int> b = readList();
-    int k;
-    std::cin >> k;
-    for (int x : b) a.push_back(x);
-    for (int x : a) std::cout << x << ' ';
-    std::cout << '\n' << "b size: " << b.size() << '\n';
-}
-```
-
-```cpp solution
-#include <iostream>
-#include <iterator>
-#include <list>
-
-std::list<int> readList() {
-    int n;
-    std::cin >> n;
-    std::list<int> l;
-    for (int i = 0; i < n; ++i) {
-        int x;
-        std::cin >> x;
-        l.push_back(x);
-    }
-    return l;
-}
-
-int main() {
-    std::list<int> a = readList();
-    std::list<int> b = readList();
-    int k;
-    std::cin >> k;
-    a.splice(std::next(a.begin(), k), b);
-    bool first = true;
-    for (int x : a) {
-        if (!first) std::cout << ' ';
-        std::cout << x;
-        first = false;
-    }
-    std::cout << '\n' << "b size: " << b.size() << '\n';
-}
-```
-
-```hint
-`std::next(a.begin(), k)` is the position **before which** `b` should be inserted.
-```
-
-```hint
-`a.splice(position, b);` moves every node of `b` into `a` and leaves `b` empty.
-```
-
-```stdin
-4 1 2 3 4
-2 8 9
-2
-```
-
-```expected
-1 2 8 9 3 4
-b size: 0
-```
-
-```stdin
-2 1 2
-3 7 7 7
-0
-```
-
-```expected hidden
-7 7 7 1 2
-b size: 0
-```
-
-```stdin
-2 5 6
-1 9
-2
-```
-
-```expected hidden
-5 6 9
-b size: 0
-```
-
-```stdin
-2 1 2
-0
-1
-```
-
-```expected hidden
-1 2
-b size: 0
-```
-
-```checks
-must \.splice\s*\( :: Use splice.
-```
-:::
-
 :::exercise Sorted unique words {easy}
 Read words into a `std::list<std::string>` until the input ends. Use the list's own `sort()` and
 `unique()` member functions to keep one copy of each word in alphabetical order.
@@ -748,6 +621,133 @@ empty
 must std::forward_list :: Use a std::forward_list.
 must push_front\s*\( :: Add elements with push_front.
 must \.remove\s*\( :: Use the member function remove.
+```
+:::
+
+:::exercise Splice the lists {medium}
+Read two lists of integers, `a` and `b`, and a number `k`. Move **all** elements of `b` into `a` so that
+they come right after the first `k` elements of `a` (`0 <= k <= size of a`), using `splice` (no copying
+element by element).
+
+**Input:** `n` and `n` integers for `a`; `m` and `m` integers for `b`; then `k`.
+**Output:** the contents of `a` separated by single spaces on the first line, then `b size: S` on the
+second line.
+
+```cpp starter
+#include <iostream>
+#include <iterator>
+#include <list>
+
+std::list<int> readList() {
+    int n;
+    std::cin >> n;
+    std::list<int> l;
+    for (int i = 0; i < n; ++i) {
+        int x;
+        std::cin >> x;
+        l.push_back(x);
+    }
+    return l;
+}
+
+int main() {
+    std::list<int> a = readList();
+    std::list<int> b = readList();
+    int k;
+    std::cin >> k;
+    for (int x : b) a.push_back(x);
+    for (int x : a) std::cout << x << ' ';
+    std::cout << '\n' << "b size: " << b.size() << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <iterator>
+#include <list>
+
+std::list<int> readList() {
+    int n;
+    std::cin >> n;
+    std::list<int> l;
+    for (int i = 0; i < n; ++i) {
+        int x;
+        std::cin >> x;
+        l.push_back(x);
+    }
+    return l;
+}
+
+int main() {
+    std::list<int> a = readList();
+    std::list<int> b = readList();
+    int k;
+    std::cin >> k;
+    a.splice(std::next(a.begin(), k), b);
+    bool first = true;
+    for (int x : a) {
+        if (!first) std::cout << ' ';
+        std::cout << x;
+        first = false;
+    }
+    std::cout << '\n' << "b size: " << b.size() << '\n';
+}
+```
+
+```hint
+`std::next(a.begin(), k)` is the position **before which** `b` should be inserted.
+```
+
+```hint
+`a.splice(position, b);` moves every node of `b` into `a` and leaves `b` empty.
+```
+
+```stdin
+4 1 2 3 4
+2 8 9
+2
+```
+
+```expected
+1 2 8 9 3 4
+b size: 0
+```
+
+```stdin
+2 1 2
+3 7 7 7
+0
+```
+
+```expected hidden
+7 7 7 1 2
+b size: 0
+```
+
+```stdin
+2 5 6
+1 9
+2
+```
+
+```expected hidden
+5 6 9
+b size: 0
+```
+
+```stdin
+2 1 2
+0
+1
+```
+
+```expected hidden
+1 2
+b size: 0
+```
+
+```checks
+must \.splice\s*\( :: Use splice.
 ```
 :::
 

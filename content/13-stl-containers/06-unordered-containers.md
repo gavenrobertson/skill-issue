@@ -291,6 +291,77 @@ Unordered containers have no ordering, so there's no `lower_bound` and no sorted
 insertions and erasures by key work on both.
 :::
 
+:::exercise First repeated word {easy}
+Read words in order and print the first word that appears for the **second time** (the earliest moment a
+repeat happens). Use a `std::unordered_set<std::string>`.
+
+**Input:** words separated by whitespace, until the input ends.
+**Output:** the first repeated word, or `none` if every word is distinct.
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <unordered_set>
+
+int main() {
+    std::string w;
+    while (std::cin >> w) {
+    }
+    std::cout << "none\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <unordered_set>
+
+int main() {
+    std::unordered_set<std::string> seen;
+    std::string w;
+    while (std::cin >> w) {
+        if (!seen.insert(w).second) {
+            std::cout << w << '\n';
+            return 0;
+        }
+    }
+    std::cout << "none\n";
+}
+```
+
+```hint
+`insert` returns a pair whose `.second` is `false` if the word was already there.
+```
+
+```stdin
+he said that she said that he
+```
+
+```expected
+said
+```
+
+```stdin
+every word here is distinct
+```
+
+```expected hidden
+none
+```
+
+```stdin
+a b b a
+```
+
+```expected hidden
+b
+```
+
+```checks
+must std::unordered_set :: Use a std::unordered_set.
+```
+:::
+
 :::exercise Pair with sum {medium}
 Read `n` integers and a `target`. Print `yes` if two numbers at **different positions** add up to `target`,
 otherwise `no`. Do it in one pass with a `std::unordered_set`: for each number `x`, check whether
@@ -392,77 +463,6 @@ yes
 
 ```expected hidden
 no
-```
-
-```checks
-must std::unordered_set :: Use a std::unordered_set.
-```
-:::
-
-:::exercise First repeated word {easy}
-Read words in order and print the first word that appears for the **second time** (the earliest moment a
-repeat happens). Use a `std::unordered_set<std::string>`.
-
-**Input:** words separated by whitespace, until the input ends.
-**Output:** the first repeated word, or `none` if every word is distinct.
-
-```cpp starter
-#include <iostream>
-#include <string>
-#include <unordered_set>
-
-int main() {
-    std::string w;
-    while (std::cin >> w) {
-    }
-    std::cout << "none\n";
-}
-```
-
-```cpp solution
-#include <iostream>
-#include <string>
-#include <unordered_set>
-
-int main() {
-    std::unordered_set<std::string> seen;
-    std::string w;
-    while (std::cin >> w) {
-        if (!seen.insert(w).second) {
-            std::cout << w << '\n';
-            return 0;
-        }
-    }
-    std::cout << "none\n";
-}
-```
-
-```hint
-`insert` returns a pair whose `.second` is `false` if the word was already there.
-```
-
-```stdin
-he said that she said that he
-```
-
-```expected
-said
-```
-
-```stdin
-every word here is distinct
-```
-
-```expected hidden
-none
-```
-
-```stdin
-a b b a
-```
-
-```expected hidden
-b
 ```
 
 ```checks

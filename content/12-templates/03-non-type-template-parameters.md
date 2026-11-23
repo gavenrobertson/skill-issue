@@ -484,6 +484,129 @@ must std::array\s*<\s*T\s*,\s*\w+\s*> :: Take a std::array<T, N> parameter.
 ```
 :::
 
+:::exercise Transpose with compile-time sizes {medium}
+A matrix stored as `std::array<std::array<T, C>, R>` has `R` rows and `C` columns, and both sizes are
+part of its **type**. Write one function template that transposes any such matrix, deducing `T`, `R`
+and `C`:
+
+```cpp
+template <typename T, std::size_t R, std::size_t C>
+std::array<std::array<T, R>, C> transpose(const std::array<std::array<T, C>, R>& m);
+```
+
+The result has `C` rows and `R` columns: `result[j][i] == m[i][j]`. Notice that the compiler now
+checks the shapes for you: assigning the result to a variable of the wrong size doesn't compile.
+
+**Input:** a 2×3 matrix of integers (two rows of three), then a 1×4 matrix of words (one row of four).
+**Output:** the 3×2 transpose of the integers, then the 4×1 transpose of the words: one matrix row per
+line, values separated by single spaces.
+
+```cpp starter
+#include <array>
+#include <cstddef>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::array<std::array<int, 3>, 2> a{};
+    for (auto& row : a)
+        for (int& x : row) std::cin >> x;
+    std::array<std::array<std::string, 4>, 1> w{};
+    for (auto& row : w)
+        for (auto& s : row) std::cin >> s;
+
+    // print transpose(a), then transpose(w)
+}
+```
+
+```cpp solution
+#include <array>
+#include <cstddef>
+#include <iostream>
+#include <string>
+
+template <typename T, std::size_t R, std::size_t C>
+std::array<std::array<T, R>, C> transpose(const std::array<std::array<T, C>, R>& m) {
+    std::array<std::array<T, R>, C> result{};
+    for (std::size_t i = 0; i < R; ++i)
+        for (std::size_t j = 0; j < C; ++j) result[j][i] = m[i][j];
+    return result;
+}
+
+template <typename T, std::size_t R, std::size_t C>
+void print(const std::array<std::array<T, C>, R>& m) {
+    for (const auto& row : m) {
+        for (std::size_t j = 0; j < C; ++j) {
+            if (j > 0) std::cout << ' ';
+            std::cout << row[j];
+        }
+        std::cout << '\n';
+    }
+}
+
+int main() {
+    std::array<std::array<int, 3>, 2> a{};
+    for (auto& row : a)
+        for (int& x : row) std::cin >> x;
+    std::array<std::array<std::string, 4>, 1> w{};
+    for (auto& row : w)
+        for (auto& s : row) std::cin >> s;
+
+    std::array<std::array<int, 2>, 3> t = transpose(a);   // the shape is checked at compile time
+    print(t);
+    print(transpose(w));
+}
+```
+
+```hint
+Both sizes are deduced from the argument's type, exactly like `N` in `sumArray`. Inside, loop
+`i` over `R` rows and `j` over `C` columns and copy `m[i][j]` into `result[j][i]`.
+```
+
+```hint
+A printing helper can be a template with the same three parameters:
+`template <typename T, std::size_t R, std::size_t C> void print(const std::array<std::array<T, C>, R>& m)`.
+```
+
+```stdin
+1 2 3
+4 5 6
+a b c d
+```
+
+```expected
+1 4
+2 5
+3 6
+a
+b
+c
+d
+```
+
+```stdin
+-1 0 7
+8 -9 10
+one two three four
+```
+
+```expected hidden
+-1 8
+0 -9
+7 10
+one
+two
+three
+four
+```
+
+```checks
+must template\s*<\s*typename\s+\w+\s*,\s*std::size_t\s+\w+\s*,\s*std::size_t\s+\w+\s*> :: Deduce T, R and C: template <typename T, std::size_t R, std::size_t C>.
+must transpose\s*\(\s*a\s*\) :: Call transpose(a).
+must transpose\s*\(\s*w\s*\) :: Call transpose(w).
+```
+:::
+
 :::exercise Last N values {hard}
 Write a class template `template <std::size_t N> class LastN` that remembers only the **last `N`**
 integers given to it, using a `std::array<int, N>` as a circular buffer (overwrite the oldest value
@@ -614,128 +737,5 @@ nothing
 must template\s*<\s*std::size_t\s+\w+\s*>\s*(class|struct)\s+LastN :: Declare LastN as template <std::size_t N>.
 must std::array\s*<\s*int\s*,\s*N\s*> :: Store the values in a std::array<int, N>.
 must LastN\s*<\s*3\s*> :: Use LastN<3>.
-```
-:::
-
-:::exercise Transpose with compile-time sizes {medium}
-A matrix stored as `std::array<std::array<T, C>, R>` has `R` rows and `C` columns, and both sizes are
-part of its **type**. Write one function template that transposes any such matrix, deducing `T`, `R`
-and `C`:
-
-```cpp
-template <typename T, std::size_t R, std::size_t C>
-std::array<std::array<T, R>, C> transpose(const std::array<std::array<T, C>, R>& m);
-```
-
-The result has `C` rows and `R` columns: `result[j][i] == m[i][j]`. Notice that the compiler now
-checks the shapes for you: assigning the result to a variable of the wrong size doesn't compile.
-
-**Input:** a 2×3 matrix of integers (two rows of three), then a 1×4 matrix of words (one row of four).
-**Output:** the 3×2 transpose of the integers, then the 4×1 transpose of the words: one matrix row per
-line, values separated by single spaces.
-
-```cpp starter
-#include <array>
-#include <cstddef>
-#include <iostream>
-#include <string>
-
-int main() {
-    std::array<std::array<int, 3>, 2> a{};
-    for (auto& row : a)
-        for (int& x : row) std::cin >> x;
-    std::array<std::array<std::string, 4>, 1> w{};
-    for (auto& row : w)
-        for (auto& s : row) std::cin >> s;
-
-    // print transpose(a), then transpose(w)
-}
-```
-
-```cpp solution
-#include <array>
-#include <cstddef>
-#include <iostream>
-#include <string>
-
-template <typename T, std::size_t R, std::size_t C>
-std::array<std::array<T, R>, C> transpose(const std::array<std::array<T, C>, R>& m) {
-    std::array<std::array<T, R>, C> result{};
-    for (std::size_t i = 0; i < R; ++i)
-        for (std::size_t j = 0; j < C; ++j) result[j][i] = m[i][j];
-    return result;
-}
-
-template <typename T, std::size_t R, std::size_t C>
-void print(const std::array<std::array<T, C>, R>& m) {
-    for (const auto& row : m) {
-        for (std::size_t j = 0; j < C; ++j) {
-            if (j > 0) std::cout << ' ';
-            std::cout << row[j];
-        }
-        std::cout << '\n';
-    }
-}
-
-int main() {
-    std::array<std::array<int, 3>, 2> a{};
-    for (auto& row : a)
-        for (int& x : row) std::cin >> x;
-    std::array<std::array<std::string, 4>, 1> w{};
-    for (auto& row : w)
-        for (auto& s : row) std::cin >> s;
-
-    std::array<std::array<int, 2>, 3> t = transpose(a);   // the shape is checked at compile time
-    print(t);
-    print(transpose(w));
-}
-```
-
-```hint
-Both sizes are deduced from the argument's type, exactly like `N` in `sumArray`. Inside, loop
-`i` over `R` rows and `j` over `C` columns and copy `m[i][j]` into `result[j][i]`.
-```
-
-```hint
-A printing helper can be a template with the same three parameters:
-`template <typename T, std::size_t R, std::size_t C> void print(const std::array<std::array<T, C>, R>& m)`.
-```
-
-```stdin
-1 2 3
-4 5 6
-a b c d
-```
-
-```expected
-1 4
-2 5
-3 6
-a
-b
-c
-d
-```
-
-```stdin
--1 0 7
-8 -9 10
-one two three four
-```
-
-```expected hidden
--1 8
-0 -9
-7 10
-one
-two
-three
-four
-```
-
-```checks
-must template\s*<\s*typename\s+\w+\s*,\s*std::size_t\s+\w+\s*,\s*std::size_t\s+\w+\s*> :: Deduce T, R and C: template <typename T, std::size_t R, std::size_t C>.
-must transpose\s*\(\s*a\s*\) :: Call transpose(a).
-must transpose\s*\(\s*w\s*\) :: Call transpose(w).
 ```
 :::

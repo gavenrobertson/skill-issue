@@ -29,7 +29,7 @@ each specification, so test those yourself too.
 5. **Handle errors deliberately.** Decide which failures are "normal" (return a value, `std::optional`)
    and which are exceptional (throw), and test the error paths, not just the happy path.
 
-Every capstone reads commands **one per line** with `std::getline`, then parses the line with a
+Most capstones read commands **one per line** with `std::getline`, then parse the line with a
 `std::istringstream`. This pattern (from the string streams lesson) makes it easy to ignore blank lines and
 to cope with missing arguments:
 
@@ -1504,6 +1504,996 @@ must override :: Mark the overriding functions with override.
 must std::unique_ptr\s*<\s*Account\s*> :: Own the accounts with std::unique_ptr<Account>.
 must throw\s+\w+ :: Report failures by throwing exceptions.
 must class\s+\w+\s*:\s*public\s+BankError :: Derive specific errors (or accounts' errors) from BankError.
+```
+:::
+
+:::exercise Capstone 5: Expression interpreter {hard}
+Write an interpreter for arithmetic with variables: a **tokenizer** that turns a line into tokens, a
+**recursive-descent parser** that builds a syntax tree, and an **evaluator** that computes it with
+checked 64-bit arithmetic. This is the classic first step towards writing a programming language.
+
+**Input:** one statement per line (blank lines are ignored):
+
+- an expression, like `(1 + 2) * x`: print its value;
+- an assignment `let NAME = EXPRESSION`: store the value and print `NAME = VALUE`.
+
+Variables keep their values for the following lines. Names are a letter or `_` followed by letters,
+digits and `_`. Numbers are decimal digits only (`-5` is the unary minus applied to `5`). Whitespace is
+allowed anywhere between tokens.
+
+**Grammar**, from lowest to highest precedence:
+
+```
+expression := term (('+' | '-') term)*
+term       := unary (('*' | '/' | '%') unary)*
+unary      := ('-' | '+') unary | power
+power      := primary ('^' unary)?
+primary    := NUMBER | NAME | '(' expression ')'
+```
+
+So `+ - * / %` are left-associative, `^` (power) is **right**-associative and binds tighter than unary
+minus: `2^3^2` is `2^9 = 512` and `-2^2` is `-4`, while `(-2)^2` is `4`. `/` and `%` truncate toward
+zero like C++.
+
+**Errors.** A line is first tokenized and parsed completely; only a line without syntax errors is
+evaluated (so `1/0 + )` reports the syntax error). Columns are 1-based; "the end" is the column just past
+the last character.
+
+| Problem | Message |
+| --- | --- |
+| a character that can't start a token | `error: unexpected character 'C' at column N` |
+| an operand is missing where one is needed (also at the end) | `error: expected expression at column N` |
+| a `(` without its `)` | `error: expected ')' at column N` |
+| tokens left over after a complete statement | `error: unexpected 'TOKEN' at column N` |
+| `let` not followed by a name, or the name not followed by `=` | `error: expected name at column N` / `error: expected '=' at column N` |
+| a variable that was never assigned | `error: unknown variable 'NAME'` |
+| division or remainder by zero | `error: division by zero` |
+| a negative exponent | `error: negative exponent` |
+| a number or any result that doesn't fit in `long long` | `error: overflow` |
+
+Evaluate the left operand before the right one; the first runtime error wins. A failed `let` leaves
+the variable unchanged. Every result that fits must be exact: `(-2)^63` is `-9223372036854775808`, and
+`(-9223372036854775807 - 1) % -1` is `0`. Note that `-9223372036854775808` on its own is an overflow,
+exactly like in C++, because `9223372036854775808` doesn't fit before the minus is applied.
+
+```
+1 + 2 * 3          ->  7
+-2^2               ->  -4
+let x = 6 * 7      ->  x = 42
+x / (x - 42)       ->  error: division by zero
+1 +                ->  error: expected expression at column 4
+(1 + 2             ->  error: expected ')' at column 7
+3 $ 4              ->  error: unexpected character '$' at column 3
+```
+
+```cpp starter
+#include <iostream>
+#include <map>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+int main() {
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        // tokenize, parse, evaluate
+    }
+}
+```
+
+```cpp solution
+#include <cctype>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+// ---------- errors ----------
+class SyntaxError : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+class EvalError : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+
+std::string at(std::size_t column) { return " at column " + std::to_string(column); }
+
+// ---------- tokenizer ----------
+enum class Tok { Number, Name, Op, End };
+
+struct Token {
+    Tok kind;
+    std::string text;
+    std::size_t column;   // 1-based
+};
+
+std::vector<Token> tokenize(const std::string& line) {
+    std::vector<Token> tokens;
+    std::size_t i = 0;
+    while (i < line.size()) {
+        const unsigned char c = static_cast<unsigned char>(line[i]);
+        const std::size_t start = i;
+        if (std::isspace(c)) {
+            ++i;
+        } else if (std::isdigit(c)) {
+            while (i < line.size() && std::isdigit(static_cast<unsigned char>(line[i]))) ++i;
+            tokens.push_back({Tok::Number, line.substr(start, i - start), start + 1});
+        } else if (std::isalpha(c) || c == '_') {
+            while (i < line.size() && (std::isalnum(static_cast<unsigned char>(line[i])) || line[i] == '_')) ++i;
+            tokens.push_back({Tok::Name, line.substr(start, i - start), start + 1});
+        } else if (std::string("+-*/%^()=").find(line[i]) != std::string::npos) {
+            tokens.push_back({Tok::Op, std::string(1, line[i]), start + 1});
+            ++i;
+        } else {
+            throw SyntaxError(std::string("unexpected character '") + line[i] + "'" + at(start + 1));
+        }
+    }
+    tokens.push_back({Tok::End, "", line.size() + 1});
+    return tokens;
+}
+
+// ---------- syntax tree ----------
+struct Node {
+    enum Kind { Number, Variable, Negate, Binary } kind;
+    std::string text;   // the number, the variable name, or the operator
+    std::unique_ptr<Node> left, right;
+};
+
+std::unique_ptr<Node> leaf(Node::Kind kind, std::string text) {
+    auto n = std::make_unique<Node>();
+    n->kind = kind;
+    n->text = std::move(text);
+    return n;
+}
+
+std::unique_ptr<Node> binary(std::string op, std::unique_ptr<Node> l, std::unique_ptr<Node> r) {
+    auto n = leaf(Node::Binary, std::move(op));
+    n->left = std::move(l);
+    n->right = std::move(r);
+    return n;
+}
+
+// ---------- recursive-descent parser ----------
+// expr  := term (('+' | '-') term)*
+// term  := unary (('*' | '/' | '%') unary)*
+// unary := ('-' | '+') unary | power
+// power := primary ('^' unary)?          (right-associative, binds tighter than unary minus)
+// primary := NUMBER | NAME | '(' expr ')'
+class Parser {
+public:
+    explicit Parser(std::vector<Token> tokens) : tokens_(std::move(tokens)) {}
+
+    const Token& peek() const { return tokens_[pos_]; }
+    bool isOp(const char* op) const { return peek().kind == Tok::Op && peek().text == op; }
+    Token next() { return tokens_[pos_++]; }
+
+    std::unique_ptr<Node> expr() {
+        auto node = term();
+        while (isOp("+") || isOp("-")) {
+            std::string op = next().text;
+            node = binary(op, std::move(node), term());
+        }
+        return node;
+    }
+
+    void expectEnd() const {
+        if (peek().kind != Tok::End) throw SyntaxError("unexpected '" + peek().text + "'" + at(peek().column));
+    }
+
+private:
+    std::unique_ptr<Node> term() {
+        auto node = unary();
+        while (isOp("*") || isOp("/") || isOp("%")) {
+            std::string op = next().text;
+            node = binary(op, std::move(node), unary());
+        }
+        return node;
+    }
+
+    std::unique_ptr<Node> unary() {
+        if (isOp("-")) {
+            next();
+            auto n = leaf(Node::Negate, "-");
+            n->left = unary();
+            return n;
+        }
+        if (isOp("+")) {
+            next();
+            return unary();
+        }
+        return power();
+    }
+
+    std::unique_ptr<Node> power() {
+        auto base = primary();
+        if (isOp("^")) {
+            next();
+            return binary("^", std::move(base), unary());
+        }
+        return base;
+    }
+
+    std::unique_ptr<Node> primary() {
+        const Token& t = peek();
+        if (t.kind == Tok::Number) return leaf(Node::Number, next().text);
+        if (t.kind == Tok::Name) return leaf(Node::Variable, next().text);
+        if (isOp("(")) {
+            next();
+            auto inside = expr();
+            if (!isOp(")")) throw SyntaxError("expected ')'" + at(peek().column));
+            next();
+            return inside;
+        }
+        throw SyntaxError("expected expression" + at(t.column));
+    }
+
+    std::vector<Token> tokens_;
+    std::size_t pos_ = 0;
+};
+
+// ---------- checked arithmetic ----------
+using Limits = std::numeric_limits<long long>;
+
+long long add(long long a, long long b) {
+    if ((b > 0 && a > Limits::max() - b) || (b < 0 && a < Limits::min() - b)) throw EvalError("overflow");
+    return a + b;
+}
+long long sub(long long a, long long b) {
+    if ((b < 0 && a > Limits::max() + b) || (b > 0 && a < Limits::min() + b)) throw EvalError("overflow");
+    return a - b;
+}
+long long mul(long long a, long long b) {
+    if (a == 0 || b == 0) return 0;
+    const bool overflow = a > 0 ? (b > 0 ? a > Limits::max() / b : b < Limits::min() / a)
+                                : (b > 0 ? a < Limits::min() / b : b < Limits::max() / a);
+    if (overflow) throw EvalError("overflow");
+    return a * b;
+}
+long long pow(long long base, long long exp) {
+    if (exp < 0) throw EvalError("negative exponent");
+    long long result = 1;
+    while (exp > 0) {   // square-and-multiply: fast even for huge exponents of 0, 1 and -1
+        if (exp & 1) result = mul(result, base);
+        exp >>= 1;
+        if (exp > 0) base = mul(base, base);
+    }
+    return result;
+}
+
+class Interpreter {
+public:
+    long long eval(const Node& n) const {
+        switch (n.kind) {
+            case Node::Number:
+                try {
+                    return std::stoll(n.text);
+                } catch (const std::out_of_range&) {
+                    throw EvalError("overflow");
+                }
+            case Node::Variable: {
+                auto it = vars_.find(n.text);
+                if (it == vars_.end()) throw EvalError("unknown variable '" + n.text + "'");
+                return it->second;
+            }
+            case Node::Negate:
+                return sub(0, eval(*n.left));
+            case Node::Binary:
+                break;
+        }
+        const long long a = eval(*n.left);   // left operand first
+        const long long b = eval(*n.right);
+        switch (n.text[0]) {
+            case '+': return add(a, b);
+            case '-': return sub(a, b);
+            case '*': return mul(a, b);
+            case '^': return pow(a, b);
+            default: break;
+        }
+        if (b == 0) throw EvalError("division by zero");
+        if (n.text == "/") {
+            if (a == Limits::min() && b == -1) throw EvalError("overflow");
+            return a / b;
+        }
+        return b == -1 ? 0 : a % b;   // LLONG_MIN % -1 would be UB; the answer is 0
+    }
+
+    void run(const std::string& line) {
+        Parser p(tokenize(line));
+        std::string target;
+        if (p.peek().kind == Tok::Name && p.peek().text == "let") {
+            p.next();
+            if (p.peek().kind != Tok::Name) throw SyntaxError("expected name" + at(p.peek().column));
+            target = p.next().text;
+            if (!p.isOp("=")) throw SyntaxError("expected '='" + at(p.peek().column));
+            p.next();
+        }
+        auto tree = p.expr();
+        p.expectEnd();                          // the whole line parsed: only now evaluate
+        const long long value = eval(*tree);
+        if (target.empty()) {
+            std::cout << value << '\n';
+        } else {
+            vars_[target] = value;
+            std::cout << target << " = " << value << '\n';
+        }
+    }
+
+private:
+    std::map<std::string, long long> vars_;
+};
+
+int main() {
+    Interpreter interpreter;
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        if (line.find_first_not_of(" \t") == std::string::npos) continue;
+        try {
+            interpreter.run(line);
+        } catch (const std::runtime_error& e) {   // SyntaxError and EvalError
+            std::cout << "error: " << e.what() << '\n';
+        }
+    }
+}
+```
+
+```hint
+Tokenize first: a `struct Token { kind; text; column; }` per number, name or operator character, plus a
+final `End` token whose column is `line.size() + 1`. The parser then only looks at tokens, never at
+characters, and every error message has a column to report.
+```
+
+```hint
+Write one parser function per grammar rule. Each returns a `std::unique_ptr<Node>` for the part it
+parsed; `expression()` loops `while (next token is + or -)`, building left-leaning `Binary` nodes, which
+gives left associativity. For right associativity, `power()` parses `primary`, and if a `^` follows, its
+right side is a full `unary()` (which itself ends in `power()`).
+```
+
+```hint
+Throw a `SyntaxError` from the parser and an `EvalError` from the evaluator (both derived from
+`std::runtime_error`), and catch them in the line loop. Since evaluation starts only after
+`parse` returned, syntax errors are always reported before runtime ones.
+```
+
+```hint
+Power with overflow checks: square-and-multiply (`if (exp & 1) result *= base; base *= base; exp >>= 1;`)
+with checked multiplications needs only about 64 steps even for `1^1000000000000000000`. Square the base
+only while bits of the exponent remain, or `(-2)^63` would overflow on a square it never needs.
+```
+
+```stdin
+1 + 2 * 3
+(1 + 2) * 3
+-2^2
+2^3^2
+7 / -2
+-7 % 3
+let x = 6 * 7
+x - 2
+let y = x / (x - 42)
+y
+1 +
+(1 + 2
+1 + 2)
+3 $ 4
+```
+
+```expected
+7
+9
+-4
+512
+-3
+-1
+x = 42
+40
+error: division by zero
+error: unknown variable 'y'
+error: expected expression at column 4
+error: expected ')' at column 7
+error: unexpected ')' at column 6
+error: unexpected character '$' at column 3
+```
+
+```stdin
+let = 5
+let z 5
+9223372036854775807 + 1
+-9223372036854775808
+- -5
++-+5
+2 ^ 62
+2^63
+(-2)^63
+1^1000000000000000000
+(-1)^1000000000000000001
+0^0
+2^-1
+10 % 0 + )
+foo * 0
+let a = 5 5
+let b = (1
+()
+2 3
+-9223372036854775807 - 1
+-9223372036854775807 - 1 - 1
+(-9223372036854775807 - 1) / -1
+(-9223372036854775807 - 1) % -1
+3037000500 * 3037000500
+  12   *   (  3 + 4 )   
+99999999999999999999 * 0
+```
+
+```expected hidden
+error: expected name at column 5
+error: expected '=' at column 7
+error: overflow
+error: overflow
+5
+-5
+4611686018427387904
+error: overflow
+-9223372036854775808
+1
+-1
+1
+error: negative exponent
+error: expected expression at column 10
+error: unknown variable 'foo'
+error: unexpected '5' at column 11
+error: expected ')' at column 11
+error: expected expression at column 2
+error: unexpected '3' at column 3
+-9223372036854775808
+error: overflow
+error: overflow
+0
+error: overflow
+84
+error: overflow
+```
+
+```stdin
+let n = 10
+let n = n * n - 1
+n
+let total = n + missing
+total
+let total = (n + 1) / 4 % 7
+-(-(total))
+((((((1))))))
+let _tmp2 = -n^2
+_tmp2 + #
+```
+
+```expected hidden
+n = 10
+n = 99
+99
+error: unknown variable 'missing'
+error: unknown variable 'total'
+total = 4
+4
+1
+_tmp2 = -9801
+error: unexpected character '#' at column 9
+```
+
+```checks
+must std::unique_ptr :: Build a syntax tree out of std::unique_ptr nodes.
+must class\s+\w+\s*:\s*public\s+std::runtime_error :: Report errors with your own exception types.
+must numeric_limits :: Check for overflow with std::numeric_limits.
+```
+:::
+
+:::exercise Capstone 6: Stack virtual machine {hard}
+Real languages like Java, Python and WebAssembly run on **virtual machines**: a program is translated to
+simple instructions that a loop executes one by one. Build a tiny one: an **assembler** that checks and
+translates a program, and a **VM** that runs it with an operand stack, a call stack and named variables.
+
+**Input:** the whole input is one program. Each line holds one instruction, a label, or nothing; `;`
+starts a comment that runs to the end of the line.
+
+| Instruction | Effect |
+| --- | --- |
+| `push N` | push the integer `N` (optional sign, digits; must fit in `long long`) |
+| `pop`, `dup`, `swap`, `over` | drop the top; duplicate it; swap the top two; copy the second onto the top (`a b` → `a b a`) |
+| `add`, `sub`, `mul`, `div`, `mod` | pop `b`, pop `a`, push `a op b` (checked: no overflow, no division by zero; truncating like C++) |
+| `neg` | pop `a`, push `-a` |
+| `print` | pop a value and print it on its own line |
+| `store NAME`, `load NAME` | pop into variable `NAME`; push the variable's value |
+| `jmp L` | continue at label `L` |
+| `jz L`, `jnz L` | pop a value; jump to `L` if it is zero / non-zero |
+| `call L`, `ret` | push the return position on the call stack and jump to `L`; return to the last saved position |
+| `halt` | stop |
+
+A label is a line holding only `NAME:`. It marks the position of the next instruction.
+
+**Assembly** happens first. Report **all** problems, in line order, as `line L: MESSAGE`, then print
+`assembly failed` and don't run anything:
+
+| Problem | Message |
+| --- | --- |
+| an unknown word | `unknown instruction 'WORD'` |
+| no operand where one is required | `missing operand` |
+| an operand where none is allowed, or a second operand | `unexpected operand` |
+| `push` with something that isn't a valid integer | `bad number 'TEXT'` |
+| a label defined a second time | `duplicate label 'NAME'` |
+| a label line with anything else on it, or an empty label name | `bad label` |
+| a jump or call to a label that doesn't exist | `unknown label 'NAME'` |
+
+**Execution** starts at the first instruction and ends at `halt` or after the last instruction; then print
+`halted after N steps`, where `N` is the number of instructions executed (including `halt`). A runtime
+error stops the program with `runtime error at line L: MESSAGE` (the line of the failing instruction):
+`stack underflow`, `division by zero`, `overflow`, `unknown variable 'NAME'`, `ret without call`,
+`call stack overflow` (more than 1000 nested calls), or `step limit exceeded` (when an instruction would
+be the 100001st step).
+
+For example, this program prints `3628800` and then `halted after 118 steps`:
+
+```
+; factorial of 10 with a loop
+    push 10
+    store n
+    push 1
+    store acc
+loop:
+    load n
+    jz done
+    load acc
+    load n
+    mul
+    store acc
+    load n
+    push 1
+    sub
+    store n
+    jmp loop
+done:
+    load acc
+    print
+```
+
+```cpp starter
+#include <iostream>
+#include <map>
+#include <sstream>
+#include <string>
+#include <vector>
+
+int main() {
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        // assemble first, then run
+    }
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <iostream>
+#include <limits>
+#include <map>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+using Limits = std::numeric_limits<long long>;
+
+class VmError : public std::runtime_error {
+public:
+    using std::runtime_error::runtime_error;
+};
+
+enum class Operand { None, Number, Label, Name };
+
+const std::map<std::string, Operand> kInstructions{
+    {"push", Operand::Number}, {"pop", Operand::None},   {"dup", Operand::None},   {"swap", Operand::None},
+    {"over", Operand::None},   {"add", Operand::None},   {"sub", Operand::None},   {"mul", Operand::None},
+    {"div", Operand::None},    {"mod", Operand::None},   {"neg", Operand::None},   {"print", Operand::None},
+    {"jmp", Operand::Label},   {"jz", Operand::Label},   {"jnz", Operand::Label},  {"call", Operand::Label},
+    {"ret", Operand::None},    {"load", Operand::Name},  {"store", Operand::Name}, {"halt", Operand::None},
+};
+
+struct Instruction {
+    std::string op;
+    std::string arg;
+    long long number = 0;
+    std::size_t target = 0;   // resolved jump target (index into the program)
+    int line = 0;             // source line, for error messages
+};
+
+long long checkedAdd(long long a, long long b) {
+    if ((b > 0 && a > Limits::max() - b) || (b < 0 && a < Limits::min() - b)) throw VmError("overflow");
+    return a + b;
+}
+long long checkedSub(long long a, long long b) {
+    if ((b < 0 && a > Limits::max() + b) || (b > 0 && a < Limits::min() + b)) throw VmError("overflow");
+    return a - b;
+}
+long long checkedMul(long long a, long long b) {
+    if (a == 0 || b == 0) return 0;
+    const bool overflow = a > 0 ? (b > 0 ? a > Limits::max() / b : b < Limits::min() / a)
+                                : (b > 0 ? a < Limits::min() / b : b < Limits::max() / a);
+    if (overflow) throw VmError("overflow");
+    return a * b;
+}
+
+// Pass 1: parse lines and collect labels. Pass 2: resolve label operands. Returns false on any error.
+bool assemble(std::istream& in, std::vector<Instruction>& program) {
+    std::map<std::string, std::size_t> labels;
+    std::vector<std::pair<int, std::string>> errors;   // (line, message)
+    auto error = [&errors](int line, const std::string& msg) { errors.emplace_back(line, msg); };
+
+    std::string text;
+    int lineNo = 0;
+    while (std::getline(in, text)) {
+        ++lineNo;
+        if (auto semi = text.find(';'); semi != std::string::npos) text.erase(semi);
+        std::istringstream words(text);
+        std::string op, arg, extra;
+        if (!(words >> op)) continue;
+        if (op.back() == ':') {   // a label definition
+            const std::string name = op.substr(0, op.size() - 1);
+            if (name.empty() || (words >> extra)) error(lineNo, "bad label");
+            else if (labels.contains(name)) error(lineNo, "duplicate label '" + name + "'");
+            else labels[name] = program.size();
+            continue;
+        }
+        auto it = kInstructions.find(op);
+        if (it == kInstructions.end()) {
+            error(lineNo, "unknown instruction '" + op + "'");
+            continue;
+        }
+        const bool hasArg = static_cast<bool>(words >> arg);
+        if (it->second == Operand::None && hasArg) {
+            error(lineNo, "unexpected operand");
+            continue;
+        }
+        if (it->second != Operand::None && (!hasArg || (words >> extra))) {
+            error(lineNo, hasArg ? "unexpected operand" : "missing operand");
+            continue;
+        }
+        Instruction ins{op, arg, 0, 0, lineNo};
+        if (it->second == Operand::Number) {
+            std::size_t used = 0;
+            try {
+                ins.number = std::stoll(arg, &used);
+            } catch (const std::logic_error&) {
+                used = 0;
+            }
+            if (used == 0 || used != arg.size()) {
+                error(lineNo, "bad number '" + arg + "'");
+                continue;
+            }
+        }
+        program.push_back(ins);
+    }
+
+    for (Instruction& ins : program) {
+        if (kInstructions.at(ins.op) != Operand::Label) continue;
+        auto it = labels.find(ins.arg);
+        if (it == labels.end()) error(ins.line, "unknown label '" + ins.arg + "'");
+        else ins.target = it->second;
+    }
+    // unknown-label errors were found in pass 2; report everything in line order
+    std::stable_sort(errors.begin(), errors.end(),
+                     [](const auto& a, const auto& b) { return a.first < b.first; });
+    for (const auto& [line, msg] : errors) std::cout << "line " << line << ": " << msg << '\n';
+    return errors.empty();
+}
+
+void run(const std::vector<Instruction>& program) {
+    constexpr long long maxSteps = 100000;
+    constexpr std::size_t maxDepth = 1000;
+    std::vector<long long> stack;
+    std::vector<std::size_t> calls;
+    std::map<std::string, long long> vars;
+    std::size_t pc = 0;
+    long long steps = 0;
+    int line = 0;
+    auto pop = [&stack] {
+        if (stack.empty()) throw VmError("stack underflow");
+        long long v = stack.back();
+        stack.pop_back();
+        return v;
+    };
+    try {
+        while (pc < program.size()) {
+            const Instruction& ins = program[pc];
+            line = ins.line;
+            if (++steps > maxSteps) throw VmError("step limit exceeded");
+            ++pc;
+            const std::string& op = ins.op;
+            if (op == "push") stack.push_back(ins.number);
+            else if (op == "pop") pop();
+            else if (op == "dup") { long long a = pop(); stack.push_back(a); stack.push_back(a); }
+            else if (op == "swap") { long long b = pop(), a = pop(); stack.push_back(b); stack.push_back(a); }
+            else if (op == "over") { long long b = pop(), a = pop(); stack.insert(stack.end(), {a, b, a}); }
+            else if (op == "neg") stack.push_back(checkedSub(0, pop()));
+            else if (op == "print") std::cout << pop() << '\n';
+            else if (op == "jmp") pc = ins.target;
+            else if (op == "jz") { if (pop() == 0) pc = ins.target; }
+            else if (op == "jnz") { if (pop() != 0) pc = ins.target; }
+            else if (op == "call") {
+                if (calls.size() == maxDepth) throw VmError("call stack overflow");
+                calls.push_back(pc);
+                pc = ins.target;
+            } else if (op == "ret") {
+                if (calls.empty()) throw VmError("ret without call");
+                pc = calls.back();
+                calls.pop_back();
+            } else if (op == "load") {
+                auto it = vars.find(ins.arg);
+                if (it == vars.end()) throw VmError("unknown variable '" + ins.arg + "'");
+                stack.push_back(it->second);
+            } else if (op == "store") vars[ins.arg] = pop();
+            else if (op == "halt") break;
+            else {   // add sub mul div mod
+                const long long b = pop(), a = pop();
+                if (op == "add") stack.push_back(checkedAdd(a, b));
+                else if (op == "sub") stack.push_back(checkedSub(a, b));
+                else if (op == "mul") stack.push_back(checkedMul(a, b));
+                else if (b == 0) throw VmError("division by zero");
+                else if (op == "div") {
+                    if (a == Limits::min() && b == -1) throw VmError("overflow");
+                    stack.push_back(a / b);
+                } else stack.push_back(b == -1 ? 0 : a % b);
+            }
+        }
+        std::cout << "halted after " << steps << " steps\n";
+    } catch (const VmError& e) {
+        std::cout << "runtime error at line " << line << ": " << e.what() << '\n';
+    }
+}
+
+int main() {
+    std::vector<Instruction> program;
+    if (!assemble(std::cin, program)) {
+        std::cout << "assembly failed\n";
+        return 0;
+    }
+    run(program);
+}
+```
+
+```hint
+Two passes. Pass 1 reads every line into a `std::vector<Instruction>` and records each label's position
+(the index of the next instruction) in a `std::map`. Pass 2 resolves the label operands to those
+indexes. Collect errors as `(line, message)` pairs and sort them by line before printing, because the
+unknown-label errors are only found in pass 2.
+```
+
+```hint
+The VM is a `while (pc < program.size())` loop with a `pc` (program counter) that normally just moves to
+the next instruction; jumps assign it. `call` pushes `pc` (already pointing after the `call`) onto a
+`std::vector<std::size_t>` and jumps; `ret` pops it back.
+```
+
+```hint
+Throw a `VmError` from deep inside an instruction (from your `pop` helper, or the checked arithmetic)
+and catch it once around the whole loop. Remember the current instruction's line before executing it,
+so the handler can report it.
+```
+
+```stdin
+; factorial of 10 with a loop
+    push 10
+    store n
+    push 1
+    store acc
+loop:
+    load n
+    jz done
+    load acc
+    load n
+    mul
+    store acc
+    load n
+    push 1
+    sub
+    store n
+    jmp loop
+done:
+    load acc
+    print
+```
+
+```expected
+3628800
+halted after 118 steps
+```
+
+```stdin
+; recursive Fibonacci
+    push 15
+    call fib
+    print
+    halt
+
+fib:            ; ( n -- fib(n) )
+    dup
+    jz done     ; fib(0) = 0: n itself is the answer
+    dup
+    push 1
+    sub
+    jz done     ; fib(1) = 1
+    dup
+    push 1
+    sub
+    call fib    ; n fib(n-1)
+    swap
+    push 2
+    sub
+    call fib    ; fib(n-1) fib(n-2)
+    add
+done:
+    ret
+```
+
+```expected
+610
+halted after 21181 steps
+```
+
+```stdin
+push 1
+push x
+pop 3
+frob
+jmp nowhere
+a:
+a:
+push
+b: c
+push 0x10
+jz a
+:
+store
+call a b
+```
+
+```expected
+line 2: bad number 'x'
+line 3: unexpected operand
+line 4: unknown instruction 'frob'
+line 5: unknown label 'nowhere'
+line 7: duplicate label 'a'
+line 8: missing operand
+line 9: bad label
+line 10: bad number '0x10'
+line 12: bad label
+line 13: missing operand
+line 14: unexpected operand
+assembly failed
+```
+
+```stdin
+push 7
+push 3
+over
+print
+mod
+print
+push -7
+push 2
+div
+print
+push -9223372036854775807
+push 1
+sub
+dup
+print
+neg
+```
+
+```expected hidden
+7
+1
+-3
+-9223372036854775808
+runtime error at line 16: overflow
+```
+
+```stdin
+; countdown with a loop and a variable
+    push 3
+    store i
+top:
+    load i
+    jz end
+    load i
+    print
+    load i
+    push 1
+    sub
+    store i
+    jmp top
+end:
+    push 42
+    print
+    halt
+    push 1     ; never reached
+    print
+```
+
+```expected hidden
+3
+2
+1
+42
+halted after 34 steps
+```
+
+```stdin
+push 1
+push 0
+div
+```
+
+```expected hidden
+runtime error at line 3: division by zero
+```
+
+```stdin
+load ghost
+```
+
+```expected hidden
+runtime error at line 1: unknown variable 'ghost'
+```
+
+```stdin
+push 5
+ret
+```
+
+```expected hidden
+runtime error at line 2: ret without call
+```
+
+```stdin
+f:
+    call f
+```
+
+```expected hidden
+runtime error at line 2: call stack overflow
+```
+
+```stdin
+spin:
+    jmp spin
+```
+
+```expected hidden
+runtime error at line 2: step limit exceeded
+```
+
+```stdin
+push 1
+add
+```
+
+```expected hidden
+runtime error at line 2: stack underflow
+```
+
+```expected hidden
+halted after 0 steps
+```
+
+```checks
+must class\s+\w+\s*:\s*public\s+std::runtime_error :: Report runtime errors with an exception type.
+must std::map :: Map labels (and variables) to their values with std::map.
 ```
 :::
 

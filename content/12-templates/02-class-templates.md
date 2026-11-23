@@ -523,6 +523,106 @@ must Stack\s*<\s*std::string\s*> :: Use a Stack<std::string>.
 ```
 :::
 
+:::exercise Grid with an alias template {easy}
+Define an alias template `Grid<T>` for `std::vector<std::vector<T>>` and use it to store a grid of
+integers. Then print the sum of each row.
+
+**Input:** `rows` and `cols`, followed by `rows * cols` integers in row order.
+**Output:** one line per row containing that row's sum. If `rows` is 0, print `no rows`.
+
+```cpp starter
+#include <iostream>
+#include <vector>
+
+// define the alias template Grid here
+
+int main() {
+    int rows, cols;
+    std::cin >> rows >> cols;
+    // create a Grid<int>, read it, print each row's sum
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <vector>
+
+template <typename T>
+using Grid = std::vector<std::vector<T>>;
+
+int main() {
+    int rows, cols;
+    std::cin >> rows >> cols;
+    Grid<int> g(rows, std::vector<int>(cols));
+    for (auto& row : g)
+        for (int& x : row) std::cin >> x;
+
+    if (g.empty()) {
+        std::cout << "no rows\n";
+        return 0;
+    }
+    for (const auto& row : g) {
+        long long sum = 0;
+        for (int x : row) sum += x;
+        std::cout << sum << '\n';
+    }
+}
+```
+
+```hint
+`template <typename T> using Grid = std::vector<std::vector<T>>;`
+```
+
+```hint
+`Grid<int> g(rows, std::vector<int>(cols));` creates `rows` rows, each with `cols` zeros.
+```
+
+```stdin
+2 3
+1 2 3
+4 5 6
+```
+
+```expected
+6
+15
+```
+
+```stdin
+3 1
+-5
+0
+5
+```
+
+```expected hidden
+-5
+0
+5
+```
+
+```stdin
+0 4
+```
+
+```expected hidden
+no rows
+```
+
+```stdin
+1 0
+```
+
+```expected hidden
+0
+```
+
+```checks
+must template\s*<[^>]*>\s*using\s+Grid\s*= :: Define Grid as an alias template.
+must Grid\s*<\s*int\s*> :: Use Grid<int>.
+```
+:::
+
 :::exercise Min-max tracker {medium}
 Write a class template `MinMax<T>` that remembers the smallest and largest value it has been given.
 Declare the member functions inside the class but **define them outside** it:
@@ -676,106 +776,6 @@ words: B b
 ```checks
 must MinMax\s*<\s*T\s*>\s*::\s*add :: Define add outside the class as MinMax<T>::add.
 must MinMax\s*<\s*T\s*>\s*::\s*(min|max) :: Define min and max outside the class too.
-```
-:::
-
-:::exercise Grid with an alias template {easy}
-Define an alias template `Grid<T>` for `std::vector<std::vector<T>>` and use it to store a grid of
-integers. Then print the sum of each row.
-
-**Input:** `rows` and `cols`, followed by `rows * cols` integers in row order.
-**Output:** one line per row containing that row's sum. If `rows` is 0, print `no rows`.
-
-```cpp starter
-#include <iostream>
-#include <vector>
-
-// define the alias template Grid here
-
-int main() {
-    int rows, cols;
-    std::cin >> rows >> cols;
-    // create a Grid<int>, read it, print each row's sum
-}
-```
-
-```cpp solution
-#include <iostream>
-#include <vector>
-
-template <typename T>
-using Grid = std::vector<std::vector<T>>;
-
-int main() {
-    int rows, cols;
-    std::cin >> rows >> cols;
-    Grid<int> g(rows, std::vector<int>(cols));
-    for (auto& row : g)
-        for (int& x : row) std::cin >> x;
-
-    if (g.empty()) {
-        std::cout << "no rows\n";
-        return 0;
-    }
-    for (const auto& row : g) {
-        long long sum = 0;
-        for (int x : row) sum += x;
-        std::cout << sum << '\n';
-    }
-}
-```
-
-```hint
-`template <typename T> using Grid = std::vector<std::vector<T>>;`
-```
-
-```hint
-`Grid<int> g(rows, std::vector<int>(cols));` creates `rows` rows, each with `cols` zeros.
-```
-
-```stdin
-2 3
-1 2 3
-4 5 6
-```
-
-```expected
-6
-15
-```
-
-```stdin
-3 1
--5
-0
-5
-```
-
-```expected hidden
--5
-0
-5
-```
-
-```stdin
-0 4
-```
-
-```expected hidden
-no rows
-```
-
-```stdin
-1 0
-```
-
-```expected hidden
-0
-```
-
-```checks
-must template\s*<[^>]*>\s*using\s+Grid\s*= :: Define Grid as an alias template.
-must Grid\s*<\s*int\s*> :: Use Grid<int>.
 ```
 :::
 
