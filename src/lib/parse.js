@@ -287,12 +287,13 @@ export function buildCourse(files) {
       errors.push(...errs.map((e) => `${folder}/${file}: ${e}`));
     }
   }
-  const list = [...modules.values()].sort((a, b) => a.folder.localeCompare(b.folder));
+  const list = [...modules.values()].filter((m) => m.lessons.length).sort((a, b) => a.folder.localeCompare(b.folder));
   list.forEach((mod, mi) => {
-    mod.index = mi + 1;
+    mod.index = Number(mod.folder.match(/^\d+/)?.[0]) || mi + 1;
     mod.lessons.forEach((l, li) => {
       l.index = li + 1;
       l.moduleTitle = mod.title;
+      l.moduleIndex = mod.index;
     });
   });
   const lessons = list.flatMap((mod) => mod.lessons);
