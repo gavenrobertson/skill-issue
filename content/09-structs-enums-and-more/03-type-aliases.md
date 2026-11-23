@@ -321,7 +321,7 @@ Which declarations make `Callback` mean "pointer to a function taking `int` and 
 Both correct forms put the `*` in parentheses. `void *(int)` is a function type returning `void*`.
 :::
 
-:::exercise Row sums
+:::exercise Row sums {easy}
 Define the aliases `using Row = std::vector<int>;` and `using Grid = std::vector<Row>;`. Read a grid
 and print the sum of each row. Write a function `Row rowSums(const Grid& g)` that returns all the sums.
 
@@ -409,6 +409,17 @@ With the aliases, the grid is `Grid g(rows, Row(cols));`.
 15
 ```
 
+```stdin
+2 2
+-1 -2
+-3 -4
+```
+
+```expected hidden
+-3
+-7
+```
+
 ```checks
 must using\s+Row\s*=\s*std::vector\s*<\s*int\s*> :: Define using Row = std::vector<int>;
 must using\s+Grid\s*=\s*std::vector\s*<\s*Row\s*> :: Define using Grid = std::vector<Row>;
@@ -416,7 +427,7 @@ must Row\s+rowSums\s*\(\s*const\s+Grid\s*& :: Write Row rowSums(const Grid& g).
 ```
 :::
 
-:::exercise Big factorial
+:::exercise Big factorial {easy}
 Use the classic `typedef` syntax to define `BigNum` as `unsigned long long`, and write
 `BigNum factorial(int n)`. Read `n` and print `n!`.
 
@@ -486,13 +497,29 @@ the result variable and the return type, or the starter's `int` overflows past `
 2432902008176640000
 ```
 
+```stdin
+13
+```
+
+```expected hidden
+6227020800
+```
+
+```stdin
+1
+```
+
+```expected hidden
+1
+```
+
 ```checks
 must typedef\s+unsigned\s+long\s+long\s+BigNum :: Define the alias with typedef unsigned long long BigNum;
 must BigNum\s+factorial :: Return a BigNum from factorial.
 ```
 :::
 
-:::exercise Transform pipeline
+:::exercise Transform pipeline {medium}
 Define `using Transform = int (*)(int);` and four functions `int(int)`: `twice` (×2), `inc` (+1),
 `square` (x²), and `negate` (−x). Write `Transform lookup(const std::string& name)` that returns the
 function for a name, or `nullptr` for an unknown name.
@@ -590,6 +617,14 @@ int main() {
 
 ```expected hidden
 -18
+```
+
+```stdin
+0 Inc inc inc square negate negate
+```
+
+```expected hidden
+4
 ```
 
 ```checks

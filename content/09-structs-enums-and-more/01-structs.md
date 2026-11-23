@@ -521,7 +521,7 @@ std::cout << c.width << ' ' << c.height << ' ' << c.fullscreen;
 Members not mentioned in the designated initializer keep their default member initializers.
 :::
 
-:::exercise Manhattan distance
+:::exercise Manhattan distance {easy}
 Define `struct Point { int x; int y; };` and a function `int manhattan(const Point& a, const Point& b)`
 that returns `|a.x - b.x| + |a.y - b.y|` (the distance a taxi drives on a grid).
 
@@ -594,13 +594,21 @@ Create the points with `Point p{x1, y1};` and access members with `p.x`, `p.y`.
 30
 ```
 
+```stdin
+7 -3 -2 -3
+```
+
+```expected hidden
+9
+```
+
 ```checks
 must struct\s+Point :: Define struct Point.
 must manhattan\s*\(\s*const\s+Point\s*&\s*\w+\s*,\s*const\s+Point\s*&\s*\w+\s*\) :: Write int manhattan(const Point& a, const Point& b).
 ```
 :::
 
-:::exercise Top student
+:::exercise Top student {medium}
 Define a struct `Student` with a `std::string name` and an `int score`. Read `n` students into a
 `std::vector<Student>`, then print the one with the **highest** score. If several share the highest
 score, print the one that came **first**.
@@ -694,13 +702,34 @@ Dee 85
 Ann 90
 ```
 
+```stdin
+2
+Xavi -5
+Yara -3
+```
+
+```expected hidden
+Yara -3
+```
+
+```stdin
+3
+A 1
+B 2
+C 3
+```
+
+```expected hidden
+C 3
+```
+
 ```checks
 must struct\s+Student :: Define struct Student.
 must std::vector\s*<\s*Student\s*> :: Store the students in a std::vector<Student>.
 ```
 :::
 
-:::exercise Scale a rectangle
+:::exercise Scale a rectangle {easy}
 Define `struct Rect { int width = 0; int height = 0; };` and write `void scale(Rect* r, int factor)`
 that multiplies both dimensions **through the pointer**, using the arrow operator. Also write
 `int area(const Rect& r)`.
@@ -785,6 +814,14 @@ Inside `scale`, `r` is a pointer, so write `r->width *= factor;`.
 0x0 area=0
 ```
 
+```stdin
+2 3 -2
+```
+
+```expected hidden
+-4x-6 area=24
+```
+
 ```checks
 must ->\s*width :: Modify the width through the pointer with r->width.
 must ->\s*height :: Modify the height through the pointer with r->height.
@@ -792,7 +829,7 @@ must int\s+area\s*\(\s*const\s+Rect\s*& :: Write int area(const Rect& r).
 ```
 :::
 
-:::exercise Count matching points
+:::exercise Count matching points {easy}
 Define `struct Point { int x = 0; int y = 0; };` with a **defaulted `operator==`** (C++20). Read a target
 point, then `n` more points, and count how many are equal to the target using `==` on whole `Point`s.
 
@@ -886,8 +923,252 @@ both members.
 3
 ```
 
+```stdin
+2 7
+4
+3 7
+2 6
+7 2
+2 7
+```
+
+```expected hidden
+1
+```
+
 ```checks
 must operator==\s*\([^)]*\)\s*const\s*=\s*default :: Declare bool operator==(const Point&) const = default; in the struct.
 must \w+\s*==\s*target|target\s*==\s*\w+ :: Compare whole points with ==.
+```
+:::
+
+:::exercise League table {hard}
+Build a football league table from match results. Each input line is one match:
+`HomeTeam homeGoals AwayTeam awayGoals`, for example `Lions 3 Tigers 1`. A win is worth 3 points, a draw
+1 point, and a loss 0.
+
+Keep one `Team` struct per team in a `std::vector<Team>`:
+
+```cpp
+struct Team {
+    std::string name;
+    int played = 0;
+    int won = 0;
+    int drawn = 0;
+    int lost = 0;
+    int goalsFor = 0;
+    int goalsAgainst = 0;
+    int points = 0;
+};
+```
+
+Find teams by name with a linear search (add a team the first time it appears). Then sort the table
+yourself (no `std::sort`) with a function `bool ranksHigher(const Team& a, const Team& b)`, using these
+rules in order: more **points**; then better **goal difference** (`goalsFor - goalsAgainst`); then more
+**goals scored**; then **name** in alphabetical order (plain `std::string` comparison).
+
+**Input:** zero or more match lines. Team names are single words (case-sensitive), goals are 0 to 99.
+**Output:** one line per team, best first:
+`<rank>. <name> <played> <won> <drawn> <lost> <goalsFor>:<goalsAgainst> <points>`, with ranks 1, 2, 3, ...
+Nothing at all if there are no matches.
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <vector>
+
+struct Team {
+    std::string name;
+    int played = 0;
+    int won = 0;
+    int drawn = 0;
+    int lost = 0;
+    int goalsFor = 0;
+    int goalsAgainst = 0;
+    int points = 0;
+};
+
+int main() {
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <vector>
+
+struct Team {
+    std::string name;
+    int played = 0;
+    int won = 0;
+    int drawn = 0;
+    int lost = 0;
+    int goalsFor = 0;
+    int goalsAgainst = 0;
+    int points = 0;
+};
+
+// Returns the team's position in the vector, adding the team if it's new.
+std::size_t indexOf(std::vector<Team>& teams, const std::string& name) {
+    for (std::size_t i = 0; i < teams.size(); ++i) {
+        if (teams[i].name == name) {
+            return i;
+        }
+    }
+    Team fresh;
+    fresh.name = name;
+    teams.push_back(fresh);
+    return teams.size() - 1;
+}
+
+void record(Team& team, int scored, int conceded) {
+    ++team.played;
+    team.goalsFor += scored;
+    team.goalsAgainst += conceded;
+    if (scored > conceded) {
+        ++team.won;
+        team.points += 3;
+    } else if (scored == conceded) {
+        ++team.drawn;
+        team.points += 1;
+    } else {
+        ++team.lost;
+    }
+}
+
+bool ranksHigher(const Team& a, const Team& b) {
+    if (a.points != b.points) return a.points > b.points;
+    int diffA = a.goalsFor - a.goalsAgainst;
+    int diffB = b.goalsFor - b.goalsAgainst;
+    if (diffA != diffB) return diffA > diffB;
+    if (a.goalsFor != b.goalsFor) return a.goalsFor > b.goalsFor;
+    return a.name < b.name;
+}
+
+int main() {
+    std::vector<Team> teams;
+    std::string home, away;
+    int homeGoals, awayGoals;
+    while (std::cin >> home >> homeGoals >> away >> awayGoals) {
+        // Look up both indexes first: adding a team may reallocate the vector,
+        // which would leave a reference to an earlier element dangling.
+        std::size_t h = indexOf(teams, home);
+        std::size_t a = indexOf(teams, away);
+        record(teams[h], homeGoals, awayGoals);
+        record(teams[a], awayGoals, homeGoals);
+    }
+
+    // insertion sort with the ranking rules
+    for (std::size_t i = 1; i < teams.size(); ++i) {
+        Team current = teams[i];
+        std::size_t j = i;
+        while (j > 0 && ranksHigher(current, teams[j - 1])) {
+            teams[j] = teams[j - 1];
+            --j;
+        }
+        teams[j] = current;
+    }
+
+    int rank = 1;
+    for (const Team& t : teams) {
+        std::cout << rank << ". " << t.name << ' ' << t.played << ' ' << t.won << ' ' << t.drawn << ' '
+                  << t.lost << ' ' << t.goalsFor << ':' << t.goalsAgainst << ' ' << t.points << '\n';
+        ++rank;
+    }
+}
+```
+
+```hint
+Write a helper that updates one team from one match: `void record(Team& team, int scored, int conceded)`.
+Each match calls it twice, once from each side.
+```
+
+```hint
+Careful with references into the vector: if you take `Team& home = find(...)` and then the lookup of
+the away team adds a new team with `push_back`, the vector may move its elements and `home` dangles.
+Look up both positions (indexes) first, then update.
+```
+
+```hint
+`ranksHigher` compares one rule at a time: `if (a.points != b.points) return a.points > b.points;`, and
+so on down to the name. Then insertion sort: shift teams right while the current team ranks higher
+than the one before it.
+```
+
+```stdin
+Lions 3 Tigers 1
+Bears 2 Lions 2
+Tigers 0 Bears 1
+```
+
+```expected
+1. Lions 2 1 1 0 5:3 4
+2. Bears 2 1 1 0 3:2 4
+3. Tigers 2 0 0 2 1:4 0
+```
+
+```stdin
+A 1 B 1
+C 2 D 2
+```
+
+```expected
+1. C 1 0 1 0 2:2 1
+2. D 1 0 1 0 2:2 1
+3. A 1 0 1 0 1:1 1
+4. B 1 0 1 0 1:1 1
+```
+
+```stdin
+```
+
+```expected hidden
+```
+
+```stdin
+Reds 0 Blues 3
+reds 1 Blues 0
+Greens 2 Reds 2
+Blues 1 Greens 4
+```
+
+```expected hidden
+1. Greens 2 1 1 0 6:3 4
+2. reds 1 1 0 0 1:0 3
+3. Blues 3 1 0 2 4:5 3
+4. Reds 2 0 1 1 2:5 1
+```
+
+```stdin
+Zeta 0 Alpha 0
+Mu 0 Beta 0
+```
+
+```expected hidden
+1. Alpha 1 0 1 0 0:0 1
+2. Beta 1 0 1 0 0:0 1
+3. Mu 1 0 1 0 0:0 1
+4. Zeta 1 0 1 0 0:0 1
+```
+
+```stdin
+X 5 Y 0
+Y 5 Z 0
+Z 5 X 0
+W 1 V 0
+```
+
+```expected hidden
+1. W 1 1 0 0 1:0 3
+2. X 2 1 0 1 5:5 3
+3. Y 2 1 0 1 5:5 3
+4. Z 2 1 0 1 5:5 3
+5. V 1 0 0 1 0:1 0
+```
+
+```checks
+must bool\s+ranksHigher\s*\(\s*const\s+Team\s*&\s*\w+\s*,\s*const\s+Team\s*& :: Write bool ranksHigher(const Team& a, const Team& b).
+must std::vector\s*<\s*Team\s*> :: Keep the teams in a std::vector<Team>.
+mustnot std::sort|std::stable_sort|std::map|std::unordered_map :: Search and sort the vector yourself.
 ```
 :::

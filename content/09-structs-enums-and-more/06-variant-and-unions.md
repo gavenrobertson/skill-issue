@@ -362,7 +362,7 @@ Given `std::variant<int, std::string> v = 10;`, which are true? (select all that
 not return an empty string.
 :::
 
-:::exercise Tagged value
+:::exercise Tagged value {easy}
 Use the tagged-union pattern from the lesson:
 
 ```cpp
@@ -482,6 +482,17 @@ real 0.5
 
 ```
 
+```stdin
+2
+real -1.5
+int 0
+```
+
+```expected hidden
+real -3
+int 0
+```
+
 ```checks
 must union :: Keep the union inside Value.
 must Value::Kind::Real :: Set and check the tag (Value::Kind::Real).
@@ -489,7 +500,7 @@ mustnot std::variant :: Practice the tagged union here, not std::variant.
 ```
 :::
 
-:::exercise Number or word
+:::exercise Number or word {medium}
 Read whitespace-separated tokens until the input ends. Store each in a `std::variant<int, std::string>`:
 an `int` if the token consists only of digits (at most 9 of them), otherwise the `std::string`. Then go
 through the variants and print each one, using `std::holds_alternative` and `std::get`.
@@ -587,6 +598,23 @@ number 0
 word 12a
 ```
 
+```stdin
+```
+
+```expected hidden
+```
+
+```stdin
+000000000 a1 1a 123456789
+```
+
+```expected hidden
+number 0
+word a1
+word 1a
+number 123456789
+```
+
 ```checks
 must std::variant\s*<\s*int\s*,\s*std::string\s*> :: Store tokens as std::variant<int, std::string>.
 must std::holds_alternative\s*<\s*int\s*> :: Check the active type with std::holds_alternative<int>.
@@ -594,7 +622,7 @@ must std::get\s*<\s*int\s*> :: Read the int with std::get<int>.
 ```
 :::
 
-:::exercise Total area with visit
+:::exercise Total area with visit {medium}
 Shapes are stored as `using Shape = std::variant<Circle, Rect, Square>;` (the structs are given). Read
 the shapes, then compute the **total area** with `std::visit` and the `overloaded` helper. Use
 `3.14159265358979` for π.
@@ -741,8 +769,253 @@ rect 0.5 4
 21.63
 ```
 
+```stdin
+3
+square 1.5
+square 1.5
+rect 10 0.1
+```
+
+```expected hidden
+5.50
+```
+
 ```checks
 must std::visit :: Compute the areas with std::visit.
 must overloaded\s*\{ :: Combine the lambdas with the overloaded helper.
+```
+:::
+
+:::exercise RPN calculator {hard}
+In **Reverse Polish Notation** (RPN) the operator comes after its operands, so no parentheses are
+needed: `3 4 +` is 7, and `5 1 2 + 4 * + 3 -` means `5 + (1 + 2) * 4 - 3`, which is 14. It's evaluated
+with a stack: a number is pushed; an operator pops the top two values `b` (top) and `a` (below it),
+and pushes `a op b`.
+
+Each input line is one expression whose tokens are separated by spaces. A token is either an
+**integer** (an optional `-` followed by one or more digits, like `42` or `-7`) or one of the
+**operators** `+ - * /` on its own. Process each line in two steps:
+
+1. **Tokenize** it into a `std::vector<std::variant<long long, char>>`, using a function
+   `std::optional<std::variant<long long, char>> parseToken(std::string_view text)` that returns
+   `std::nullopt` for anything that isn't a valid token.
+2. **Evaluate** the tokens with a `std::vector<long long>` as the stack. Division truncates toward zero,
+   like C++'s `/`.
+
+**Input:** zero or more lines. Numbers have at most 15 digits and no result overflows a `long long`.
+**Output:** one line per input line: the value, or the **first** problem found:
+
+| Output | When |
+| --- | --- |
+| `error: bad token` | some token is invalid (checked for the whole line before evaluating) |
+| `error: stack underflow` | an operator finds fewer than two values on the stack |
+| `error: division by zero` | dividing by 0 |
+| `error: leftover operands` | more than one value is left at the end |
+| `error: empty` | the line has no tokens at all |
+
+```cpp starter
+#include <iostream>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <variant>
+#include <vector>
+
+int main() {
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <variant>
+#include <vector>
+
+using Token = std::variant<long long, char>;
+
+std::optional<Token> parseToken(std::string_view text) {
+    if (text.size() == 1 && (text[0] == '+' || text[0] == '-' || text[0] == '*' || text[0] == '/')) {
+        return Token{text[0]};                      // an operator
+    }
+    std::size_t i = 0;
+    bool negative = false;
+    if (!text.empty() && text[0] == '-') {
+        negative = true;
+        i = 1;
+    }
+    if (i == text.size()) {
+        return std::nullopt;                        // empty, or just a sign
+    }
+    long long value = 0;
+    for (; i < text.size(); ++i) {
+        if (text[i] < '0' || text[i] > '9') {
+            return std::nullopt;
+        }
+        value = value * 10 + (text[i] - '0');
+    }
+    return Token{negative ? -value : value};        // a number
+}
+
+std::vector<std::string_view> splitWords(std::string_view line) {
+    std::vector<std::string_view> words;
+    while (true) {
+        while (!line.empty() && line.front() == ' ') {
+            line.remove_prefix(1);
+        }
+        if (line.empty()) {
+            return words;
+        }
+        std::size_t length = line.find(' ');
+        if (length == std::string_view::npos) {
+            length = line.size();
+        }
+        words.push_back(line.substr(0, length));
+        line.remove_prefix(length);
+    }
+}
+
+std::string evaluate(const std::vector<Token>& tokens) {
+    std::vector<long long> stack;
+    for (const Token& token : tokens) {
+        if (const long long* number = std::get_if<long long>(&token)) {
+            stack.push_back(*number);
+            continue;
+        }
+        char op = std::get<char>(token);
+        if (stack.size() < 2) {
+            return "error: stack underflow";
+        }
+        long long b = stack.back();
+        stack.pop_back();
+        long long a = stack.back();
+        stack.pop_back();
+        if (op == '/' && b == 0) {
+            return "error: division by zero";
+        }
+        switch (op) {
+            case '+': stack.push_back(a + b); break;
+            case '-': stack.push_back(a - b); break;
+            case '*': stack.push_back(a * b); break;
+            default:  stack.push_back(a / b); break;
+        }
+    }
+    if (stack.empty()) {
+        return "error: empty";
+    }
+    if (stack.size() > 1) {
+        return "error: leftover operands";
+    }
+    return std::to_string(stack.back());
+}
+
+int main() {
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        std::vector<Token> tokens;
+        bool valid = true;
+        for (std::string_view word : splitWords(line)) {
+            if (auto token = parseToken(word)) {
+                tokens.push_back(*token);
+            } else {
+                valid = false;
+            }
+        }
+        std::cout << (valid ? evaluate(tokens) : "error: bad token") << '\n';
+    }
+}
+```
+
+```hint
+A token is an operator only if it is exactly one character long and that character is `+`, `-`, `*` or
+`/`. So `-` is an operator, but `-5` is a number, and `5-`, `+5` and `--5` are bad tokens.
+```
+
+```hint
+While evaluating, `std::get_if<long long>(&token)` gives a pointer to the number, or `nullptr` if the
+token holds an operator (then `std::get<char>(token)` is the operator). Pop `b` **first**: for `10 3 -`
+the answer is `10 - 3`, not `3 - 10`.
+```
+
+```hint
+Splitting a line into words: skip spaces with `remove_prefix`, then take everything up to the next space
+(or the end) as a `std::string_view`, as in the string_view lesson.
+```
+
+```stdin
+3 4 +
+5 1 2 + 4 * + 3 -
+2 3 4 * +
+```
+
+```expected
+7
+14
+14
+```
+
+```stdin
+1 +
+4 0 /
+1 2 3 +
+```
+
+```expected
+error: stack underflow
+error: division by zero
+error: leftover operands
+```
+
+```stdin
+-7 2 /
+7 -2 /
+-3 -4 *
+10 3 - 2 -
+```
+
+```expected hidden
+-3
+-3
+12
+5
+```
+
+```stdin
+
+3 x +
+1 2 ^
+-
+42
+--5 3 +
+```
+
+```expected hidden
+error: empty
+error: bad token
+error: bad token
+error: stack underflow
+42
+error: bad token
+```
+
+```stdin
++ 1 2 q
+1000000000 1000000000 * 1000000000 /
+0 5 /
+  6   2 / 3 /
+```
+
+```expected hidden
+error: bad token
+1000000000
+0
+1
+```
+
+```checks
+must std::variant\s*<\s*long\s+long\s*,\s*char\s*> :: Store each token as a std::variant<long long, char>.
+must std::optional :: Return std::optional from parseToken.
+must get_if|holds_alternative|std::visit :: Check which alternative a token holds.
 ```
 :::

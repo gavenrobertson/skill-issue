@@ -800,3 +800,176 @@ v now has 0 elements
 must \[\s*\w+\s*=\s*std::move\s*\(\s*v\s*\) :: Move the vector into the lambda with an init-capture: [data = std::move(v)].
 ```
 :::
+
+:::exercise Rate limiter {hard}
+A web service allows each user at most `LIMIT` requests in any window of `W` time units. A request at
+time `t` is **accepted** if the user had fewer than `LIMIT` accepted requests at times in
+`(t - W, t]` (strictly after `t - W`); otherwise it's **rejected**, and a rejected request doesn't count.
+
+Write a factory that returns a limiter as a **stateful lambda**:
+
+```cpp
+auto make_limiter(int limit, long long window) {
+    return [/* captures */](long long t) mutable -> bool { ... };   // true = accepted
+}
+```
+
+All of the limiter's state (the times of recently accepted requests, e.g. in a `std::deque<long long>`)
+must live **inside** the lambda, created with init-captures. Each user gets their **own copy** of a
+limiter, so their states are independent.
+
+**Input:** `LIMIT W` on the first line, then lines `t user` with non-decreasing times, until the
+input ends.
+**Output:** one line per request: `t user ok` or `t user rejected`.
+
+Example with `LIMIT = 2`, `W = 10`: `ann` at times `1`, `5`, `9`, `11` gives `ok`, `ok`, `rejected`,
+`ok` (at time `11` the window is `(1, 11]`, which holds only the request at `5`).
+
+```cpp starter
+#include <deque>
+#include <iostream>
+#include <map>
+#include <string>
+
+int main() {
+    int limit;
+    long long window;
+    std::cin >> limit >> window;
+    long long t;
+    std::string user;
+    while (std::cin >> t >> user) {
+        std::cout << t << ' ' << user << " ok\n";
+    }
+}
+```
+
+```cpp solution
+#include <deque>
+#include <iostream>
+#include <map>
+#include <string>
+
+auto make_limiter(int limit, long long window) {
+    return [limit, window, accepted = std::deque<long long>{}](long long t) mutable -> bool {
+        while (!accepted.empty() && accepted.front() <= t - window) accepted.pop_front();
+        if (static_cast<int>(accepted.size()) >= limit) return false;
+        accepted.push_back(t);
+        return true;
+    };
+}
+
+int main() {
+    int limit;
+    long long window;
+    std::cin >> limit >> window;
+
+    using Limiter = decltype(make_limiter(limit, window));
+    std::map<std::string, Limiter> limiters;
+
+    long long t;
+    std::string user;
+    while (std::cin >> t >> user) {
+        // A capturing lambda has no default constructor, so limiters[user] doesn't compile.
+        auto it = limiters.find(user);
+        if (it == limiters.end()) it = limiters.emplace(user, make_limiter(limit, window)).first;
+        std::cout << t << ' ' << user << (it->second(t) ? " ok" : " rejected") << '\n';
+    }
+}
+```
+
+```hint
+Capture the settings by value and create the deque with an init-capture:
+`[limit, window, accepted = std::deque<long long>{}](long long t) mutable -> bool { ... }`.
+Without `mutable` the lambda can't modify its own deque.
+```
+
+```hint
+On each call, first drop old times from the front: while `accepted.front() <= t - window`, pop it.
+Then accept only if fewer than `limit` remain.
+```
+
+```hint
+To keep one limiter per user, store them in a `std::map<std::string, decltype(make_limiter(limit, window))>`.
+`map[user]` needs a default constructor, which a capturing lambda doesn't have: use `find` and
+`emplace` (or `try_emplace`) instead.
+```
+
+```stdin
+2 10
+1 ann
+5 ann
+9 ann
+11 ann
+```
+
+```expected
+1 ann ok
+5 ann ok
+9 ann rejected
+11 ann ok
+```
+
+```stdin
+1 5
+0 ann
+0 bob
+3 ann
+5 ann
+5 bob
+9 bob
+```
+
+```expected
+0 ann ok
+0 bob ok
+3 ann rejected
+5 ann ok
+5 bob ok
+9 bob rejected
+```
+
+```stdin
+3 1
+7 x
+7 x
+7 x
+7 x
+8 x
+8 y
+```
+
+```expected hidden
+7 x ok
+7 x ok
+7 x ok
+7 x rejected
+8 x ok
+8 y ok
+```
+
+```stdin
+2 100
+-50 a
+-50 a
+49 a
+50 a
+51 a
+150 a
+151 a
+```
+
+```expected hidden
+-50 a ok
+-50 a ok
+49 a rejected
+50 a ok
+51 a ok
+150 a ok
+151 a ok
+```
+
+```checks
+must \bmutable\b :: The limiter lambda must be mutable so it can update its own state.
+must \[[^\]]*\w+\s*=\s*std::(deque|queue|vector|list) :: Create the limiter's container with an init-capture.
+```
+:::

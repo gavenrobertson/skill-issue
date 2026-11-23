@@ -325,7 +325,7 @@ You can't take the address of a bit-field, and bit-field layout is implementatio
 they're unsuitable for byte-exact file formats.
 :::
 
-:::exercise Reorder for size
+:::exercise Reorder for size {easy}
 The `Record` struct in the starter wastes space on padding. **Reorder its members** (don't remove,
 rename, or change their types) so that `sizeof(Record)` is as small as possible: 16 bytes on this
 compiler. Don't use packing pragmas or attributes.
@@ -397,6 +397,14 @@ Put the members with the biggest alignment first: `double`, then `int`, then the
 0 records = 0 bytes
 ```
 
+```stdin
+1000000000
+```
+
+```expected hidden
+1000000000 records = 16000000000 bytes
+```
+
 ```checks
 must double\s+value\s*; :: Keep the member double value.
 must int\s+id\s*; :: Keep the member int id.
@@ -406,7 +414,7 @@ mustnot pragma|packed|alignas :: Reorder the members instead of packing them.
 ```
 :::
 
-:::exercise Packed date
+:::exercise Packed date {easy}
 Define a `Date` struct using **bit-fields**: `day` (5 bits), `month` (4 bits), and `year` (12 bits), all
 `unsigned`. Read a date, store it in a `Date`, and print it together with the struct's size.
 
@@ -494,7 +502,7 @@ must year\s*:\s*12\s*; :: Declare year as a 12-bit field.
 ```
 :::
 
-:::exercise Layout calculator
+:::exercise Layout calculator {hard}
 Simulate the compiler's layout rules. Read a list of member types and compute the size of a struct with
 those members **in that order**, plus how many of its bytes are padding.
 
@@ -621,6 +629,33 @@ char double char int
 
 ```expected hidden
 size=24 padding=10
+```
+
+```stdin
+2
+short char
+```
+
+```expected hidden
+size=4 padding=1
+```
+
+```stdin
+3
+char char char
+```
+
+```expected hidden
+size=3 padding=0
+```
+
+```stdin
+5
+int char char short double
+```
+
+```expected hidden
+size=16 padding=0
 ```
 
 ```checks

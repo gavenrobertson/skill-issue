@@ -396,7 +396,7 @@ Why is it often better to leave out `default:` when switching over an `enum clas
 `-Wswitch` (part of `-Wall`) reports unhandled enumerators, but only if there's no `default:` to catch them.
 :::
 
-:::exercise Traffic light
+:::exercise Traffic light {easy}
 Define `enum class Light { Red, Yellow, Green };`. Read the current light as a word and print the
 **next** one in the cycle Red → Green → Yellow → Red.
 
@@ -492,7 +492,7 @@ must case\s+Light::\w+ :: Switch over the enumerators (case Light::Red: ...).
 ```
 :::
 
-:::exercise Weekday or weekend
+:::exercise Weekday or weekend {easy}
 Define `enum class Weekday { Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday };`.
 Read a number, check that it's between 0 and 6, convert it to a `Weekday` with `static_cast`, and
 print the day's name and whether it's a weekday or the weekend.
@@ -600,7 +600,7 @@ must static_cast\s*<\s*Weekday\s*> :: Convert the number with static_cast<Weekda
 ```
 :::
 
-:::exercise HTTP status names
+:::exercise HTTP status names {easy}
 Define a scoped enum with **explicit values** and the underlying type `int`:
 
 ```cpp
@@ -691,6 +691,22 @@ Put `using enum HttpStatus;` as the first line inside `switch (s) { ... }`.
 302 Unknown
 ```
 
+```stdin
+400
+```
+
+```expected hidden
+400 BadRequest
+```
+
+```stdin
+-200
+```
+
+```expected hidden
+-200 Unknown
+```
+
 ```checks
 must enum\s+class\s+HttpStatus\s*:\s*int :: Declare enum class HttpStatus : int.
 must using\s+enum\s+HttpStatus :: Use using enum HttpStatus; in the switch.
@@ -698,7 +714,7 @@ must Ok\s*=\s*200 :: Give the enumerators explicit values (Ok = 200, ...).
 ```
 :::
 
-:::exercise Permission string
+:::exercise Permission string {medium}
 Unix file permissions are stored as bits: read = 4, write = 2, execute = 1. A digit like `5` (4 + 1)
 means read and execute. Define:
 
@@ -780,9 +796,199 @@ rwx
 -w-
 ```
 
+```stdin
+6
+```
+
+```expected hidden
+rw-
+```
+
+```stdin
+1
+```
+
+```expected hidden
+--x
+```
+
 ```checks
 must enum\s+class\s+Permission\s*:\s*unsigned\s+char :: Keep enum class Permission : unsigned char.
 must has\s*\(\s*\w+\s*,\s*Permission::Read\s*\) :: Check each permission with has(bits, Permission::Read) and friends.
 must static_cast :: Convert the enumerator to a number with static_cast.
+```
+:::
+
+:::exercise Robot walk {hard}
+A robot starts at `(0, 0)` facing **North** on an endless grid (`x` grows to the East, `y` to the North).
+It reads whitespace-separated commands until the input ends:
+
+| Command | Effect |
+| --- | --- |
+| `L` | turn 90° left (North → West → South → East → North) |
+| `R` | turn 90° right (North → East → South → West → North) |
+| `F n` | move `n` steps forward in the direction it's facing |
+| `B n` | move `n` steps backward, without turning |
+
+Model the direction as `enum class Direction { North, East, South, West };`. Write
+`Direction turnRight(Direction d)` and `Direction turnLeft(Direction d)` using `static_cast` and the
+remainder operator, and `std::string_view name(Direction d)` using a `switch`. Track the position and
+also the **farthest** Manhattan distance (`|x| + |y|`) from the origin that the robot ever reached.
+
+**Input:** zero or more commands; each `n` is between 0 and 10^9, and there are at most 1000 commands
+(so use `long long` for coordinates).
+**Output:** two lines: `position <x> <y> facing <Direction>` and `farthest <distance>`.
+
+Example: `F 2 R F 3 L L F 1` ends at `2 2` facing `West`, and the farthest point was `(3, 2)`, at
+distance 5.
+
+```cpp starter
+#include <iostream>
+
+enum class Direction { North, East, South, West };
+
+int main() {
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <string_view>
+
+enum class Direction { North, East, South, West };
+
+Direction turnRight(Direction d) {
+    return static_cast<Direction>((static_cast<int>(d) + 1) % 4);
+}
+
+Direction turnLeft(Direction d) {
+    return static_cast<Direction>((static_cast<int>(d) + 3) % 4);   // +3 is -1, without going negative
+}
+
+std::string_view name(Direction d) {
+    switch (d) {
+        case Direction::North: return "North";
+        case Direction::East:  return "East";
+        case Direction::South: return "South";
+        case Direction::West:  return "West";
+    }
+    return "?";
+}
+
+long long absolute(long long v) {
+    return v < 0 ? -v : v;
+}
+
+int main() {
+    Direction facing = Direction::North;
+    long long x = 0;
+    long long y = 0;
+    long long farthest = 0;
+
+    std::string command;
+    while (std::cin >> command) {
+        if (command == "L") {
+            facing = turnLeft(facing);
+        } else if (command == "R") {
+            facing = turnRight(facing);
+        } else {
+            long long steps;
+            std::cin >> steps;
+            if (command == "B") {
+                steps = -steps;
+            }
+            switch (facing) {
+                case Direction::North: y += steps; break;
+                case Direction::East:  x += steps; break;
+                case Direction::South: y -= steps; break;
+                case Direction::West:  x -= steps; break;
+            }
+            // the distance along a straight move is largest at one of its ends
+            long long distance = absolute(x) + absolute(y);
+            if (distance > farthest) {
+                farthest = distance;
+            }
+        }
+    }
+    std::cout << "position " << x << ' ' << y << " facing " << name(facing) << '\n';
+    std::cout << "farthest " << farthest << '\n';
+}
+```
+
+```hint
+The enumerators are 0, 1, 2, 3 in clockwise order, so turning right is "add 1, wrap around with `% 4`".
+Turning left is "subtract 1", but `-1 % 4` is `-1` in C++: add 3 instead.
+```
+
+```hint
+Moving backward is moving forward by `-n`. A `switch` over the direction decides whether to change `x`
+or `y`, and with which sign.
+```
+
+```hint
+Since the robot moves in straight lines, the farthest point of any move is its start or its end, so
+checking the distance after every move is enough. `2 * 10^9` doesn't fit in an `int`.
+```
+
+```stdin
+F 2 R F 3 L L F 1
+```
+
+```expected
+position 2 2 facing West
+farthest 5
+```
+
+```stdin
+L F 5 B 2 R R R
+```
+
+```expected
+position -3 0 facing South
+farthest 5
+```
+
+```stdin
+```
+
+```expected hidden
+position 0 0 facing North
+farthest 0
+```
+
+```stdin
+L L L L L F 0
+```
+
+```expected hidden
+position 0 0 facing West
+farthest 0
+```
+
+```stdin
+F 1000000000 R F 1000000000 R F 1000000000 R F 1000000000 R F 1000000000
+```
+
+```expected hidden
+position 0 1000000000 facing North
+farthest 2000000000
+```
+
+```stdin
+R B 7 L B 3
+```
+
+```expected hidden
+position -7 -3 facing North
+farthest 10
+```
+
+```checks
+must enum\s+class\s+Direction :: Use enum class Direction.
+must Direction\s+turnLeft\s*\(\s*Direction :: Write Direction turnLeft(Direction d).
+must Direction\s+turnRight\s*\(\s*Direction :: Write Direction turnRight(Direction d).
+must static_cast\s*<\s*Direction\s*> :: Convert back to the enum with static_cast<Direction>.
+must switch\s*\( :: Use a switch over the direction.
 ```
 :::

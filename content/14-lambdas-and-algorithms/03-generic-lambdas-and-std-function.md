@@ -694,3 +694,202 @@ mustnot \b(for|while)\s*\( :: Use recursion, not a loop.
 mustnot \bgoto\b :: Use recursion, not goto.
 ```
 :::
+
+:::exercise Function pipeline {hard}
+Build a processing pipeline out of small functions at run time. The input first describes the steps,
+one per line, until a line `run`:
+
+| Step | Function applied to `x` |
+| --- | --- |
+| `add K` | `x + K` |
+| `mul K` | `x * K` |
+| `neg` | `-x` |
+| `clamp LO HI` | `x` limited to `[LO, HI]` |
+| `repeat N` | replaces the **last** step with that step applied `N` times in a row (`N >= 1`; ignored if there are no steps) |
+| `undo` | removes the last step (ignored if there are none) |
+
+Store the steps in a `std::vector<std::function<long long(long long)>>`, creating each one with a
+lambda that captures its parameters **by value**. `repeat` must wrap the previous step in a new lambda
+(it captures the old `std::function` and `N`), so that `undo` later removes the whole repeated step.
+
+After `run` come `q` and then `q` numbers. Push each number through all the steps, in order.
+
+**Output:** `steps: S` (the number of steps in the vector), then one result per number.
+
+Example: `add 1`, `mul 3`, `repeat 2`, `run`, then `1` and `2`: the steps are "add 1" and "multiply by
+3 twice", so `1` gives `(1 + 1) * 9 = 18` and `2` gives `27`.
+
+All intermediate values fit in a `long long`.
+
+```cpp starter
+#include <functional>
+#include <iostream>
+#include <string>
+#include <vector>
+
+int main() {
+    std::vector<std::function<long long(long long)>> steps;
+    std::string cmd;
+    while (std::cin >> cmd && cmd != "run") {
+        // build the steps
+    }
+    int q;
+    std::cin >> q;
+    std::cout << "steps: " << steps.size() << '\n';
+    for (int i = 0; i < q; ++i) {
+        long long x;
+        std::cin >> x;
+        std::cout << x << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+using Step = std::function<long long(long long)>;
+
+int main() {
+    std::vector<Step> steps;
+    std::string cmd;
+    while (std::cin >> cmd && cmd != "run") {
+        if (cmd == "add") {
+            long long k;
+            std::cin >> k;
+            steps.push_back([k](long long x) { return x + k; });
+        } else if (cmd == "mul") {
+            long long k;
+            std::cin >> k;
+            steps.push_back([k](long long x) { return x * k; });
+        } else if (cmd == "neg") {
+            steps.push_back([](long long x) { return -x; });
+        } else if (cmd == "clamp") {
+            long long lo, hi;
+            std::cin >> lo >> hi;
+            steps.push_back([lo, hi](long long x) { return std::clamp(x, lo, hi); });
+        } else if (cmd == "repeat") {
+            int n;
+            std::cin >> n;
+            if (steps.empty()) continue;
+            Step last = std::move(steps.back());
+            steps.back() = [last, n](long long x) {
+                for (int i = 0; i < n; ++i) x = last(x);
+                return x;
+            };
+        } else if (cmd == "undo") {
+            if (!steps.empty()) steps.pop_back();
+        }
+    }
+
+    int q;
+    std::cin >> q;
+    std::cout << "steps: " << steps.size() << '\n';
+    for (int i = 0; i < q; ++i) {
+        long long x;
+        std::cin >> x;
+        for (const auto& step : steps) x = step(x);
+        std::cout << x << '\n';
+    }
+}
+```
+
+```hint
+Every step is a different lambda type, but they all fit into `std::function<long long(long long)>`.
+Capture the step's parameters by value: `[k](long long x) { return x + k; }`.
+```
+
+```hint
+For `repeat`, take the old step out of the vector (`Step last = steps.back();`) and put a new lambda in
+its place that captures `last` and `n` and calls `last` `n` times. Don't capture `steps.back()` by
+reference: the vector may reallocate, and you are about to overwrite that element anyway.
+```
+
+```hint
+`repeat` can be applied to a step that is itself a repeat: `mul 2`, `repeat 3`, `repeat 2` multiplies by
+`2` six times.
+```
+
+```stdin
+add 1
+mul 3
+repeat 2
+run
+2
+1 2
+```
+
+```expected
+steps: 2
+18
+27
+```
+
+```stdin
+undo
+repeat 5
+run
+3
+0 -7 42
+```
+
+```expected
+steps: 0
+0
+-7
+42
+```
+
+```stdin
+mul 2
+repeat 3
+repeat 2
+add -100
+clamp -10 10
+neg
+run
+4
+1 2 0 -1
+```
+
+```expected hidden
+steps: 4
+10
+-10
+10
+10
+```
+
+```stdin
+add 5
+neg
+undo
+undo
+undo
+add 2
+mul 10
+undo
+repeat 4
+clamp 0 5
+run
+3
+-20 1 100
+```
+
+```expected hidden
+steps: 2
+0
+5
+5
+```
+
+```checks
+must std::function :: Store the steps as std::function objects.
+must std::vector\s*<\s*(std::function|Step|\w+) :: Keep the steps in a std::vector.
+must \[\s*\w+\s*,\s*\w+\s*\]|\[\s*=\s*\] :: Capture the old step (and N) by value for repeat.
+```
+:::

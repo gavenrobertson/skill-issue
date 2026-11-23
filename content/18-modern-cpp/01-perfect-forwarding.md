@@ -414,7 +414,7 @@ Inside `template <typename T> void w(T&& arg)`, why is `std::move(arg)` worse th
 `std::move` casts unconditionally. `std::forward<T>` casts to an rvalue only when the original argument was an rvalue.
 :::
 
-:::exercise Relay the category
+:::exercise Relay the category {easy}
 Three overloads of `describe` print the value category they receive. Write the function template
 `relay(T&& x)` so that it **perfectly forwards** `x` to `describe`.
 
@@ -508,7 +508,7 @@ must std::forward\s*<\s*T\s*>\s*\(\s*x\s*\) :: Forward with std::forward<T>(x).
 ```
 :::
 
-:::exercise Build your own make_unique
+:::exercise Build your own make_unique {medium}
 Implement
 
 ```cpp
@@ -619,6 +619,17 @@ solo#1 solo!#2 solo#3
 copies: 1, moves: 2
 ```
 
+```stdin
+a b c
+```
+
+```expected hidden
+a#1 a!#2 a#3
+b#1 b!#2 b#3
+c#1 c!#2 c#3
+copies: 3, moves: 6
+```
+
 ```expected
 copies: 0, moves: 0
 ```
@@ -629,7 +640,7 @@ mustnot make_unique :: Implement it yourself instead of calling std::make_unique
 ```
 :::
 
-:::exercise Count the copies
+:::exercise Count the copies {medium}
 `Widget` counts its copies and moves. Implement the two helpers:
 
 - `addItem(v, item)`: a function template taking a **forwarding reference** that forwards `item` to
@@ -763,6 +774,19 @@ copy z
 ```expected hidden
 widgets: x y z z
 copies: 2, moves: 0
+```
+
+```stdin
+move a
+move b
+copy c
+emplace d
+move e
+```
+
+```expected hidden
+widgets: a b c d e
+copies: 1, moves: 3
 ```
 
 ```stdin

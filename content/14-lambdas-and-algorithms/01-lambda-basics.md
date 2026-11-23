@@ -575,3 +575,277 @@ must count_if :: Use std::count_if.
 must \[\s*\]\s*\( :: Pass a lambda as the predicate.
 ```
 :::
+
+:::exercise Sort by digit sum {medium}
+Sort integers by the **sum of their digits** (of the absolute value: `-19` has digit sum `10`), smallest
+digit sum first. Numbers with the same digit sum are ordered by their **value**, ascending, so the
+order is completely determined.
+
+Pass the rule to `std::sort` as a lambda comparator. You may write a small helper (a function, or a
+lambda the comparator can see) that computes the digit sum.
+
+**Input:** `n`, then `n` integers (each between `-10^9` and `10^9`).
+**Output:** the sorted numbers on one line, separated by single spaces.
+
+Example: `19 -19 5 100 23` sorts to `100 5 23 -19 19` (digit sums 1, 5, 5, 10, 10).
+
+```cpp starter
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> v(n);
+    for (int& x : v) std::cin >> x;
+
+    std::sort(v.begin(), v.end());
+
+    for (std::size_t i = 0; i < v.size(); ++i) {
+        if (i > 0) std::cout << ' ';
+        std::cout << v[i];
+    }
+    std::cout << '\n';
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int digitSum(int x) {
+    if (x < 0) x = -x;
+    int sum = 0;
+    for (; x > 0; x /= 10) sum += x % 10;
+    return sum;
+}
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> v(n);
+    for (int& x : v) std::cin >> x;
+
+    std::sort(v.begin(), v.end(), [](int a, int b) {
+        int da = digitSum(a), db = digitSum(b);
+        if (da != db) return da < db;
+        return a < b;                     // tie: by value
+    });
+
+    for (std::size_t i = 0; i < v.size(); ++i) {
+        if (i > 0) std::cout << ' ';
+        std::cout << v[i];
+    }
+    std::cout << '\n';
+}
+```
+
+```hint
+The comparator answers "must `a` come before `b`?": compare the digit sums first, and only when they
+are equal, compare the values. Never return `<=`.
+```
+
+```hint
+For the digit sum, make the number non-negative, then repeatedly add `x % 10` and divide by 10. A plain
+function is visible inside a lambda without capturing anything.
+```
+
+```stdin
+5
+19 -19 5 100 23
+```
+
+```expected
+100 5 23 -19 19
+```
+
+```stdin
+1
+0
+```
+
+```expected
+0
+```
+
+```stdin
+6
+1000000000 -1 10 -10 1 0
+```
+
+```expected hidden
+0 -10 -1 1 10 1000000000
+```
+
+```stdin
+5
+99 -99 18 -999 9
+```
+
+```expected hidden
+9 18 -99 99 -999
+```
+
+```checks
+must std::sort|std::ranges::sort :: Sort with std::sort.
+must sort\s*\([^;]*\[\s*\]\s*\( :: Pass a lambda as the comparator.
+```
+:::
+
+:::exercise Bisection solver {hard}
+The **bisection method** finds a root of a continuous function `f` (an `x` with `f(x) == 0`) inside an
+interval `[lo, hi]` where `f(lo)` and `f(hi)` have **opposite signs**: look at the midpoint, keep the
+half whose endpoints still have opposite signs, and repeat until the interval is tiny.
+
+Write **one** generic solver that takes the function as a parameter, so any lambda can be passed in:
+
+```cpp
+template <typename F>
+double bisect(F f, double lo, double hi);   // or: double bisect(auto f, double lo, double hi)
+```
+
+Then solve for these functions, each written as a lambda:
+
+| Name | f(x) |
+| --- | --- |
+| `sqrt2` | `x * x - 2` |
+| `cubic` | `x * x * x - x - 1` |
+| `cosine` | `std::cos(x) - x` |
+| `cube8` | `x * x * x - 8` |
+
+**Input:** lines `NAME LO HI` with `LO < HI`, until the input ends.
+**Output:** per line, the root with exactly 6 digits after the decimal point (`std::fixed`,
+`std::setprecision(6)`), found by bisecting until the interval is shorter than `1e-9` (or for a fixed
+100 steps). Special cases, checked in this order:
+
+- if `f(LO) == 0` print `LO`, and if `f(HI) == 0` print `HI` (also with 6 decimals),
+- if `f(LO)` and `f(HI)` have the **same** sign, print `no sign change`.
+
+```cpp starter
+#include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string name;
+    double lo, hi;
+    std::cout << std::fixed << std::setprecision(6);
+    while (std::cin >> name >> lo >> hi) {
+        std::cout << "no sign change\n";
+    }
+}
+```
+
+```cpp solution
+#include <cmath>
+#include <iomanip>
+#include <iostream>
+#include <string>
+
+template <typename F>
+void solve(F f, double lo, double hi) {
+    double flo = f(lo), fhi = f(hi);
+    if (flo == 0) {
+        std::cout << lo << '\n';
+        return;
+    }
+    if (fhi == 0) {
+        std::cout << hi << '\n';
+        return;
+    }
+    if ((flo < 0) == (fhi < 0)) {
+        std::cout << "no sign change\n";
+        return;
+    }
+    for (int step = 0; step < 100; ++step) {
+        double mid = lo + (hi - lo) / 2;
+        double fmid = f(mid);
+        if (fmid == 0) {
+            lo = hi = mid;
+            break;
+        }
+        if ((fmid < 0) == (flo < 0)) {   // the sign change is in the right half
+            lo = mid;
+            flo = fmid;
+        } else {
+            hi = mid;
+        }
+    }
+    std::cout << lo + (hi - lo) / 2 << '\n';
+}
+
+int main() {
+    std::string name;
+    double lo, hi;
+    std::cout << std::fixed << std::setprecision(6);
+    while (std::cin >> name >> lo >> hi) {
+        if (name == "sqrt2") solve([](double x) { return x * x - 2; }, lo, hi);
+        else if (name == "cubic") solve([](double x) { return x * x * x - x - 1; }, lo, hi);
+        else if (name == "cosine") solve([](double x) { return std::cos(x) - x; }, lo, hi);
+        else solve([](double x) { return x * x * x - 8; }, lo, hi);
+    }
+}
+```
+
+```hint
+Every lambda has its own type, so the solver must be a template (or take an `auto` parameter). The
+call site then reads naturally: `solve([](double x) { return x * x - 2; }, lo, hi);`.
+```
+
+```hint
+Compare **signs**, not products: `(f(a) < 0) == (f(b) < 0)` means "same sign" (for non-zero values).
+At each step, compute the midpoint and replace whichever endpoint has the same sign as `f(mid)`.
+```
+
+```hint
+Handle the special cases before the loop: an exact zero at an endpoint, then "no sign change".
+```
+
+```stdin
+sqrt2 0 2
+cubic 1 2
+cosine 0 1
+```
+
+```expected
+1.414214
+1.324718
+0.739085
+```
+
+```stdin
+sqrt2 2 3
+cube8 2 5
+cube8 -5 2
+```
+
+```expected
+no sign change
+2.000000
+2.000000
+```
+
+```stdin
+sqrt2 -2 0
+sqrt2 -1 1
+cubic -10 10
+cube8 0 10
+cosine -3.5 0.5
+```
+
+```expected hidden
+-1.414214
+no sign change
+1.324718
+2.000000
+no sign change
+```
+
+```checks
+must template\s*<\s*typename|\(\s*auto\s+\w+\s*,|\(\s*auto&*\s+\w+ :: Write the solver as a template (or with an auto parameter).
+must \[\s*\]\s*\(\s*double :: Pass the functions as lambdas.
+```
+:::

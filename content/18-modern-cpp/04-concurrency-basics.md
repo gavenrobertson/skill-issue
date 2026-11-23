@@ -456,7 +456,7 @@ You need to lock two mutexes at once without risking deadlock. What should you u
 `std::scoped_lock` acquires all its mutexes with a deadlock-avoidance algorithm and releases them via RAII.
 :::
 
-:::exercise Parallel sum
+:::exercise Parallel sum {easy}
 Read `n` and then `n` integers. Split the numbers into **4 contiguous chunks** (chunk `i` covers
 indices `i*n/4` up to, but not including, `(i+1)*n/4`) and sum each chunk in its own `std::thread`,
 writing the result into `partial[i]`. Join all threads, then print each partial sum and the total:
@@ -553,6 +553,32 @@ total: 60
 ```
 
 ```stdin
+5
+1 2 3 4 5
+```
+
+```expected hidden
+chunk 0: 1
+chunk 1: 2
+chunk 2: 3
+chunk 3: 9
+total: 15
+```
+
+```stdin
+6
+-1000000000000 1 2 3 4 1000000000000
+```
+
+```expected hidden
+chunk 0: -1000000000000
+chunk 1: 3
+chunk 2: 3
+chunk 3: 1000000000004
+total: 10
+```
+
+```stdin
 0
 ```
 
@@ -570,7 +596,7 @@ must \.join\s*\(\s*\) :: Join the threads before printing.
 ```
 :::
 
-:::exercise Shared counter
+:::exercise Shared counter {easy}
 Read `k` (number of threads, 1 to 16) and `m` (increments per thread). Start `k` threads that each
 increment one **shared** counter `m` times, join them, and print `count = <k*m>`.
 
@@ -636,6 +662,14 @@ count = 160000
 ```
 
 ```stdin
+1 1
+```
+
+```expected hidden
+count = 1
+```
+
+```stdin
 3 0
 ```
 
@@ -649,7 +683,7 @@ must std::atomic|std::mutex :: Protect the counter with std::atomic or std::mute
 ```
 :::
 
-:::exercise Primes in parallel
+:::exercise Primes in parallel {medium}
 Read ranges `a b` (inclusive, 0 ≤ a ≤ b ≤ 200000) until the end of input. Count the primes in **each
 range in its own task** using `std::async(std::launch::async, ...)`, storing the futures in a vector.
 After launching all the tasks, collect the results with `.get()` in input order and print:
@@ -745,6 +779,21 @@ total: 33
 total: 17985
 ```
 
+```stdin
+5 5
+4 4
+100 1000
+199990 200000
+```
+
+```expected hidden
+[5, 5]: 1 primes
+[4, 4]: 0 primes
+[100, 1000]: 143 primes
+[199990, 200000]: 1 primes
+total: 145
+```
+
 ```expected
 total: 0
 ```
@@ -756,7 +805,7 @@ must \.get\s*\(\s*\) :: Collect results with .get().
 ```
 :::
 
-:::exercise Word counts with jthreads
+:::exercise Word counts with jthreads {medium}
 Read lines until the end of input. Process **each line in its own `std::jthread`**: split it into words
 and add each word's count into one shared `std::map<std::string, int>`, protected by a `std::mutex`
 (use `std::lock_guard` or `std::scoped_lock`).
@@ -856,6 +905,25 @@ b
 a: 3
 b: 1
 lines: 3
+```
+
+```stdin
+x y z
+z y
+z
+
+  spaced   out  
+X
+```
+
+```expected hidden
+X: 1
+out: 1
+spaced: 1
+x: 1
+y: 2
+z: 3
+lines: 6
 ```
 
 ```expected

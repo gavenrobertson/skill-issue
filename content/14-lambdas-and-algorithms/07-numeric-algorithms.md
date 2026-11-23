@@ -657,3 +657,167 @@ must std::lcm :: Use std::lcm.
 must accumulate|reduce :: Fold the list with std::accumulate.
 ```
 :::
+
+:::exercise Sum of fractions {hard}
+Add up a list of fractions **exactly** and print the result in lowest terms.
+
+Represent a fraction as `struct Fraction { long long num, den; };` and fold the list with
+`std::accumulate`, starting from `Fraction{0, 1}`, with a lambda that adds two fractions. Keep every
+intermediate result **normalized**:
+
+- the denominator is positive (move the sign to the numerator: `3/-6` is `-3/6`),
+- numerator and denominator have no common factor (`std::gcd`), and zero is `0/1`.
+
+To keep the numbers small, add over the least common multiple of the denominators (`std::lcm`)
+instead of simply multiplying them.
+
+**Input:** `n` (`n >= 0`), then `n` fractions written `a/b` with `b != 0` (either may be negative).
+**Output:** the sum in lowest terms as `p/q`, or just `p` when the denominator is `1`.
+
+Example: `1/2 1/3 1/6` sums to `1`, and `1/4 1/4 -1/3` sums to `1/6`.
+
+Every normalized partial sum fits in a `long long`.
+
+```cpp starter
+#include <iostream>
+#include <numeric>
+#include <vector>
+
+struct Fraction {
+    long long num, den;
+};
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<Fraction> fs(n);
+    for (auto& f : fs) {
+        char slash;
+        std::cin >> f.num >> slash >> f.den;
+    }
+    std::cout << 0 << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <numeric>
+#include <vector>
+
+struct Fraction {
+    long long num, den;
+};
+
+Fraction normalize(Fraction f) {
+    if (f.den < 0) {
+        f.num = -f.num;
+        f.den = -f.den;
+    }
+    long long g = std::gcd(f.num, f.den);   // gcd(0, d) == d, so 0/d becomes 0/1
+    return {f.num / g, f.den / g};
+}
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<Fraction> fs(n);
+    for (auto& f : fs) {
+        char slash;
+        std::cin >> f.num >> slash >> f.den;
+    }
+
+    Fraction sum = std::accumulate(fs.begin(), fs.end(), Fraction{0, 1}, [](Fraction acc, Fraction f) {
+        f = normalize(f);
+        long long l = std::lcm(acc.den, f.den);
+        return normalize({acc.num * (l / acc.den) + f.num * (l / f.den), l});
+    });
+
+    std::cout << sum.num;
+    if (sum.den != 1) std::cout << '/' << sum.den;
+    std::cout << '\n';
+}
+```
+
+```hint
+Read a fraction with `std::cin >> f.num >> slash >> f.den;` where `slash` is a `char` that swallows
+the `/`.
+```
+
+```hint
+Write `Fraction normalize(Fraction f)`: flip both signs if the denominator is negative, then divide both
+parts by `std::gcd(f.num, f.den)`. Since `std::gcd(0, d)` is `d`, zero comes out as `0/1` by itself.
+```
+
+```hint
+`a/b + c/d` over `l = std::lcm(b, d)` is `(a * (l / b) + c * (l / d)) / l`. Normalize the inputs too:
+`std::lcm` of a negative denominator would work, but the sign rules get confusing.
+```
+
+```stdin
+3
+1/2 1/3 1/6
+```
+
+```expected
+1
+```
+
+```stdin
+3
+1/4 1/4 -1/3
+```
+
+```expected
+1/6
+```
+
+```stdin
+0
+```
+
+```expected hidden
+0
+```
+
+```stdin
+2
+3/-6 1/2
+```
+
+```expected hidden
+0
+```
+
+```stdin
+1
+-4/-6
+```
+
+```expected hidden
+2/3
+```
+
+```stdin
+4
+1/1000000000 1/1000000000 999999998/1000000000 -7/3
+```
+
+```expected hidden
+-4/3
+```
+
+```stdin
+3
+0/5 -10/4 0/-3
+```
+
+```expected hidden
+-5/2
+```
+
+```checks
+must accumulate|reduce :: Fold the fractions with std::accumulate.
+must std::gcd :: Reduce with std::gcd.
+must std::lcm :: Add over the least common multiple with std::lcm.
+```
+:::

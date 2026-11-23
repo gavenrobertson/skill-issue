@@ -313,7 +313,7 @@ value itself.
 `std::nullopt` are always safe.
 :::
 
-:::exercise Find the index
+:::exercise Find the index {easy}
 Write `std::optional<std::size_t> findIndex(const std::vector<int>& v, int target)` that returns the
 index of the **first** element equal to `target`, or `std::nullopt` if there is none.
 
@@ -420,13 +420,23 @@ not found
 found at 1
 ```
 
+```stdin
+4
+9 1 2 9
+9
+```
+
+```expected hidden
+found at 0
+```
+
 ```checks
 must std::optional\s*<\s*(std::)?size_t\s*>\s+findIndex :: Return std::optional<std::size_t> from findIndex.
 must std::nullopt|return\s*\{\s*\}\s*; :: Return std::nullopt when the target isn't found.
 ```
 :::
 
-:::exercise Phone book
+:::exercise Phone book {easy}
 Read `n` entries of `name number`, then `q` queries (names). Write
 `std::optional<std::string> lookup(const std::vector<Entry>& book, const std::string& name)`, where
 `Entry` is a struct with `name` and `number` strings. For each query, print the number, or `unknown` if
@@ -539,13 +549,26 @@ x
 x: 1
 ```
 
+```stdin
+1
+Ada 555-1
+2
+ada
+Ada
+```
+
+```expected hidden
+ada: unknown
+Ada: 555-1
+```
+
 ```checks
 must std::optional\s*<\s*std::string\s*>\s+lookup :: Return std::optional<std::string> from lookup.
 must value_or\s*\( :: Print the result with value_or.
 ```
 :::
 
-:::exercise Safe division chain
+:::exercise Safe division chain {medium}
 Write `std::optional<int> safeDivide(int a, int b)` that returns `a / b`, or `std::nullopt` when `b` is 0.
 Read `a`, `b`, and `c` and compute `(a / b) / c` using `safeDivide` twice. If either division fails,
 print `error`.
@@ -626,13 +649,29 @@ error
 6
 ```
 
+```stdin
+3 5 2
+```
+
+```expected hidden
+0
+```
+
+```stdin
+0 7 0
+```
+
+```expected hidden
+error
+```
+
 ```checks
 must std::optional\s*<\s*int\s*>\s+safeDivide :: Write std::optional<int> safeDivide(int a, int b).
 must std::nullopt :: Return std::nullopt for division by zero.
 ```
 :::
 
-:::exercise Parse the numbers
+:::exercise Parse the numbers {hard}
 Write `std::optional<int> parseInt(const std::string& s)` that accepts an optional leading `-` followed
 by **one or more digits** and nothing else, and returns the number; anything else returns `std::nullopt`.
 (Inputs are at most 9 digits long, so the result fits in an `int`.)
@@ -737,6 +776,14 @@ sum=0 invalid=0
 
 ```expected hidden
 sum=999999998 invalid=2
+```
+
+```stdin
+1-2 5- -7 0 12.5 x9
+```
+
+```expected hidden
+sum=-7 invalid=4
 ```
 
 ```checks

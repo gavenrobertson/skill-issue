@@ -683,3 +683,175 @@ abc ab
 must mismatch :: Use std::mismatch.
 ```
 :::
+
+:::exercise Password checker {hard}
+Check passwords against a policy. Each rule has a name; a password passes if it breaks none of them:
+
+| Rule | The password must... |
+| --- | --- |
+| `length` | have at least 8 characters |
+| `digit` | contain a digit |
+| `upper` | contain an uppercase letter |
+| `lower` | contain a lowercase letter |
+| `symbol` | contain a character that is neither a letter nor a digit |
+| `repeat` | **not** contain the same character 3 or more times in a row (`aaa`) |
+| `user` | **not** contain the username, ignoring upper/lower case |
+
+Use the algorithms from this lesson (`std::any_of`, `std::none_of`, `std::all_of`, `std::equal`, ...)
+with lambdas rather than hand-written flag loops. For the character tests use `<cctype>`
+(`std::isdigit`, `std::isupper`, `std::islower`, `std::isalnum`), passing the `char` converted to
+`unsigned char`.
+
+**Input:** the username on the first line, then one password per line (no spaces) until the input
+ends. The username has at least one character.
+**Output:** per password, `ok`, or `fail:` followed by the broken rules in the table's order,
+separated by `, ` (for example `fail: digit, symbol`).
+
+```cpp starter
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string user, pw;
+    std::cin >> user;
+    while (std::cin >> pw) {
+        std::cout << "ok\n";
+    }
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <iostream>
+#include <string>
+#include <vector>
+
+bool containsIgnoreCase(const std::string& text, const std::string& word) {
+    auto same = [](char a, char b) {
+        return std::tolower(static_cast<unsigned char>(a)) == std::tolower(static_cast<unsigned char>(b));
+    };
+    for (std::size_t i = 0; i + word.size() <= text.size(); ++i) {
+        if (std::equal(word.begin(), word.end(), text.begin() + static_cast<std::ptrdiff_t>(i), same)) return true;
+    }
+    return false;
+}
+
+bool hasTriple(const std::string& s) {
+    for (std::size_t i = 0; i + 2 < s.size(); ++i)
+        if (s[i] == s[i + 1] && s[i + 1] == s[i + 2]) return true;
+    return false;
+}
+
+int main() {
+    std::string user, pw;
+    std::cin >> user;
+    auto has = [](const std::string& s, int (*test)(int)) {
+        return std::any_of(s.begin(), s.end(), [test](char c) { return test(static_cast<unsigned char>(c)) != 0; });
+    };
+    while (std::cin >> pw) {
+        std::vector<std::string> broken;
+        if (pw.size() < 8) broken.push_back("length");
+        if (!has(pw, [](int c) { return std::isdigit(c); })) broken.push_back("digit");
+        if (!has(pw, [](int c) { return std::isupper(c); })) broken.push_back("upper");
+        if (!has(pw, [](int c) { return std::islower(c); })) broken.push_back("lower");
+        if (std::all_of(pw.begin(), pw.end(), [](char c) { return std::isalnum(static_cast<unsigned char>(c)) != 0; }))
+            broken.push_back("symbol");
+        if (hasTriple(pw)) broken.push_back("repeat");
+        if (containsIgnoreCase(pw, user)) broken.push_back("user");
+
+        if (broken.empty()) {
+            std::cout << "ok\n";
+            continue;
+        }
+        std::cout << "fail: ";
+        for (std::size_t i = 0; i < broken.size(); ++i) std::cout << (i ? ", " : "") << broken[i];
+        std::cout << '\n';
+    }
+}
+```
+
+```hint
+`std::any_of(pw.begin(), pw.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)); })`
+answers "contains a digit". "Contains a symbol" is "not all characters are alphanumeric".
+```
+
+```hint
+Collect the names of the broken rules in a `std::vector<std::string>` as you test them in order, then
+print `ok` if it's empty, or join it with `, `.
+```
+
+```hint
+For the case-insensitive search, try every start position `i` where the username still fits and
+compare with `std::equal(user.begin(), user.end(), pw.begin() + i, pred)`, where `pred` compares the
+two characters after `std::tolower`.
+```
+
+```stdin
+ada
+Secur3!pass
+password
+ADAlovelace1!
+```
+
+```expected
+ok
+fail: digit, upper, symbol
+fail: user
+```
+
+```stdin
+bob
+aaa
+Abc!1234
+xX9#bbbx
+```
+
+```expected
+fail: length, digit, upper, symbol, repeat
+ok
+fail: repeat
+```
+
+```stdin
+kim
+Kim!12345
+1!Aa1!Aa
+!!!!!!!!
+abcdefgH9
+aa1!AAbb
+MyKIm#2024
+```
+
+```expected hidden
+fail: user
+ok
+fail: digit, upper, lower, repeat
+fail: symbol
+ok
+fail: user
+```
+
+```stdin
+x
+ABCDEFG!1
+abcdefg!1
+Q1!q1!Q1!
+XyZ!1abc
+```
+
+```expected hidden
+fail: lower
+fail: upper
+ok
+fail: user
+```
+
+```checks
+must any_of|all_of|none_of :: Use std::any_of / std::all_of / std::none_of with lambdas.
+must std::is(digit|upper|lower|alnum|alpha) :: Classify characters with <cctype>.
+```
+:::

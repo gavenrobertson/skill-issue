@@ -428,7 +428,7 @@ c += 5;
 `c += 5` makes `p.first` 6.
 :::
 
-:::exercise Min and max pair
+:::exercise Min and max pair {easy}
 Write `std::pair<int, int> minMax(const std::vector<int>& v)` that returns the smallest and largest
 element. In `main`, unpack the result with a **structured binding**.
 
@@ -512,13 +512,22 @@ min 7 max 7
 min -1 max -1
 ```
 
+```stdin
+4
+10 3 -8 2
+```
+
+```expected hidden
+min -8 max 10
+```
+
 ```checks
 must std::pair\s*<\s*int\s*,\s*int\s*>\s+minMax :: Return std::pair<int, int> from minMax.
 must auto\s*&?\s*\[\s*\w+\s*,\s*\w+\s*\]\s*=\s*minMax :: Unpack the result with auto [lo, hi] = minMax(v);
 ```
 :::
 
-:::exercise Stats with a tuple
+:::exercise Stats with a tuple {medium}
 Write `std::tuple<int, int, double> stats(const std::vector<int>& v)` that returns the **sum**, the
 **maximum**, and the **average** of the values. In `main`, unpack the result into three variables you
 declared beforehand, using `std::tie`.
@@ -610,13 +619,31 @@ sum=-6 max=-6 avg=-6
 sum=-18 max=-3 avg=-6
 ```
 
+```stdin
+2
+-2 -3
+```
+
+```expected hidden
+sum=-5 max=-2 avg=-2.5
+```
+
+```stdin
+3
+1 2 2
+```
+
+```expected hidden
+sum=5 max=2 avg=1.66667
+```
+
 ```checks
 must std::tuple\s*<\s*int\s*,\s*int\s*,\s*double\s*>\s+stats :: Return std::tuple<int, int, double> from stats.
 must std::tie\s*\( :: Unpack the result with std::tie.
 ```
 :::
 
-:::exercise Word frequencies
+:::exercise Word frequencies {easy}
 Read words until the input ends and count how often each one appears, using a
 `std::map<std::string, int>`. Print the words in alphabetical order (the map does that for you), iterating
 with a structured binding: `for (const auto& [word, count] : counts)`.
@@ -690,12 +717,18 @@ a 1
 b 2
 ```
 
+```stdin
+```
+
+```expected hidden
+```
+
 ```checks
 must for\s*\(\s*const\s+auto\s*&\s*\[\s*\w+\s*,\s*\w+\s*\]\s*: :: Iterate with for (const auto& [word, count] : counts).
 ```
 :::
 
-:::exercise Golf leaderboard
+:::exercise Golf leaderboard {medium}
 In golf, the **lowest** score wins. Read players into a `std::vector<std::pair<int, std::string>>`
 (score first, then name), sort it with `std::sort` (pairs sort by score, then by name for ties), and
 print the leaderboard.
@@ -795,6 +828,19 @@ Bea 71
 2. Ana (71)
 3. Bea (71)
 4. Max (71)
+```
+
+```stdin
+3
+Amy -2
+Bo 0
+Cy -5
+```
+
+```expected hidden
+1. Cy (-5)
+2. Amy (-2)
+3. Bo (0)
 ```
 
 ```checks

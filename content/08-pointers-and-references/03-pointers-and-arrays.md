@@ -713,7 +713,7 @@ int main() {
 
     int* newEnd = removeDuplicates(values, values + n);
     std::cout << newEnd - values << ':';
-    for (const int* p = values; p != newEnd; ++p) {
+    for (int* p = values; p != newEnd; ++p) {
         std::cout << ' ' << *p;
     }
     std::cout << '\n';

@@ -478,7 +478,7 @@ It's a C++23 sum type: a value on success, an error object on failure. `std::opt
 "value or nothing" type.
 :::
 
-:::exercise Span statistics
+:::exercise Span statistics {easy}
 Write `void stats(std::span<const int> values)` that prints `min=<min> max=<max> sum=<sum>` (one line)
 for a non-empty span, or `empty` for an empty one.
 
@@ -567,6 +567,28 @@ min=42 max=42 sum=42
 ```
 
 ```stdin
+4
+2147483647 2147483647 -2147483648 -2147483648
+```
+
+```expected hidden
+min=-2147483648 max=2147483647 sum=-2
+min=2147483647 max=2147483647 sum=4294967294
+min=-2147483648 max=-2147483648 sum=-4294967296
+```
+
+```stdin
+2
+5 -5
+```
+
+```expected hidden
+min=-5 max=5 sum=0
+min=5 max=5 sum=5
+min=-5 max=-5 sum=-5
+```
+
+```stdin
 0
 ```
 
@@ -583,7 +605,7 @@ must \.(subspan|last)\s*\( :: Use .subspan() or .last() for the rest.
 ```
 :::
 
-:::exercise Server options
+:::exercise Server options {easy}
 The `ServerOptions` struct has defaults for every member. Read lines of `key value` pairs, where the key
 is `port`, `threads`, or `name` (each appears at most once, in any order, and any may be missing). Build
 **one** `ServerOptions` using a designated initializer for `port` and `threads` (passing the value read,
@@ -668,6 +690,16 @@ name api
 name=api port=8080 threads=1 verbose=0
 ```
 
+```stdin
+name db
+port 1
+threads 0
+```
+
+```expected hidden
+name=db port=1 threads=0 verbose=0
+```
+
 ```expected
 name=server port=8080 threads=4 verbose=0
 ```
@@ -677,7 +709,7 @@ must \{\s*\.name\s*=|\{\s*\.port\s*=|\{\s*\.threads\s*= :: Construct ServerOptio
 ```
 :::
 
-:::exercise Version sorter
+:::exercise Version sorter {medium}
 A version is three integers `major.minor.patch`. Write `struct Version` with a **defaulted `<=>`**, read
 versions (like `1.10.0`) until the end of input, sort them, and print them in ascending order, one per
 line, using `std::format("{}.{}.{}", ...)`. Then print `latest: <max version>` (or `latest: none` if there
@@ -771,6 +803,25 @@ latest: 1.10.0
 latest: 2.0.0
 ```
 
+```stdin
+10.0.0
+9.9.9
+1.0.10
+1.0.9
+1.0.0
+0.0.1
+```
+
+```expected hidden
+0.0.1
+1.0.0
+1.0.9
+1.0.10
+9.9.9
+10.0.0
+latest: 10.0.0
+```
+
 ```expected
 latest: none
 ```
@@ -781,7 +832,7 @@ must std::format :: Print with std::format.
 ```
 :::
 
-:::exercise Filter by prefix
+:::exercise Filter by prefix {medium}
 The first input word is a prefix; the rest are words. Store the words in a `std::vector<std::string>`
 and:
 
@@ -867,6 +918,17 @@ alpha beta
 
 removed: 2
 duplicates: 0
+```
+
+```stdin
+ab
+ab abc a abd ab ba ab
+```
+
+```expected hidden
+ab abc abd ab ab
+removed: 2
+duplicates: 2
 ```
 
 ```stdin

@@ -788,3 +788,157 @@ must upper_bound :: Use std::upper_bound.
 must std::sort|std::ranges::sort :: Sort the numbers first.
 ```
 :::
+
+:::exercise Meeting rooms {hard}
+`n` meetings are given as half-open intervals `[start, end)`: a meeting ending at `10` and one
+starting at `10` can use the same room. Find the **minimum number of rooms** needed so that no two
+overlapping meetings share a room, and the **earliest time** at which that many meetings are running
+at once.
+
+The minimum number of rooms equals the largest number of meetings in progress at the same moment. A
+neat O(n log n) way to find it: sort all start times, sort all end times, and sweep through both
+sorted lists like a merge. When a start and an end happen at the same time, process the **end first**
+(that room is free again).
+
+**Input:** `n` (`n >= 1`), then `n` lines `start end` with `start < end` (integers, possibly negative).
+**Output:** `rooms: R`, then `busiest: T`, where `T` is the earliest time at which `R` meetings are in
+progress.
+
+Example: `[1, 5)`, `[2, 6)`, `[5, 8)` need 2 rooms; two meetings first run at once at time `2`.
+
+```cpp starter
+#include <algorithm>
+#include <iostream>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> starts(n), ends(n);
+    for (int i = 0; i < n; ++i) std::cin >> starts[i] >> ends[i];
+    std::cout << "rooms: " << n << "\nbusiest: " << starts[0] << '\n';
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <cstddef>
+#include <iostream>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> starts(n), ends(n);
+    for (int i = 0; i < n; ++i) std::cin >> starts[i] >> ends[i];
+
+    std::sort(starts.begin(), starts.end());
+    std::sort(ends.begin(), ends.end());
+
+    int running = 0, best = 0, bestTime = starts[0];
+    std::size_t e = 0;
+    for (int s : starts) {
+        // free every room whose meeting ended at or before this start
+        while (e < ends.size() && ends[e] <= s) {
+            --running;
+            ++e;
+        }
+        ++running;
+        if (running > best) {        // strictly greater: keep the EARLIEST time
+            best = running;
+            bestTime = s;
+        }
+    }
+    std::cout << "rooms: " << best << "\nbusiest: " << bestTime << '\n';
+}
+```
+
+```hint
+Sort `starts` and `ends` separately; you no longer need to know which end belongs to which start.
+For each start in order, first release all meetings whose end is `<=` that start, then count the new
+meeting.
+```
+
+```hint
+The count only goes up at a start time, so the busiest moment is always some start time. Update the
+answer only when the count becomes **strictly** larger, so you keep the earliest such time.
+```
+
+```stdin
+3
+1 5
+2 6
+5 8
+```
+
+```expected
+rooms: 2
+busiest: 2
+```
+
+```stdin
+4
+0 10
+10 20
+20 30
+30 40
+```
+
+```expected
+rooms: 1
+busiest: 0
+```
+
+```stdin
+5
+6 9
+1 10
+2 3
+3 4
+2 7
+```
+
+```expected hidden
+rooms: 3
+busiest: 2
+```
+
+```stdin
+3
+4 5
+4 5
+4 5
+```
+
+```expected hidden
+rooms: 3
+busiest: 4
+```
+
+```stdin
+4
+-10 -1
+-5 0
+-1 3
+-3 2
+```
+
+```expected hidden
+rooms: 3
+busiest: -3
+```
+
+```stdin
+1
+7 8
+```
+
+```expected hidden
+rooms: 1
+busiest: 7
+```
+
+```checks
+must std::sort|std::ranges::sort :: Sort the times.
+```
+:::

@@ -381,7 +381,7 @@ int len(const T& x) {
 must compile for every `T`.
 :::
 
-:::exercise Compile-time factorial
+:::exercise Compile-time factorial {easy}
 Write `constexpr unsigned long long factorial(int n)` (with `factorial(0) == 1`). Prove it works with
 at least one `static_assert` (e.g. `factorial(5) == 120`), and make a compile-time constant
 `constexpr auto f20 = factorial(20);`.
@@ -452,6 +452,17 @@ max: 2432902008176640000
 max: 2432902008176640000
 ```
 
+```stdin
+19 2 3
+```
+
+```expected hidden
+19! = 121645100408832000
+2! = 2
+3! = 6
+max: 2432902008176640000
+```
+
 ```expected
 max: 2432902008176640000
 ```
@@ -463,7 +474,7 @@ must constexpr\s+(auto|unsigned\s+long\s+long)\s+f20 :: Define the constexpr con
 ```
 :::
 
-:::exercise Prime lookup table
+:::exercise Prime lookup table {medium}
 Build a table of the first 100 prime numbers **at compile time**: write a `constexpr` function that
 returns a `std::array<int, 100>` and store its result in a `constexpr` variable. Add `static_assert`s
 checking that the first prime is `2` and the 100th is `541`.
@@ -551,6 +562,16 @@ prime #100 = 541
 prime #50 = 229
 ```
 
+```stdin
+99 26 2147483647
+```
+
+```expected hidden
+prime #99 = 523
+prime #26 = 101
+#2147483647 is out of range
+```
+
 ```checks
 must constexpr\s+std::array\s*<\s*int\s*,\s*100\s*> :: Write a constexpr function returning std::array<int, 100>.
 must constexpr\s+(auto|std::array\s*<[^>]*>)\s+\w+\s*=\s*\w+\s*\( :: Store the table in a constexpr variable.
@@ -558,7 +579,7 @@ must static_assert :: Check the table with static_assert.
 ```
 :::
 
-:::exercise One function, many types
+:::exercise One function, many types {medium}
 Write a function template `void show(const T& value)` that uses `if constexpr` to print:
 
 | Type | Output |
@@ -670,12 +691,24 @@ string: "x" (1 chars)
 vector of 0: []
 ```
 
+```stdin
+2147483647 -2.5 a'b 1
+-1
+```
+
+```expected hidden
+int: 2147483647
+double: -2.50
+string: "a'b" (3 chars)
+vector of 1: [-1]
+```
+
 ```checks
 must if\s+constexpr :: Use if constexpr to choose the branch.
 ```
 :::
 
-:::exercise Switch on strings
+:::exercise Switch on strings {medium}
 C++ can't `switch` on a `std::string`, but it can switch on a **hash** of one, if the `case` labels are
 compile-time constants. Using the FNV-1a hash below:
 
@@ -806,6 +839,27 @@ print
 total = 0
 unknown command: jump
 total = -8
+```
+
+```stdin
+Add 5
+add 3
+prints
+print
+neg
+neg
+mul 0
+print
+sub -7
+print
+```
+
+```expected hidden
+unknown command: Add
+unknown command: prints
+total = 3
+total = 0
+total = 7
 ```
 
 ```checks

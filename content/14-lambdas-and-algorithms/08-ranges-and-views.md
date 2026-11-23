@@ -818,3 +818,169 @@ must views::keys :: Use std::views::keys.
 must views::filter :: Use std::views::filter.
 ```
 :::
+
+:::exercise Group top-k report {hard}
+Students belong to groups and have scores. Answer queries "who are the top `k` students of group `G`?"
+**Without writing a single raw loop over the students** (range-for over a view is fine):
+
+1. Once, sort all students by score, **highest first**, keeping input order for equal scores:
+   `std::ranges::stable_sort` with a comparator and a **projection**.
+2. For each query, build a view: `std::views::filter` (only group `G`) piped into `std::views::take(k)`.
+3. Also report how many of the group's students passed (score `>= 50`) with `std::ranges::count_if`
+   and a projection or lambda.
+
+**Input:** `n`, then `n` lines `name group score`; then `q`, then `q` lines `group k` (`k >= 1`).
+**Output:** per query, one line: `G (P passed):` followed by ` name=score` for each of the top `k`
+students in order, where `P` is the number of students of group `G` with score `>= 50`. A group with
+no students prints `G: none`.
+
+Example: students `ann a 70`, `bob b 90`, `cy a 40`, `dee a 70` and query `a 2` print
+`a (2 passed): ann=70 dee=70` (ann before dee: same score, input order).
+
+```cpp starter
+#include <algorithm>
+#include <iostream>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Student {
+    std::string name;
+    std::string group;
+    int score;
+};
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<Student> students(n);
+    for (auto& s : students) std::cin >> s.name >> s.group >> s.score;
+    int q;
+    std::cin >> q;
+    for (int i = 0; i < q; ++i) {
+        std::string g;
+        int k;
+        std::cin >> g >> k;
+        std::cout << g << ": none\n";
+    }
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <ranges>
+#include <string>
+#include <vector>
+
+struct Student {
+    std::string name;
+    std::string group;
+    int score;
+};
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<Student> students(n);
+    for (auto& s : students) std::cin >> s.name >> s.group >> s.score;
+
+    std::ranges::stable_sort(students, std::ranges::greater{}, &Student::score);
+
+    int q;
+    std::cin >> q;
+    for (int i = 0; i < q; ++i) {
+        std::string g;
+        int k;
+        std::cin >> g >> k;
+        auto inGroup = [&g](const Student& s) { return s.group == g; };
+
+        auto members = students | std::views::filter(inGroup);
+        if (members.begin() == members.end()) {
+            std::cout << g << ": none\n";
+            continue;
+        }
+        auto passed = std::ranges::count_if(members, [](int score) { return score >= 50; }, &Student::score);
+        std::cout << g << " (" << passed << " passed):";
+        for (const Student& s : members | std::views::take(k)) std::cout << ' ' << s.name << '=' << s.score;
+        std::cout << '\n';
+    }
+}
+```
+
+```hint
+`std::ranges::stable_sort(students, std::ranges::greater{}, &Student::score);` sorts by score,
+highest first, and `stable_sort` keeps equal scores in input order.
+```
+
+```hint
+The filter lambda needs the query's group: capture it, `[&g](const Student& s) { return s.group == g; }`.
+A filtered view has no `.size()` or `.empty()`; compare `begin()` with `end()` to detect "no students".
+```
+
+```hint
+Ranges algorithms accept views, so `std::ranges::count_if(members, pred, &Student::score)` counts with a
+projection: `pred` receives the score.
+```
+
+```stdin
+4
+ann a 70
+bob b 90
+cy a 40
+dee a 70
+3
+a 2
+b 5
+c 1
+```
+
+```expected
+a (2 passed): ann=70 dee=70
+b (1 passed): bob=90
+c: none
+```
+
+```stdin
+6
+p x 50
+q x 49
+r x 100
+s y 0
+t x 50
+u x 100
+4
+x 3
+x 10
+y 1
+X 1
+```
+
+```expected hidden
+x (4 passed): r=100 u=100 p=50
+x (4 passed): r=100 u=100 p=50 t=50 q=49
+y (0 passed): s=0
+X: none
+```
+
+```stdin
+1
+solo g -5
+2
+g 1
+g 3
+```
+
+```expected hidden
+g (0 passed): solo=-5
+g (0 passed): solo=-5
+```
+
+```checks
+must ranges::stable_sort :: Sort once with std::ranges::stable_sort.
+must views::filter :: Select the group with std::views::filter.
+must views::take :: Limit the output with std::views::take.
+must ranges::count_if :: Count the passing students with std::ranges::count_if.
+```
+:::

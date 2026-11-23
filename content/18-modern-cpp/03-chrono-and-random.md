@@ -398,7 +398,7 @@ Modulo bias plus an unspecified, often weak generator. Use an engine like `std::
 `std::uniform_int_distribution<int>(1, 6)`.
 :::
 
-:::exercise Split a duration
+:::exercise Split a duration {easy}
 Read a number of seconds (a non-negative integer that fits in `long long`) into a
 `std::chrono::seconds`. Using `std::chrono::duration_cast`, print three lines:
 
@@ -481,13 +481,33 @@ minutes (rounded down): 5999
 milliseconds: 359999000
 ```
 
+```stdin
+3599
+```
+
+```expected hidden
+0h 59m 59s
+minutes (rounded down): 59
+milliseconds: 3599000
+```
+
+```stdin
+86400
+```
+
+```expected hidden
+24h 0m 0s
+minutes (rounded down): 1440
+milliseconds: 86400000
+```
+
 ```checks
 must duration_cast :: Use std::chrono::duration_cast.
 must (std::)?chrono::|using\s+namespace\s+std::chrono :: Use the std::chrono types.
 ```
 :::
 
-:::exercise Time budget
+:::exercise Time budget {medium}
 Read duration tokens until the end of input. Each token is a non-negative integer followed by a unit:
 `h`, `min`, `s`, or `ms` (for example `2h`, `15min`, `90s`, `500ms`). Add them all up as a
 `std::chrono::milliseconds` and print the total as `HH:MM:SS.mmm` (hours with at least two digits,
@@ -575,6 +595,25 @@ bad token: 45
 26:00:01.000
 ```
 
+```stdin
+ms -5s 1H 0h 59min 60s 1000ms 999ms 1ms
+```
+
+```expected hidden
+bad token: ms
+bad token: -5s
+bad token: 1H
+01:00:02.000
+```
+
+```stdin
+100h 0ms
+```
+
+```expected hidden
+100:00:00.000
+```
+
 ```expected
 00:00:00.000
 ```
@@ -585,7 +624,7 @@ must milliseconds :: Accumulate the total as std::chrono::milliseconds.
 ```
 :::
 
-:::exercise Mersenne Twister by the numbers
+:::exercise Mersenne Twister by the numbers {easy}
 Read a seed (an unsigned 32-bit integer) and a position `k` (1 ≤ k ≤ 1,000,000). Create a
 `std::mt19937` with that seed and print:
 
@@ -652,13 +691,22 @@ first: 1608637542 3421126067 4083286876
 #1: 1608637542
 ```
 
+```stdin
+0 2
+```
+
+```expected hidden
+first: 2357136044 2546248239 3071714933
+#2: 2546248239
+```
+
 ```checks
 must std::mt19937\b :: Use std::mt19937.
 must \.discard\s*\( :: Skip ahead with .discard().
 ```
 :::
 
-:::exercise Reproducible rolls
+:::exercise Reproducible rolls {easy}
 Write `int rollDie(std::mt19937& gen)` that returns a fair die roll (1 to 6) using
 `std::uniform_int_distribution<int>`.
 

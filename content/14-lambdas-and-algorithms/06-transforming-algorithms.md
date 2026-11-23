@@ -806,3 +806,120 @@ must std::replace|std::ranges::replace :: Use std::replace.
 must std::rotate|std::ranges::rotate :: Use std::rotate.
 ```
 :::
+
+:::exercise Normalize text {hard}
+Before comparing or indexing text, programs often **normalize** it. Normalize each input line like
+this, using the algorithms from this lesson for each step:
+
+1. Lowercase every letter (`std::transform` with `std::tolower`).
+2. Replace every character that is not a letter or digit with a space (`std::replace_if`).
+3. Collapse every run of spaces into a single space (`std::unique` with a **binary predicate**
+   "both are spaces", followed by `erase`).
+4. Remove a leading and a trailing space, if present.
+
+If nothing is left, print `(empty)`.
+
+**Input:** any number of lines (they may contain spaces and punctuation, and may be empty).
+**Output:** one normalized line per input line.
+
+Example: `  Hello,   World!! C++20  ` becomes `hello world c 20`.
+
+```cpp starter
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        std::cout << line << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <cctype>
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        std::transform(line.begin(), line.end(), line.begin(),
+                       [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+        std::replace_if(line.begin(), line.end(),
+                        [](unsigned char c) { return !std::isalnum(c); }, ' ');
+        line.erase(std::unique(line.begin(), line.end(),
+                               [](char a, char b) { return a == ' ' && b == ' '; }),
+                   line.end());
+        if (!line.empty() && line.front() == ' ') line.erase(line.begin());
+        if (!line.empty() && line.back() == ' ') line.pop_back();
+
+        std::cout << (line.empty() ? "(empty)" : line) << '\n';
+    }
+}
+```
+
+```hint
+`std::unique` with a binary predicate removes an element when `pred(previous, current)` is true. With
+`[](char a, char b) { return a == ' ' && b == ' '; }` only repeated **spaces** are collapsed, while
+repeated letters like `ll` stay.
+```
+
+```hint
+After collapsing, there is at most one space at each end. Check `line.empty()` before looking at
+`front()` or `back()`: an input line of only punctuation becomes a single space, then nothing.
+```
+
+```hint
+Pass characters to `<cctype>` functions as `unsigned char` (a lambda parameter of type
+`unsigned char` does the conversion).
+```
+
+```stdin
+  Hello,   World!! C++20
+Keep   ll and 00 intact...
+```
+
+```expected
+hello world c 20
+keep ll and 00 intact
+```
+
+```stdin
+!!!
+
+single
+a-b_c.d
+	tabs	and	TABS
+```
+
+```expected hidden
+(empty)
+(empty)
+single
+a b c d
+tabs and tabs
+```
+
+```stdin
+   x
+--a--b--
+A . B
+```
+
+```expected hidden
+x
+a b
+a b
+```
+
+```checks
+must std::transform|std::ranges::transform :: Lowercase with std::transform.
+must replace_if :: Replace the punctuation with std::replace_if.
+must unique\s*\([^;]*\[ :: Collapse the spaces with std::unique and a lambda predicate.
+must \.erase\s*\( :: Erase the leftover tail after std::unique.
+```
+:::
