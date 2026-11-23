@@ -93,12 +93,17 @@ for (const lesson of course.lessons) {
       const r = run(c.bin, '');
       if (r.timedOut) problems.push(`${where}: timed out (examples must finish without input)`);
       else if (r.signal) warnings.push(`${where}: crashed with ${r.signal}`);
+      else if (ex.output != null && normalizeOutput(r.stdout) !== normalizeOutput(ex.output))
+        problems.push(`${where}: output fence does not match the real output\n  fence:\n${indent(normalizeOutput(ex.output))}\n  real:\n${indent(normalizeOutput(r.stdout))}`);
     });
   });
   for (const ex of lesson.exercises) {
     exerciseCount++;
     jobs.push(async () => {
       const where = `${lesson.path} exercise "${ex.title}"`;
+      if (!ex.difficulty) warnings.push(`${where}: no difficulty tag (add {easy}, {medium} or {hard} after the title)`);
+      if (ex.difficulty === 'hard' && (ex.tests.length < 3 || !ex.tests.some((t) => t.hidden)))
+        warnings.push(`${where}: hard exercises need at least 3 tests including a hidden one`);
       const c = await compile(ex.solution);
       if (!c.ok) return problems.push(`${where}: solution does not compile\n${indent(c.stderr)}`);
       if (c.stderr.trim()) warnings.push(`${where}: solution has warnings\n${indent(c.stderr)}`);

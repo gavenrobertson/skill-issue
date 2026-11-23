@@ -53,7 +53,9 @@ int main() { int x = "hello"; }
 > **Note:** Callouts are blockquotes starting with **Note:**, **Tip:**, **Warning:**, or **Pitfall:**.
 ````
 
-An `output` fence right after a `cpp run` block shows what the program prints. Keep it accurate.
+An `output` fence right after a `cpp run` block shows what the program prints. The verifier runs the
+program and fails if the fence doesn't match exactly, so never put addresses, timings or random values in
+one (show those with a plain fence and say it's sample output).
 
 Markers:
 - `cpp run warns` is a runnable example that intentionally triggers a compiler warning (to teach about it).
@@ -114,7 +116,13 @@ mustnot \bprintf\b :: Use std::cout, not printf.
 ````
 
 Rules:
-- `:::exercise <Title>` … `:::` — the title must be unique within the lesson.
+- `:::exercise <Title> {difficulty}` … `:::`. The title must be unique within the lesson and
+  **must never be renamed** once published (it is the exercise's id). `{difficulty}` is `{easy}`,
+  `{medium}` or `{hard}` and is not part of the id:
+  - **easy**: direct application of one idea from the lesson; the prompt guides you.
+  - **medium**: combine two or three ideas, think about edge cases; light guidance.
+  - **hard**: a small real program; you design the solution; tricky edge cases. Needs at least
+    3 tests including at least one `expected hidden` test, and the starter is minimal.
 - Exactly one `cpp starter` and one `cpp solution`. The starter should **compile** and should
   **not** already pass the tests.
 - Tests are `stdin` (optional) + `expected` pairs. Each `expected` closes one test. Output is
@@ -147,6 +155,13 @@ Integer division truncates toward zero, so `7 / 2` is `3`.
 
 Options are single lines starting with `- [ ]` or `- [x]`. One or more can be correct.
 Anything after the options is the explanation, shown after answering.
+
+## Module challenges
+
+The last lesson of every module is `NN-challenges.md` (title "<Module title>: Challenges"). It holds 4 to 6
+`{hard}` problems that combine the module's ideas with earlier modules, written like real programming
+tasks (a precise spec of the input and output format, constraints, and examples), plus 1 or 2 tricky
+"predict the output" quizzes. Starters are just a skeleton `main`. Hidden tests cover edge cases.
 
 ## Style
 

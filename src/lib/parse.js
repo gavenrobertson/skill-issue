@@ -128,10 +128,14 @@ function parseChecks(text) {
 
 export function parseExercise(seg, lessonId, errors) {
   const parts = splitFences(seg.md);
+  // Optional difficulty suffix: ":::exercise Title {hard}". It is not part of the id.
+  const dm = (seg.title || '').match(/^(.*?)\s*\{(easy|medium|hard)\}\s*$/);
+  const title = (dm ? dm[1] : seg.title) || 'Exercise';
   const ex = {
     kind: 'exercise',
-    title: seg.title || 'Exercise',
-    id: `${lessonId}/${slugify(seg.title || 'exercise')}`,
+    title,
+    difficulty: dm ? dm[2] : null,
+    id: `${lessonId}/${slugify(title)}`,
     prompt: '',
     starter: '',
     solution: '',
@@ -223,15 +227,20 @@ export function parseLesson(src, moduleSlug, fileName) {
   for (const seg of segs) {
     if (seg.kind === 'prose') {
       blocks.push({ kind: 'prose', md: seg.md });
-      for (const p of splitFences(seg.md)) {
+      const parts = splitFences(seg.md);
+      parts.forEach((p, i) => {
         if (p.type === 'fence' && p.lang === 'cpp' && /\b(run|compile-error)\b/.test(p.meta)) {
+          // An ```output fence right after a runnable example (only blank text between) is its expected output.
+          let next = parts[i + 1];
+          if (next?.type === 'text' && !next.text.trim()) next = parts[i + 2];
           examples.push({
             code: p.code,
             mode: /\bcompile-error\b/.test(p.meta) ? 'compile-error' : 'run',
             warns: /\bwarns\b/.test(p.meta),
+            output: next?.type === 'fence' && next.lang === 'output' ? next.code : null,
           });
         }
-      }
+      });
     } else if (seg.kind === 'exercise') blocks.push(parseExercise(seg, id, errors));
     else blocks.push(parseQuiz(seg, id, quizIndex++, errors));
   }
