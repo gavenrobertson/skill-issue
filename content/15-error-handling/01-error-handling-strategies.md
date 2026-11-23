@@ -296,7 +296,7 @@ Which statements about `[[nodiscard]]` are true? (select all that apply)
 It's purely a compile-time hint: ignoring the result is still legal, but you get a warning.
 :::
 
-:::exercise Safe division
+:::exercise Safe division {easy}
 Write `std::optional<long long> safe_divide(long long a, long long b)` that returns `std::nullopt` when
 `b` is `0`, and `a / b` otherwise. Use it on every pair read from input.
 
@@ -370,13 +370,27 @@ error
 0
 ```
 
+```stdin
+-7 2
+7 -2
+-8 0
+9223372036854775807 1
+```
+
+```expected hidden
+-3
+-3
+error
+9223372036854775807
+```
+
 ```checks
 must std::optional\s*<\s*long\s+long\s*>\s*safe_divide :: safe_divide must return std::optional<long long>.
 must nullopt :: Return std::nullopt for the failure case.
 ```
 :::
 
-:::exercise Parse an age
+:::exercise Parse an age {medium}
 Write `bool parse_age(const std::string& text, int& age)`. It succeeds (returns `true` and stores the
 value in `age`) only if `text` is **all digits** (at least one) and the number is between `0` and
 `150`. Otherwise it returns `false` and leaves `age` alone.
@@ -411,13 +425,13 @@ int main() {
 #include <string>
 
 bool parse_age(const std::string& text, int& age) {
-    if (text.empty() || text.size() > 3) return false;
+    if (text.empty()) return false;
     int value = 0;
     for (char c : text) {
         if (!std::isdigit(static_cast<unsigned char>(c))) return false;
         value = value * 10 + (c - '0');
+        if (value > 150) return false;   // too big already: also keeps value from overflowing
     }
-    if (value > 150) return false;
     age = value;
     return true;
 }
@@ -441,8 +455,9 @@ Loop over the characters and reject the token as soon as one isn't a digit
 ```
 
 ```hint
-Long tokens like `99999999999` would overflow an `int`. Any valid age has at most 3 digits, so you can
-reject longer tokens up front.
+Long tokens like `99999999999` would overflow an `int`. Since anything above `150` is invalid anyway,
+stop as soon as the value passes `150`. (Don't reject tokens just for being longer than 3 characters:
+`0042` is all digits and its value is `42`.)
 ```
 
 ```stdin
@@ -469,13 +484,28 @@ age 7
 invalid: 99999999999
 ```
 
+```stdin
+0150 +5 1000 000000000000000000042 15o 1 5 0
+```
+
+```expected hidden
+age 150
+invalid: +5
+invalid: 1000
+age 42
+invalid: 15o
+age 1
+age 5
+age 0
+```
+
 ```checks
 must bool\s+parse_age\s*\(\s*const\s+std::string\s*&\s*\w+\s*,\s*int\s*&\s*\w+\s*\) :: Keep the signature bool parse_age(const std::string& text, int& age).
 must if\s*\(\s*parse_age :: Check the result of parse_age with if.
 ```
 :::
 
-:::exercise Status codes
+:::exercise Status codes {easy}
 Model a bank account with an error-code API. Write
 
 ```cpp
@@ -570,6 +600,17 @@ invalid amount
 insufficient funds
 ok, balance 0
 insufficient funds
+```
+
+```stdin
+0
+1 0 -1000000000000
+```
+
+```expected hidden
+insufficient funds
+invalid amount
+invalid amount
 ```
 
 ```checks

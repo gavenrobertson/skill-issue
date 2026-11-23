@@ -387,7 +387,7 @@ Guards work per translation unit. They prevent redefinition errors from double i
 can't stop two `.cpp` files from each compiling their own copy of a non-inline definition.
 :::
 
-:::exercise Declare before use
+:::exercise Declare before use {easy}
 This "multi-file" program lost its header: `main` calls `celsiusToFahrenheit` and `describe`, which are
 defined **below** `main`, so it doesn't compile. Add the missing **declarations** (prototypes) in the
 header section at the top. Don't move the definitions.
@@ -475,13 +475,24 @@ A declaration is the function's first line with a semicolon instead of the body:
 37.5C = 99.5F (hot)
 ```
 
+```stdin
+19.9 20 29.99 30
+```
+
+```expected hidden
+19.9C = 67.82F (cool)
+20C = 68F (warm)
+29.99C = 85.982F (warm)
+30C = 86F (hot)
+```
+
 ```checks
 must double\s+celsiusToFahrenheit\s*\([^)]*\)\s*; :: Declare celsiusToFahrenheit with a prototype.
 must std::string\s+describe\s*\([^)]*\)\s*; :: Declare describe with a prototype.
 ```
 :::
 
-:::exercise Guard the header
+:::exercise Guard the header {easy}
 The starter simulates what happens when `#include "money.h"` appears twice in one translation unit:
 the header's text is pasted in **twice**. That redefines `struct Money` and `inline` function `cents`,
 so it doesn't compile.
@@ -579,6 +590,14 @@ $0.05
 ```
 
 ```stdin
+1 99 0 1
+```
+
+```expected hidden
+$2.00
+```
+
+```stdin
 10 0 20 0
 ```
 
@@ -593,7 +612,7 @@ must (#endif[\s\S]*){2} :: Close each guard with #endif.
 ```
 :::
 
-:::exercise Split the class
+:::exercise Split the class {medium}
 A stack of integers is split across "files". The class definition (the header part) is given, with
 **declarations** of its member functions. Write the member function **definitions** out of class, in the
 source-file section, using `IntStack::` (for example `void IntStack::push(int value) { ... }`).
@@ -740,6 +759,31 @@ top
 empty
 empty
 -7
+```
+
+```stdin
+push 5
+push 6
+pop
+push 7
+size
+top
+pop
+pop
+pop
+size
+top
+```
+
+```expected hidden
+6
+2
+7
+7
+5
+empty
+0
+empty
 ```
 
 ```checks

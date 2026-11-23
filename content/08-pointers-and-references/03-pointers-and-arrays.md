@@ -338,7 +338,7 @@ is ignored.
 A pointer one past the end is legal to create and compare, but not to dereference.
 :::
 
-:::exercise Sum with a pointer
+:::exercise Sum with a pointer {easy}
 Read `n` (1 to 100) and then `n` integers into a C array `int values[100]`. Compute their sum by walking
 a pointer from the first element to one past the last element: don't use `[]` in the summing loop.
 
@@ -421,7 +421,7 @@ must \+=\s*\*\s*\w+ :: Add the pointed-to value with total += *p.
 ```
 :::
 
-:::exercise Reverse in place
+:::exercise Reverse in place {medium}
 Read `n` (0 to 100) and `n` integers into a C array. Reverse the array **in place** using two pointers:
 one starting at the first element, one at the last. Swap what they point to and move them toward each
 other until they meet. Then print the array.
@@ -526,13 +526,22 @@ Careful with `n == 0`: `a + n - 1` would point before the array.
 
 ```
 
+```stdin
+2
+-1 1
+```
+
+```expected hidden
+1 -1
+```
+
 ```checks
 must int\s*\*\s*\w+\s*=\s*a\s*\+ :: Create a pointer to the last element (a + n - 1).
 mustnot std::reverse|std::swap :: Do the swapping yourself with the pointers.
 ```
 :::
 
-:::exercise Position of the maximum
+:::exercise Position of the maximum {medium}
 Write a function `int* findMax(int* begin, int* end)` that returns a pointer to the largest element
 in the half-open range `[begin, end)` (the **first** one if there are ties). In `main`, read the
 values, call it, and use **pointer subtraction** to compute the index of the maximum.
@@ -636,5 +645,151 @@ max 50 at index 2
 ```checks
 must int\s*\*\s*findMax\s*\(\s*int\s*\*\s*\w+\s*,\s*int\s*\*\s*\w+\s*\) :: Keep the signature int* findMax(int* begin, int* end).
 must \w+\s*-\s*values :: Compute the index with pointer subtraction (m - values).
+```
+:::
+
+:::exercise Remove duplicates in place {hard}
+Write `int* removeDuplicates(int* begin, int* end)` that removes every element of the range
+`[begin, end)` that is equal to an **earlier** element, keeping the first occurrence of each value in
+its original order. Do it **in place**: move the kept values to the front of the same array, and return
+a pointer one past the last kept value (the new end). Everything after the new end is garbage you
+don't care about.
+
+Work with pointers only inside the function: walk the range with a pointer, keep a second "write"
+pointer for the next free slot, and search the already-kept part `[begin, write)` for duplicates.
+
+`main` reads the values into a C array, calls the function, and uses **pointer subtraction** to get the
+number of kept values.
+
+**Input:** `n` (0 to 100), then `n` integers.
+**Output:** `<count>:` followed by the kept values, each preceded by a space. Example: for
+`3 1 3 2 1 1 4 3` the output is `4: 3 1 2 4`, and for `n = 0` it is `0:`.
+
+```cpp starter
+#include <iostream>
+
+int* removeDuplicates(int* begin, int* end) {
+    return end;
+}
+
+int main() {
+    int values[100]{};
+    int n;
+    std::cin >> n;
+    for (int i = 0; i < n; ++i) {
+        std::cin >> values[i];
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int* removeDuplicates(int* begin, int* end) {
+    int* write = begin;                     // [begin, write) holds the values kept so far
+    for (int* read = begin; read != end; ++read) {
+        bool seen = false;
+        for (int* q = begin; q != write; ++q) {
+            if (*q == *read) {
+                seen = true;
+                break;
+            }
+        }
+        if (!seen) {
+            *write = *read;                 // copy it into the next free slot
+            ++write;
+        }
+    }
+    return write;
+}
+
+int main() {
+    int values[100]{};
+    int n;
+    std::cin >> n;
+    for (int i = 0; i < n; ++i) {
+        std::cin >> values[i];
+    }
+
+    int* newEnd = removeDuplicates(values, values + n);
+    std::cout << newEnd - values << ':';
+    for (const int* p = values; p != newEnd; ++p) {
+        std::cout << ' ' << *p;
+    }
+    std::cout << '\n';
+}
+```
+
+```hint
+Use two pointers that start at `begin`: `read` visits every element, and `write` marks where the next
+kept value goes. `write` never gets ahead of `read`, so you never overwrite a value you haven't read yet.
+```
+
+```hint
+For each `*read`, loop a third pointer `q` from `begin` to `write` and look for an equal value. If there
+is none, `*write = *read; ++write;`. Return `write`.
+```
+
+```hint
+Removing only **neighbouring** duplicates is a different problem: in `3 1 3`, the second `3` must go too.
+```
+
+```stdin
+8
+3 1 3 2 1 1 4 3
+```
+
+```expected
+4: 3 1 2 4
+```
+
+```stdin
+0
+```
+
+```expected
+0:
+```
+
+```stdin
+1
+5
+```
+
+```expected hidden
+1: 5
+```
+
+```stdin
+5
+7 7 7 7 7
+```
+
+```expected hidden
+1: 7
+```
+
+```stdin
+6
+-1 0 1 -1 0 1
+```
+
+```expected hidden
+3: -1 0 1
+```
+
+```stdin
+5
+1 2 3 4 5
+```
+
+```expected hidden
+5: 1 2 3 4 5
+```
+
+```checks
+must int\s*\*\s*removeDuplicates\s*\(\s*int\s*\*\s*\w+\s*,\s*int\s*\*\s*\w+\s*\) :: Keep the signature int* removeDuplicates(int* begin, int* end).
+must \w+\s*-\s*values :: Count the kept values with pointer subtraction (newEnd - values).
+mustnot std::unique|std::find|std::remove :: Move the elements yourself.
 ```
 :::

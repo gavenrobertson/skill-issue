@@ -264,7 +264,7 @@ What happens with `std::array<int, 3> a{}; a.at(5);`?
 `.at()` checks the index at run time and throws. `a[5]` would be undefined behavior.
 :::
 
-:::exercise Five scores
+:::exercise Five scores {easy}
 Read 5 integers into a `std::array<int, 5>`. Print the minimum, the maximum and the sum on three
 lines, using `.size()` or range-for loops (no hard-coded `5` in your loops).
 
@@ -327,13 +327,23 @@ max: -3
 sum: -15
 ```
 
+```stdin
+23 16 -15 8 4
+```
+
+```expected hidden
+min: -15
+max: 23
+sum: 36
+```
+
 ```checks
 must std::array\s*<\s*int\s*,\s*5\s*> :: Use std::array<int, 5>.
 mustnot <\s*5\s*;|<=\s*4\s*; :: Don't hard-code the size in your loops; use .size() or range-for.
 ```
 :::
 
-:::exercise Day lookup
+:::exercise Day lookup {easy}
 Store the day names `Mon`, `Tue`, `Wed`, `Thu`, `Fri`, `Sat`, `Sun` in a `std::array<std::string, 7>`.
 Read integers until the end of input. For each, print the day name at that index, or `invalid` if
 the number is not a valid index. Compare against `.size()` (watch out for negative numbers!).
@@ -396,13 +406,30 @@ invalid
 Wed
 ```
 
+```stdin
+```
+
+```expected hidden
+```
+
+```stdin
+2147483647 -2147483648 6 5
+```
+
+```expected hidden
+invalid
+invalid
+Sun
+Sat
+```
+
 ```checks
 must std::array\s*<\s*std::string\s*,\s*7\s*> :: Store the names in a std::array<std::string, 7>.
 must \.size\s*\(\s*\) :: Compare against .size().
 ```
 :::
 
-:::exercise Doubled copy
+:::exercise Doubled copy {medium}
 Write `std::array<int, 4> doubled(std::array<int, 4> values)` that takes the array **by value**,
 doubles every element of its copy, and returns it. Read 4 integers into `original`, compute
 `twice = doubled(original)`, and print:
@@ -479,8 +506,181 @@ different
 same
 ```
 
+```stdin
+-5 0 5 -1
+```
+
+```expected hidden
+-5 0 5 -1
+-10 0 10 -2
+different
+```
+
 ```checks
 must std::array\s*<\s*int\s*,\s*4\s*>\s+doubled\s*\(\s*std::array\s*<\s*int\s*,\s*4\s*>\s+\w+\s*\) :: Write std::array<int, 4> doubled(std::array<int, 4> values), taking the array by value.
 must ==|!= :: Compare the two arrays with == or !=.
+```
+:::
+
+:::exercise Next arrangement {hard}
+Read 6 integers into a `std::array<int, 6>` and rearrange them into the **next arrangement** in
+lexicographic (dictionary) order: the smallest rearrangement of the same numbers that is **greater**
+than the current one, comparing arrays like `std::array`'s `<` does. Print it. If no greater
+arrangement exists (the numbers never increase from left to right), print `last`.
+
+Numbers may repeat. For example, after `1 2 3 4 5 6` comes `1 2 3 4 6 5`, after `1 3 5 4 2 0` comes
+`1 4 0 2 3 5`, and `3 2 2 1 1 0` is `last`. Do the work yourself (no `std::next_permutation`,
+`std::sort` or `std::reverse`).
+
+**Input:** 6 integers.
+**Output:** the next arrangement, separated by single spaces, or `last`, then a newline.
+
+```cpp starter
+#include <array>
+#include <iostream>
+
+int main() {
+    std::array<int, 6> a{};
+    for (int& x : a) {
+        std::cin >> x;
+    }
+}
+```
+
+```cpp solution
+#include <array>
+#include <iostream>
+
+// Rearranges a into the next greater arrangement. Returns false if a was already the greatest.
+bool nextArrangement(std::array<int, 6>& a) {
+    // 1. Find the last position i where a[i] < a[i + 1]. Everything after i never increases.
+    std::size_t i = a.size() - 1;
+    while (i > 0 && a[i - 1] >= a[i]) {
+        --i;
+    }
+    if (i == 0) {
+        return false;
+    }
+    std::size_t pivot = i - 1;
+
+    // 2. Find the last element after the pivot that is strictly greater than it, and swap them.
+    std::size_t j = a.size() - 1;
+    while (a[j] <= a[pivot]) {
+        --j;
+    }
+    int tmp = a[pivot];
+    a[pivot] = a[j];
+    a[j] = tmp;
+
+    // 3. The tail is still non-increasing: reverse it to make it as small as possible.
+    std::size_t lo = pivot + 1;
+    std::size_t hi = a.size() - 1;
+    while (lo < hi) {
+        tmp = a[lo];
+        a[lo] = a[hi];
+        a[hi] = tmp;
+        ++lo;
+        --hi;
+    }
+    return true;
+}
+
+int main() {
+    std::array<int, 6> a{};
+    for (int& x : a) {
+        std::cin >> x;
+    }
+    if (!nextArrangement(a)) {
+        std::cout << "last\n";
+        return 0;
+    }
+    for (std::size_t i = 0; i < a.size(); ++i) {
+        std::cout << a[i] << (i + 1 < a.size() ? " " : "\n");
+    }
+}
+```
+
+```hint
+Scan from the right for the first position `p` where `a[p] < a[p + 1]`. If there is none, the
+arrangement is the last one. Everything to the right of `p` is in non-increasing order.
+```
+
+```hint
+Swap `a[p]` with the **rightmost** element to its right that is strictly greater than `a[p]`. Then
+reverse everything after position `p`.
+```
+
+```hint
+Walk through `1 3 5 4 2 0` on paper: `p` is index 1 (the `3`), it swaps with the `4`, giving
+`1 4 5 3 2 0`, and reversing the tail gives `1 4 0 2 3 5`.
+```
+
+```stdin
+1 2 3 4 5 6
+```
+
+```expected
+1 2 3 4 6 5
+```
+
+```stdin
+1 3 5 4 2 0
+```
+
+```expected
+1 4 0 2 3 5
+```
+
+```stdin
+6 5 4 3 2 1
+```
+
+```expected hidden
+last
+```
+
+```stdin
+3 3 3 3 3 3
+```
+
+```expected hidden
+last
+```
+
+```stdin
+1 1 2 2 3 3
+```
+
+```expected hidden
+1 1 2 3 2 3
+```
+
+```stdin
+1 2 2 1 1 1
+```
+
+```expected hidden
+2 1 1 1 1 2
+```
+
+```stdin
+-1 0 0 -1 5 5
+```
+
+```expected hidden
+-1 0 0 5 -1 5
+```
+
+```stdin
+2 1 3 3 2 1
+```
+
+```expected hidden
+2 2 1 1 3 3
+```
+
+```checks
+must std::array\s*<\s*int\s*,\s*6\s*> :: Store the numbers in a std::array<int, 6>.
+mustnot next_permutation|std::sort|std::reverse|std::swap :: Rearrange the elements yourself.
 ```
 :::

@@ -427,7 +427,7 @@ the (still generated) copy constructor. Add `C(C&&) = default;` etc. to fix it, 
 needless destructor.
 :::
 
-:::exercise Steal the buffer
+:::exercise Steal the buffer {medium}
 `Buffer` owns a heap array and can't be copied. Its move constructor and move assignment are stubs that
 do nothing. Implement them properly (both `noexcept`):
 
@@ -598,7 +598,7 @@ must delete\s*\[\s*\]\s*data_\s*;[\s\S]*delete\s*\[\s*\]\s*data_ :: Free the old
 ```
 :::
 
-:::exercise Move it, don't copy it
+:::exercise Move it, don't copy it {easy}
 `Tracked` counts how often it is copied and moved. Right now it has only a copy constructor, and `main`
 copies every object into the vector. Make it zero-copy:
 
@@ -719,7 +719,7 @@ must push_back\s*\(\s*std::move\s*\( :: Move each object into the vector with st
 ```
 :::
 
-:::exercise Rule of zero playlist
+:::exercise Rule of zero playlist {easy}
 This `Playlist` manages a raw `std::string*` array by hand, has a destructor, and no copy operations,
 so copying it is broken. Instead of writing all five special members, apply the **rule of zero**:
 store the songs in a `std::vector<std::string>` and **delete the destructor and every `new`/`delete`**.
@@ -856,5 +856,231 @@ road-copy: trip song1 song2 song3 bonus
 must std::vector\s*<\s*std::string\s*> :: Store the songs in a std::vector<std::string>.
 mustnot \bnew\b :: The rule of zero means no manual new.
 mustnot ~\s*Playlist :: Remove the destructor: the members clean up after themselves.
+```
+:::
+
+:::exercise Move-only file handles {hard}
+Write a **move-only** RAII class `FileHandle` that pretends to own an open file (it just remembers the
+file's name and prints messages):
+
+- `FileHandle()` is empty (owns nothing). `explicit FileHandle(const std::string& name)` prints `open NAME`.
+- The destructor prints `close NAME` if the handle owns a file, and nothing if it's empty.
+- Copying is forbidden. Moving transfers ownership and leaves the source **empty**. Move assignment
+  first closes the file the target owned (if any). Moving a handle into itself must change nothing.
+- `void reset()` closes the file now (if any) and leaves the handle empty. `bool empty() const` and
+  `const std::string& name() const` report the state.
+
+`main` (given) keeps five handles in a built-in array, slots `A` to `E`, and runs the commands below.
+Note that `open` builds the new handle **before** assigning it, so the new file opens before the old one
+closes. At the end it prints `end`, and then the array is destroyed, **last slot first**.
+
+| Command | Code in `main` |
+| --- | --- |
+| `open S NAME` | `slots[S] = FileHandle(NAME);` |
+| `move S T` | `slots[T] = std::move(slots[S]);` |
+| `swap S T` | `std::swap(slots[S], slots[T]);` |
+| `close S` | `slots[S].reset();` |
+| `show` | prints each slot as `A:NAME` (or `A:-` when empty), separated by spaces |
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <utility>
+
+class FileHandle {
+    std::string name_;
+public:
+    FileHandle() = default;
+    explicit FileHandle(const std::string& name) : name_(name) {}
+    void reset() {}
+    bool empty() const { return name_.empty(); }
+    const std::string& name() const { return name_; }
+};
+
+int main() {
+    FileHandle slots[5];
+    std::string cmd;
+    while (std::cin >> cmd) {
+        char s, t;
+        if (cmd == "open") {
+            std::string name;
+            std::cin >> s >> name;
+            slots[s - 'A'] = FileHandle(name);
+        } else if (cmd == "move") {
+            std::cin >> s >> t;
+            slots[t - 'A'] = std::move(slots[s - 'A']);
+        } else if (cmd == "swap") {
+            std::cin >> s >> t;
+            std::swap(slots[s - 'A'], slots[t - 'A']);
+        } else if (cmd == "close") {
+            std::cin >> s;
+            slots[s - 'A'].reset();
+        } else if (cmd == "show") {
+            for (int i = 0; i < 5; ++i)
+                std::cout << (i ? " " : "") << static_cast<char>('A' + i) << ':'
+                          << (slots[i].empty() ? "-" : slots[i].name());
+            std::cout << '\n';
+        }
+    }
+    std::cout << "end\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <utility>
+
+class FileHandle {
+    std::string name_;      // empty string = owns nothing
+public:
+    FileHandle() = default;
+    explicit FileHandle(const std::string& name) : name_(name) { std::cout << "open " << name_ << '\n'; }
+    ~FileHandle() { reset(); }
+
+    FileHandle(const FileHandle&) = delete;
+    FileHandle& operator=(const FileHandle&) = delete;
+
+    FileHandle(FileHandle&& other) noexcept : name_(std::exchange(other.name_, std::string{})) {}
+
+    FileHandle& operator=(FileHandle&& other) noexcept {
+        if (this != &other) {
+            reset();                                          // close what we own first
+            name_ = std::exchange(other.name_, std::string{});
+        }
+        return *this;
+    }
+
+    void reset() {
+        if (!name_.empty()) {
+            std::cout << "close " << name_ << '\n';
+            name_.clear();
+        }
+    }
+    bool empty() const { return name_.empty(); }
+    const std::string& name() const { return name_; }
+};
+
+int main() {
+    FileHandle slots[5];
+    std::string cmd;
+    while (std::cin >> cmd) {
+        char s, t;
+        if (cmd == "open") {
+            std::string name;
+            std::cin >> s >> name;
+            slots[s - 'A'] = FileHandle(name);
+        } else if (cmd == "move") {
+            std::cin >> s >> t;
+            slots[t - 'A'] = std::move(slots[s - 'A']);
+        } else if (cmd == "swap") {
+            std::cin >> s >> t;
+            std::swap(slots[s - 'A'], slots[t - 'A']);
+        } else if (cmd == "close") {
+            std::cin >> s;
+            slots[s - 'A'].reset();
+        } else if (cmd == "show") {
+            for (int i = 0; i < 5; ++i)
+                std::cout << (i ? " " : "") << static_cast<char>('A' + i) << ':'
+                          << (slots[i].empty() ? "-" : slots[i].name());
+            std::cout << '\n';
+        }
+    }
+    std::cout << "end\n";
+}
+```
+
+```hint
+A moved-from `std::string` is "valid but unspecified": it is *usually* empty, but nothing promises it.
+Since an empty name means "owns nothing" here, empty the source explicitly, for example with
+`name_(std::exchange(other.name_, std::string{}))`.
+```
+
+```hint
+Move assignment: `if (this != &other) { reset(); /* then steal */ } return *this;`. `std::swap` is
+built from one move construction and two move assignments, so if those are right, `swap` prints
+nothing.
+```
+
+```stdin
+open A log
+open B db
+show
+move A C
+show
+open C cfg
+swap B C
+show
+close B
+```
+
+```expected
+open log
+open db
+A:log B:db C:- D:- E:-
+A:- B:db C:log D:- E:-
+open cfg
+close log
+A:- B:cfg C:db D:- E:-
+close cfg
+end
+close db
+```
+
+```stdin
+open A x
+move A A
+show
+move B A
+show
+open A p
+open B q
+open E r
+open D s
+```
+
+```expected hidden
+open x
+A:x B:- C:- D:- E:-
+close x
+A:- B:- C:- D:- E:-
+open p
+open q
+open r
+open s
+end
+close r
+close s
+close q
+close p
+```
+
+```stdin
+open A one
+open A two
+close A
+close A
+move A B
+open C z
+swap C D
+swap D E
+show
+```
+
+```expected hidden
+open one
+open two
+close one
+close two
+open z
+A:- B:- C:- D:- E:z
+end
+close z
+```
+
+```checks
+must FileHandle\s*\(\s*const\s+FileHandle\s*&\s*\)\s*=\s*delete :: Make FileHandle move-only: delete the copy constructor.
+must FileHandle\s*\(\s*FileHandle\s*&&\s*\w+\s*\)\s*noexcept :: Write a noexcept move constructor.
+must operator\s*=\s*\(\s*FileHandle\s*&&\s*\w+\s*\)\s*noexcept :: Write a noexcept move assignment operator.
 ```
 :::

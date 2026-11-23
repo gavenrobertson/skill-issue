@@ -232,7 +232,7 @@ Given `void g(int)` and `void g(double)`, what does `g('A')` call?
 A promotion (char to int) ranks better than a conversion (char to double).
 :::
 
-:::exercise Overloaded describe
+:::exercise Overloaded describe {easy}
 Write three overloads of `describe`:
 
 - `void describe(int n)` prints `int: N`
@@ -308,6 +308,26 @@ double: 0.25
 string: x (length 1)
 ```
 
+```stdin
+0 100 abcdefghij
+```
+
+```expected hidden
+int: 0
+double: 100
+string: abcdefghij (length 10)
+```
+
+```stdin
+2147483647 1e10 C++
+```
+
+```expected hidden
+int: 2147483647
+double: 1e+10
+string: C++ (length 3)
+```
+
 ```checks
 must void\s+describe\s*\(\s*int\b :: Write a describe(int) overload.
 must void\s+describe\s*\(\s*double\b :: Write a describe(double) overload.
@@ -315,7 +335,7 @@ must void\s+describe\s*\(\s*const\s+std::string\s*& :: Write a describe(const st
 ```
 :::
 
-:::exercise Largest of two or three
+:::exercise Largest of two or three {easy}
 Write two overloads: `int largest(int a, int b)` and `int largest(int a, int b, int c)`. Make the
 three-argument version **call** the two-argument one. Read a count `k` (2 or 3) followed by `k`
 integers, and print the largest using the matching overload.
@@ -386,13 +406,37 @@ The three-argument version can be one line: the largest of `largest(a, b)` and `
 5
 ```
 
+```stdin
+2 -5 -9
+```
+
+```expected hidden
+-5
+```
+
+```stdin
+3 1 2 3
+```
+
+```expected hidden
+3
+```
+
+```stdin
+3 9 1 1
+```
+
+```expected hidden
+9
+```
+
 ```checks
 must int\s+largest\s*\(\s*int\s+\w+\s*,\s*int\s+\w+\s*\) :: Write int largest(int a, int b).
 must int\s+largest\s*\(\s*int\s+\w+\s*,\s*int\s+\w+\s*,\s*int\s+\w+\s*\) :: Write int largest(int a, int b, int c).
 ```
 :::
 
-:::exercise Fix the ambiguity
+:::exercise Fix the ambiguity {medium}
 This program doesn't compile: the call `half(n)` with a `long` is ambiguous between `half(int)` and
 `half(double)`. Fix it by **adding a third overload** `long half(long x)` that returns `x / 2`. Don't
 change `main`.
@@ -453,8 +497,208 @@ Read the error: `call of overloaded 'half(long int&)' is ambiguous`. An exact ma
 0.25
 ```
 
+```stdin
+-7 -3
+```
+
+```expected hidden
+-3
+-1.5
+```
+
+```stdin
+0 0
+```
+
+```expected hidden
+0
+0
+```
+
 ```checks
 must long\s+half\s*\(\s*long\b :: Add a long half(long x) overload.
 mustnot static_cast :: Fix it with an overload, not a cast.
+```
+:::
+
+:::exercise Biggest of each kind {hard}
+Write **four** overloads of a function named `biggest`:
+
+- `int biggest(int a, int b)`: the larger value.
+- `double biggest(double a, double b)`: the larger value.
+- `std::string biggest(const std::string& a, const std::string& b)`: the **longer** string; if both have
+  the same length, the one that comes first alphabetically (`a < b` compares strings alphabetically).
+- `int biggest(int a, int b, int c)`: the largest of three, implemented by calling the two-argument
+  `int` version.
+
+**Input:** lines until the end of input. Each line starts with a kind word and is followed by the
+values: `int a b`, `double a b`, `word a b`, or `int3 a b c`.
+**Output:** for each line, the result of calling the matching overload (doubles with default
+`std::cout` formatting). For an unknown kind, print `unknown kind <kind>` and stop reading.
+
+For the input
+
+```
+int -3 -8
+double 2.5 2.25
+word pear fig
+word fig kiwi
+int3 4 9 1
+```
+
+the output is
+
+```
+-3
+2.5
+pear
+kiwi
+9
+```
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string kind;
+    while (std::cin >> kind) {
+        std::cout << kind << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+int biggest(int a, int b) {
+    return a > b ? a : b;
+}
+
+double biggest(double a, double b) {
+    return a > b ? a : b;
+}
+
+std::string biggest(const std::string& a, const std::string& b) {
+    if (a.size() != b.size()) {
+        return a.size() > b.size() ? a : b;
+    }
+    return a < b ? a : b;
+}
+
+int biggest(int a, int b, int c) {
+    return biggest(biggest(a, b), c);
+}
+
+int main() {
+    std::string kind;
+    while (std::cin >> kind) {
+        if (kind == "int") {
+            int a = 0, b = 0;
+            std::cin >> a >> b;
+            std::cout << biggest(a, b) << '\n';
+        } else if (kind == "double") {
+            double a = 0, b = 0;
+            std::cin >> a >> b;
+            std::cout << biggest(a, b) << '\n';
+        } else if (kind == "word") {
+            std::string a, b;
+            std::cin >> a >> b;
+            std::cout << biggest(a, b) << '\n';
+        } else if (kind == "int3") {
+            int a = 0, b = 0, c = 0;
+            std::cin >> a >> b >> c;
+            std::cout << biggest(a, b, c) << '\n';
+        } else {
+            std::cout << "unknown kind " << kind << '\n';
+            break;
+        }
+    }
+}
+```
+
+```hint
+Read the values into variables of the right type first. The type of the arguments is what makes the
+compiler pick the matching overload.
+```
+
+```hint
+For the strings, compare `a.size()` and `b.size()` first; only when they're equal fall back to `a < b`.
+```
+
+```hint
+Careful with mixed calls: `biggest(2, 2.5)` would be **ambiguous** (int to double vs double to int).
+Make sure both arguments have the same type.
+```
+
+```stdin
+int -3 -8
+double 2.5 2.25
+word pear fig
+word fig kiwi
+int3 4 9 1
+```
+
+```expected
+-3
+2.5
+pear
+kiwi
+9
+```
+
+```stdin
+int3 -1 -1 -2
+word abc abd
+word same same
+```
+
+```expected hidden
+-1
+abc
+same
+```
+
+```stdin
+double -0.5 -0.25
+double 1e9 999999999.5
+int 2147483647 -2147483648
+```
+
+```expected hidden
+-0.25
+1e+09
+2147483647
+```
+
+```stdin
+int 1 2
+float 1 2
+int 5 6
+```
+
+```expected hidden
+2
+unknown kind float
+```
+
+```stdin
+int3 1 2 3
+int3 3 2 1
+int3 2 3 1
+```
+
+```expected hidden
+3
+3
+3
+```
+
+```checks
+must int\s+biggest\s*\(\s*int\s+\w+\s*,\s*int\s+\w+\s*\) :: Write int biggest(int a, int b).
+must double\s+biggest\s*\(\s*double :: Write double biggest(double a, double b).
+must std::string\s+biggest\s*\(\s*const\s+std::string\s*& :: Write std::string biggest(const std::string& a, const std::string& b).
+must int\s+biggest\s*\(\s*int\s+\w+\s*,\s*int\s+\w+\s*,\s*int\s+\w+\s*\) :: Write int biggest(int a, int b, int c).
 ```
 :::

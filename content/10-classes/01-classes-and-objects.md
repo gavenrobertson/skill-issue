@@ -387,7 +387,7 @@ Given `class Car { int speed_; public: void go(); };` and `Car c;` in `main`, wh
 `go(c)` would call a free function that doesn't exist.
 :::
 
-:::exercise Rectangle class
+:::exercise Rectangle class {easy}
 Complete the `Rectangle` class. It has two **private** members `width_` and `height_`, and three public
 member functions:
 
@@ -479,7 +479,7 @@ must \.set\s*\( :: Call r.set(w, h) in main.
 ```
 :::
 
-:::exercise Bank account
+:::exercise Bank account {medium}
 Write a class `BankAccount` with a **private** balance (an `int`, starting at 0) and these public members:
 
 - `void deposit(int amount)`: adds `amount` if it is positive, otherwise does nothing.
@@ -584,6 +584,20 @@ Insufficient funds
 Balance: 0
 ```
 
+```stdin
+4
+D 50
+W 0
+W -5
+W 50
+```
+
+```expected hidden
+Insufficient funds
+Insufficient funds
+Balance: 0
+```
+
 ```checks
 must \bprivate\s*: :: The balance must be private.
 must \bbool\s+withdraw\s*\( :: withdraw should return bool.
@@ -591,7 +605,7 @@ must acc\.balance\s*\(\s*\) :: Read the balance through the balance() getter.
 ```
 :::
 
-:::exercise Define it outside
+:::exercise Define it outside {easy}
 The `Temperature` class below only **declares** its member functions. Define all three **outside** the
 class using `Temperature::`.
 
@@ -696,5 +710,207 @@ The pattern is `ReturnType ClassName::name(params) const { ... }`, for example `
 must Temperature::setCelsius\s*\( :: Define setCelsius outside the class with Temperature::.
 must Temperature::fahrenheit\s*\(\s*\)\s*const :: Define fahrenheit outside the class (keep the const).
 must \bt\.fahrenheit\s*\( :: Print the result of t.fahrenheit().
+```
+:::
+
+:::exercise Elevator controller {hard}
+Write a class `Elevator` that **protects its invariants**: the elevator is always on a floor between
+its lowest and highest floor, and never holds more people than its capacity. All data is private;
+the outside world can only send it requests through member functions, and invalid requests are
+refused without changing anything.
+
+**Input:** the first line holds `lo hi cap`: the lowest floor, the highest floor (`lo <= hi`, floors
+can be negative for basements) and the capacity (at least 1). The elevator starts on floor `lo`,
+empty. Then commands until end of input:
+
+| Command | Effect and output |
+| --- | --- |
+| `go F` | If `F` is outside `lo..hi`, print `error: no floor F`. Otherwise move to `F`, add the distance travelled to a running total, and print `at F`. |
+| `in N` | If `N <= 0`, print `error: bad count`. Otherwise as many of the `N` people as fit get in. Print `boarded N` if everyone fit, or `boarded K, M left behind`. |
+| `out N` | If `N <= 0`, print `error: bad count`. If `N` is more than the people inside (`L`), print `error: only L inside` and change nothing. Otherwise print `left N`. |
+| `status` | Print `floor F, load L/CAP, travelled T`. |
+
+**Example:** for `0 5 4` then `in 3`, `go 4`, `in 2`, `go 1`, `out 5`, `status` the output is:
+
+```
+boarded 3
+at 4
+boarded 1, 1 left behind
+at 1
+error: only 4 inside
+floor 1, load 4/4, travelled 7
+```
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+class Elevator {
+    // your design: private data + public member functions
+};
+
+int main() {
+    int lo, hi, cap;
+    std::cin >> lo >> hi >> cap;
+    // read commands until end of input and drive an Elevator
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+class Elevator {
+private:
+    int lo_ = 0, hi_ = 0, cap_ = 1;
+    int floor_ = 0, load_ = 0;
+    long long travelled_ = 0;
+
+public:
+    void setup(int lo, int hi, int cap) {
+        lo_ = lo;
+        hi_ = hi;
+        cap_ = cap;
+        floor_ = lo;
+        load_ = 0;
+        travelled_ = 0;
+    }
+
+    bool go(int f) {
+        if (f < lo_ || f > hi_) return false;
+        travelled_ += f > floor_ ? f - floor_ : floor_ - f;
+        floor_ = f;
+        return true;
+    }
+
+    // returns how many people actually got in
+    int board(int n) {
+        int room = cap_ - load_;
+        int k = n < room ? n : room;
+        load_ += k;
+        return k;
+    }
+
+    bool leave(int n) {
+        if (n > load_) return false;
+        load_ -= n;
+        return true;
+    }
+
+    int floor() const { return floor_; }
+    int load() const { return load_; }
+    int capacity() const { return cap_; }
+    long long travelled() const { return travelled_; }
+};
+
+int main() {
+    int lo, hi, cap;
+    std::cin >> lo >> hi >> cap;
+    Elevator e;
+    e.setup(lo, hi, cap);
+
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "status") {
+            std::cout << "floor " << e.floor() << ", load " << e.load() << '/' << e.capacity()
+                      << ", travelled " << e.travelled() << '\n';
+            continue;
+        }
+        int n;
+        std::cin >> n;
+        if (cmd == "go") {
+            if (e.go(n)) std::cout << "at " << n << '\n';
+            else std::cout << "error: no floor " << n << '\n';
+        } else if (n <= 0) {
+            std::cout << "error: bad count\n";
+        } else if (cmd == "in") {
+            int k = e.board(n);
+            if (k == n) std::cout << "boarded " << n << '\n';
+            else std::cout << "boarded " << k << ", " << n - k << " left behind\n";
+        } else if (cmd == "out") {
+            if (e.leave(n)) std::cout << "left " << n << '\n';
+            else std::cout << "error: only " << e.load() << " inside\n";
+        }
+    }
+}
+```
+
+```hint
+A possible interface: `void setup(int lo, int hi, int cap)`, `bool go(int f)`, `int board(int n)`
+(returns how many got in), `bool leave(int n)`, plus `const` getters for the status line. Keep the
+printing in `main` and the rules in the class.
+```
+
+```hint
+The distance between floors is the absolute difference, which matters with basements: from `-2` to `3`
+is 5 floors.
+```
+
+```stdin
+0 5 4
+in 3
+go 4
+in 2
+go 1
+out 5
+status
+```
+
+```expected
+boarded 3
+at 4
+boarded 1, 1 left behind
+at 1
+error: only 4 inside
+floor 1, load 4/4, travelled 7
+```
+
+```stdin
+-2 3 2
+status
+go 3
+go 4
+go -3
+go -2
+in 0
+out -1
+out 1
+status
+```
+
+```expected hidden
+floor -2, load 0/2, travelled 0
+at 3
+error: no floor 4
+error: no floor -3
+at -2
+error: bad count
+error: bad count
+error: only 0 inside
+floor -2, load 0/2, travelled 10
+```
+
+```stdin
+1 1 1
+in 5
+in 1
+out 1
+go 1
+out 1
+status
+```
+
+```expected hidden
+boarded 1, 4 left behind
+boarded 0, 1 left behind
+left 1
+at 1
+error: only 0 inside
+floor 1, load 0/1, travelled 0
+```
+
+```checks
+must \bclass\s+Elevator\b :: Write an Elevator class.
+must \bprivate\s*: :: Put the elevator's data in a private: section.
 ```
 :::

@@ -324,7 +324,7 @@ The standard guarantees `delete nullptr` (and `delete[] nullptr`) is a no-op, wh
 pointers to `nullptr` after deleting them prevents double-delete bugs through that pointer.
 :::
 
-:::exercise Heap integer
+:::exercise Heap integer {easy}
 Read an integer, store it in an `int` allocated with `new`, triple the value through the pointer, print
 it, and free the memory with `delete`.
 
@@ -392,7 +392,7 @@ mustnot delete\s*\[\s*\] :: A single object is freed with delete, not delete[].
 ```
 :::
 
-:::exercise Run-time sized array
+:::exercise Run-time sized array {easy}
 Read `n`, allocate an array of `n` ints with `new[]`, read `n` values into it, and print them in
 **reverse** order. Then free it with `delete[]`.
 
@@ -475,7 +475,7 @@ mustnot std::vector :: Practice new[] here instead of std::vector.
 ```
 :::
 
-:::exercise Growing array
+:::exercise Growing array {medium}
 Build a tiny version of what `std::vector` does internally. Read integers until the input ends and
 store them in a heap array that **grows**:
 
@@ -584,9 +584,194 @@ count=0 capacity=1 sum=0
 count=9 capacity=16 sum=45
 ```
 
+```stdin
+1 2 3 4
+```
+
+```expected hidden
+count=4 capacity=4 sum=10
+```
+
+```stdin
+2000000000 2000000000 -1
+```
+
+```expected hidden
+count=3 capacity=4 sum=3999999999
+```
+
 ```checks
 must new\s+int\s*\[ :: Allocate arrays with new int[...].
 must delete\s*\[\s*\] :: Free the old array with delete[].
 mustnot std::vector :: Build the growing array yourself, without std::vector.
+```
+:::
+
+:::exercise Merge on the heap {hard}
+Read two lists of integers, each already sorted in non-decreasing order, into two arrays allocated with
+`new int[...]` (sized exactly from the input). Write
+
+```cpp
+int* merge(const int* a, int n, const int* b, int m);
+```
+
+which allocates a **new** heap array of `n + m` ints, fills it with all the values of both lists in
+sorted order, and returns it. The caller owns the result. Walk both inputs once, always taking the
+smaller front value; don't sort.
+
+Then print the merged list and the number of **distinct** values in it, and free all three arrays with
+`delete[]`. Either list may be empty (`new int[0]` is allowed, and must still be deleted).
+
+**Input:** `n` (0 to 1000), `n` sorted integers, then `m` (0 to 1000), `m` sorted integers.
+**Output:** two lines: the merged values separated by single spaces (an empty line if there are none),
+then `distinct=<count>`.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int* readArray(int& count) {
+    std::cin >> count;
+    int* values = new int[count];
+    for (int i = 0; i < count; ++i) {
+        std::cin >> values[i];
+    }
+    return values;                          // the caller must delete[] it
+}
+
+int* merge(const int* a, int n, const int* b, int m) {
+    int* out = new int[n + m];
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    while (i < n && j < m) {
+        if (b[j] < a[i]) {
+            out[k++] = b[j++];
+        } else {
+            out[k++] = a[i++];
+        }
+    }
+    while (i < n) out[k++] = a[i++];        // whatever is left of a...
+    while (j < m) out[k++] = b[j++];        // ...or of b
+    return out;
+}
+
+int main() {
+    int n = 0;
+    int m = 0;
+    int* a = readArray(n);
+    int* b = readArray(m);
+    int* merged = merge(a, n, b, m);
+
+    int distinct = 0;
+    for (int k = 0; k < n + m; ++k) {
+        if (k > 0) std::cout << ' ';
+        std::cout << merged[k];
+        if (k == 0 || merged[k] != merged[k - 1]) {
+            ++distinct;                     // sorted, so equal values are neighbours
+        }
+    }
+    std::cout << "\ndistinct=" << distinct << '\n';
+
+    delete[] merged;
+    delete[] b;
+    delete[] a;
+}
+```
+
+```hint
+Keep one index into each input and one into the output. While **both** inputs have values left, copy
+the smaller front value and advance that input. When one runs out, copy the rest of the other.
+```
+
+```hint
+Because the merged array is sorted, equal values sit next to each other: a value is new exactly when
+it's the first one or differs from the one before it.
+```
+
+```hint
+Every `new int[...]` needs exactly one `delete[]`, including the array `merge` returned.
+```
+
+```stdin
+3
+1 4 9
+4
+2 4 5 10
+```
+
+```expected
+1 2 4 4 5 9 10
+distinct=6
+```
+
+```stdin
+0
+3
+-1 0 0
+```
+
+```expected
+-1 0 0
+distinct=2
+```
+
+```stdin
+0
+0
+```
+
+```expected hidden
+
+distinct=0
+```
+
+```stdin
+2
+1 2
+2
+3 4
+```
+
+```expected hidden
+1 2 3 4
+distinct=4
+```
+
+```stdin
+3
+5 5 5
+2
+5 5
+```
+
+```expected hidden
+5 5 5 5 5
+distinct=1
+```
+
+```stdin
+3
+-5 0 7
+1
+-10
+```
+
+```expected hidden
+-10 -5 0 7
+distinct=4
+```
+
+```checks
+must new\s+int\s*\[ :: Allocate the arrays with new int[...].
+must delete\s*\[\s*\] :: Free every array with delete[].
+must int\s*\*\s*merge\s*\(\s*const\s+int\s*\*\s*\w+\s*,\s*int\s+\w+\s*,\s*const\s+int\s*\*\s*\w+\s*,\s*int\s+\w+\s*\) :: Write int* merge(const int* a, int n, const int* b, int m).
+mustnot std::vector|std::merge|std::sort :: Merge the heap arrays yourself.
 ```
 :::

@@ -479,7 +479,7 @@ What does `#define STR(x) #x` make `STR(a + b)` expand to?
 `#` (stringizing) turns the macro argument's tokens into a string literal. `##` would paste tokens.
 :::
 
-:::exercise Fix the square macro
+:::exercise Fix the square macro {easy}
 This program uses a broken `SQUARE` macro, so two of its three results are wrong. Fix the **macro
 definition** (keep using the macro in `main`) so the program prints:
 
@@ -548,6 +548,16 @@ Parenthesize each use of `x` **and** the whole replacement: `((x) * (x))`.
 ```
 
 ```stdin
+10 3
+```
+
+```expected hidden
+100
+121
+11
+```
+
+```stdin
 -4 1
 ```
 
@@ -563,7 +573,7 @@ must SQUARE\s*\(\s*a\s*\+\s*1\s*\) :: Keep using SQUARE(a + 1) in main.
 ```
 :::
 
-:::exercise Log levels
+:::exercise Log levels {easy}
 Write a program that reads integers until the end of input and prints their sum, with logging
 controlled by a macro `LOG_LEVEL`:
 
@@ -642,6 +652,18 @@ Directives can appear inside a function body, as long as each is on its own line
 [info] sum = -10
 ```
 
+```stdin
+1
+2 3
+```
+
+```expected hidden
+[debug] read 1
+[debug] read 2
+[debug] read 3
+[info] sum = 6
+```
+
 ```expected
 [info] sum = 0
 ```
@@ -654,7 +676,7 @@ must #if\s+LOG_LEVEL\s*>=\s*1 :: Guard the info output with #if LOG_LEVEL >= 1.
 ```
 :::
 
-:::exercise Show your work
+:::exercise Show your work {medium}
 Write a macro `SHOW(expr)` that prints the expression's **source text**, then ` = `, then its value,
 then a newline. Use the `#` operator. Read two integers `a` and `b` (`b` is never 0) and use your macro
 exactly like this:
@@ -738,6 +760,18 @@ a * b = -36
 a / b = -2
 a % b = -1
 a < b = 1
+```
+
+```stdin
+5 5
+```
+
+```expected hidden
+a + b = 10
+a * b = 25
+a / b = 1
+a % b = 0
+a < b = 0
 ```
 
 ```checks

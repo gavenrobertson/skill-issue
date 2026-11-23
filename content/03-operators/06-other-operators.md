@@ -299,7 +299,7 @@ The comma operator evaluates `a += 5` first (a becomes 6), discards that, then e
 `x <=> y` is "less" because 3 < 7, `y <=> x` is "greater", and a value compared with itself is "equal".
 :::
 
-:::exercise Max with a ternary
+:::exercise Max with a ternary {easy}
 Read two integers and print the larger one, using the conditional operator `?:` (no `if`, no `std::max`).
 
 **Input:** two integers `a b`.
@@ -353,6 +353,14 @@ int main() {
 5
 ```
 
+```stdin
+-2147483648 2147483647
+```
+
+```expected hidden
+2147483647
+```
+
 ```checks
 must \? :: Use the conditional operator ?:
 mustnot \bif\b :: Don't use if.
@@ -360,7 +368,7 @@ mustnot \bmax\b :: Don't use std::max.
 ```
 :::
 
-:::exercise Plural
+:::exercise Plural {easy}
 Read a number of apples `n` and print `<n> apple` if `n` is exactly 1, otherwise `<n> apples`.
 Use `?:` to choose the ending.
 
@@ -415,13 +423,21 @@ Both branches can be string literals: `(n == 1 ? " apple" : " apples")`.
 12 apples
 ```
 
+```stdin
+2
+```
+
+```expected hidden
+2 apples
+```
+
 ```checks
 must \? :: Use the conditional operator ?:
 mustnot \bif\b :: Don't use if.
 ```
 :::
 
-:::exercise Sign word
+:::exercise Sign word {medium}
 Read an integer and print `positive`, `negative` or `zero`, using a **nested** conditional expression
 (two `?:` operators, no `if`).
 
@@ -476,26 +492,55 @@ zero
 negative
 ```
 
+```stdin
+-1
+```
+
+```expected hidden
+negative
+```
+
+```stdin
+1
+```
+
+```expected hidden
+positive
+```
+
+```stdin
+-2147483648
+```
+
+```expected hidden
+negative
+```
+
 ```checks
 must \?[\s\S]*\? :: Use two nested ?: operators.
 mustnot \bif\b :: Don't use if.
 ```
 :::
 
-:::exercise Spaceship verdict
-Read two integers `a` and `b`. Compare them **once** with the three-way comparison operator `<=>`,
-store the result in a variable, and print `less`, `equal` or `greater` depending on how `a` relates to `b`.
+:::exercise Spaceship verdict {hard}
+Software versions like `1.10` and `1.2` are compared **field by field**: first the major numbers, and
+only if those are equal, the minor numbers. So `1.10` is *greater* than `1.2` (10 > 2), even though
+`1.10 < 1.2` as decimal numbers.
 
-**Input:** two integers `a b`.
-**Output:** `less`, `equal` or `greater`, newline. For `3 5` print `less`.
+Read two versions and print how the first relates to the second. Use the three-way comparison
+operator `<=>`: compare the majors, and when that comparison says "equal", use the comparison of the
+minors instead. Store the final ordering in a variable and turn it into a word.
+
+**Input:** four integers `major1 minor1 major2 minor2` (each between 0 and 2,147,483,647).
+**Output:** `less`, `equal` or `greater`, newline. For `1 2 1 10` (version 1.2 vs. 1.10) print `less`.
 
 ```cpp starter
 #include <compare>
 #include <iostream>
 
 int main() {
-    int a{}, b{};
-    std::cin >> a >> b;
+    int major1{}, minor1{}, major2{}, minor2{};
+    std::cin >> major1 >> minor1 >> major2 >> minor2;
     // auto order = ...;
     std::cout << "equal\n";
 }
@@ -506,23 +551,25 @@ int main() {
 #include <iostream>
 
 int main() {
-    int a{}, b{};
-    std::cin >> a >> b;
-    auto order = a <=> b;
+    int major1{}, minor1{}, major2{}, minor2{};
+    std::cin >> major1 >> minor1 >> major2 >> minor2;
+    auto byMajor = major1 <=> major2;
+    auto order = byMajor != 0 ? byMajor : minor1 <=> minor2;
     std::cout << (order < 0 ? "less" : order > 0 ? "greater" : "equal") << '\n';
 }
 ```
 
 ```hint
-`auto order = a <=> b;` Then test `order < 0` and `order > 0`.
+An ordering can be compared with `0`: `byMajor != 0` means "the majors already decide it".
 ```
 
 ```hint
-A nested conditional works nicely: `order < 0 ? "less" : order > 0 ? "greater" : "equal"`.
+Both branches of `?:` can be orderings: `auto order = byMajor != 0 ? byMajor : minor1 <=> minor2;`.
+Then a nested conditional turns `order` into a word.
 ```
 
 ```stdin
-3 5
+1 2 1 10
 ```
 
 ```expected
@@ -530,7 +577,7 @@ less
 ```
 
 ```stdin
-9 2
+2 0 1 99
 ```
 
 ```expected
@@ -538,14 +585,56 @@ greater
 ```
 
 ```stdin
--4 -4
+3 4 3 4
 ```
 
 ```expected hidden
 equal
 ```
 
+```stdin
+1 10 1 2
+```
+
+```expected hidden
+greater
+```
+
+```stdin
+1 0 0 5
+```
+
+```expected hidden
+greater
+```
+
+```stdin
+1 1000 2 0
+```
+
+```expected hidden
+less
+```
+
+```stdin
+2147483647 5 2147483646 2147483647
+```
+
+```expected hidden
+greater
+```
+
+```stdin
+0 0 0 1
+```
+
+```expected hidden
+less
+```
+
 ```checks
 must <=> :: Use the <=> operator.
+must \? :: Combine the orderings with ?:.
+mustnot \bif\b :: Use ?: instead of if.
 ```
 :::

@@ -197,9 +197,9 @@ int main() {
 
 All three give the same result here, so why prefer `static_cast`?
 
-- A **C-style cast is a sledgehammer.** It tries `static_cast`, then `const_cast`, then
-  `reinterpret_cast`, silently doing whichever works, including dangerous ones like stripping `const`
-  or reinterpreting a pointer's bits. `static_cast` only allows sensible conversions and refuses the rest.
+- A **C-style cast is a sledgehammer.** It tries `const_cast`, then `static_cast`, then
+  `reinterpret_cast` (and combinations of them), silently doing the first that works, including
+  dangerous ones like stripping `const` or reinterpreting a pointer's bits. `static_cast` only allows sensible conversions and refuses the rest.
 - **Hard to find.** You can search a codebase for `static_cast`; you can't search for `(int)`.
 - **Clear intent.** C++ has four named casts, each with a specific job:
 
@@ -367,11 +367,14 @@ Both compile to the same machine code for a simple numeric conversion. The benef
 comparison; `std::cmp_less(x, y)` gives the mathematically correct `true`.
 :::
 
-:::exercise True average
+:::exercise True average {medium}
 Read two integers and print their **exact** average. Use `static_cast<double>` on an operand so the
 division happens in floating point.
 
-**Input:** two integers `a b`.
+Careful: `a` and `b` can be anywhere in the `int` range, so even the sum `a + b` can overflow if you
+compute it in `int`.
+
+**Input:** two integers `a b` (each between -2,147,483,648 and 2,147,483,647).
 **Output:** the average with plain `std::cout <<`, newline. For `7 2` print `4.5`.
 
 ```cpp starter
@@ -391,13 +394,18 @@ int main() {
 int main() {
     int a{}, b{};
     std::cin >> a >> b;
-    double average = static_cast<double>(a + b) / 2;
+    double average = (static_cast<double>(a) + b) / 2;
     std::cout << average << '\n';
 }
 ```
 
 ```hint
-`(a + b) / 2` is integer division. Convert the sum to `double` **before** dividing: `static_cast<double>(a + b) / 2`.
+`(a + b) / 2` is integer division. Convert to `double` **before** dividing.
+```
+
+```hint
+`static_cast<double>(a + b)` is too late for huge inputs: `a + b` is still added as `int` and can
+overflow first. Convert an operand before adding: `(static_cast<double>(a) + b) / 2`.
 ```
 
 ```stdin
@@ -424,13 +432,37 @@ int main() {
 15
 ```
 
+```stdin
+2147483647 2147483647
+```
+
+```expected hidden
+2.14748e+09
+```
+
+```stdin
+-2147483648 -2147483647
+```
+
+```expected hidden
+-2.14748e+09
+```
+
+```stdin
+-2147483648 2147483647
+```
+
+```expected hidden
+-0.5
+```
+
 ```checks
 must static_cast\s*<\s*double\s*> :: Use static_cast<double>.
 mustnot \(\s*double\s*\) :: Don't use a C-style cast.
 ```
 :::
 
-:::exercise Letter codes
+:::exercise Letter codes {easy}
 Read one character. Print its character code, a space, and **the next character** in the code table.
 Use `static_cast` for both conversions.
 
@@ -489,13 +521,21 @@ z
 48 1
 ```
 
+```stdin
+9
+```
+
+```expected hidden
+57 :
+```
+
 ```checks
 must static_cast\s*<\s*int\s*> :: Convert to int with static_cast<int>.
 must static_cast\s*<\s*char\s*> :: Convert back to char with static_cast<char>.
 ```
 :::
 
-:::exercise Dollars and cents
+:::exercise Dollars and cents {medium}
 Read a price with at most two decimal places (like `12.75`) and split it into whole dollars and
 cents. Use `static_cast<int>` to get the dollars, and **round** (with `std::round` from `<cmath>`)
 when computing the cents, because floating-point values like `0.29 * 100` are slightly below 29.
@@ -569,13 +609,45 @@ Try the starter with `0.29`. It prints 28 cents: `(0.29 - 0) * 100` is `28.99999
 19 dollars and 99 cents
 ```
 
+```stdin
+4.35
+```
+
+```expected hidden
+4 dollars and 35 cents
+```
+
+```stdin
+0.07
+```
+
+```expected hidden
+0 dollars and 7 cents
+```
+
+```stdin
+0
+```
+
+```expected hidden
+0 dollars and 0 cents
+```
+
+```stdin
+1000000.01
+```
+
+```expected hidden
+1000000 dollars and 1 cents
+```
+
 ```checks
 must static_cast\s*<\s*int\s*> :: Use static_cast<int>.
 must \bround\s*\( :: Round the cents with std::round.
 ```
 :::
 
-:::exercise Safe comparison
+:::exercise Safe comparison {medium}
 Read a signed integer `a` and an unsigned integer `b`, and print whether `a` is **mathematically**
 less than `b`. A plain `a < b` gets this wrong for negative `a` (and GCC warns about it). Use C++20's
 `std::cmp_less` from `<utility>`.
@@ -637,6 +709,38 @@ false
 
 ```stdin
 -2000000000 0
+```
+
+```expected hidden
+true
+```
+
+```stdin
+-1 4294967295
+```
+
+```expected hidden
+true
+```
+
+```stdin
+2147483647 2147483648
+```
+
+```expected hidden
+true
+```
+
+```stdin
+0 0
+```
+
+```expected hidden
+false
+```
+
+```stdin
+-2147483648 4294967295
 ```
 
 ```expected hidden

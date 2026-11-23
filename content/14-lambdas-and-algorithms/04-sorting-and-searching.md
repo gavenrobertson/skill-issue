@@ -383,7 +383,7 @@ order they were hired (the current order). Which call is correct?
 Only `stable_sort` guarantees that elements comparing equal (same department) keep their relative order.
 :::
 
-:::exercise Sort descending
+:::exercise Sort descending {easy}
 Read `n` integers and print them sorted from **largest to smallest**, separated by spaces.
 
 **Input:** `n` (at least 1), then `n` integers.
@@ -466,7 +466,7 @@ must std::sort|std::ranges::sort :: Sort with std::sort.
 ```
 :::
 
-:::exercise Leaderboard
+:::exercise Leaderboard {medium}
 Read `n` players, each a name and a score. Print them sorted by score **descending**; players with
 equal scores are ordered by name **alphabetically**.
 
@@ -555,13 +555,26 @@ bo -5
 cara -5
 ```
 
+```stdin
+3
+bo 1
+Bo 1
+al -1
+```
+
+```expected hidden
+Bo 1
+bo 1
+al -1
+```
+
 ```checks
 must std::sort|std::stable_sort :: Use std::sort (or std::stable_sort) with a comparator.
 must \[[^\]]*\]\s*\(\s*const\s+Player\s*& :: Write the comparator as a lambda taking const Player&.
 ```
 :::
 
-:::exercise First negative
+:::exercise First negative {easy}
 Read `n` integers and print the **index** (0-based) of the first negative number, using
 `std::find_if`. If there is no negative number, print `none`.
 
@@ -648,7 +661,7 @@ must find_if :: Use std::find_if.
 ```
 :::
 
-:::exercise Range count queries
+:::exercise Range count queries {medium}
 Read `n` integers (in any order), then `q` queries. Each query is two integers `lo hi`
 (`lo <= hi`); answer **how many of the numbers are between `lo` and `hi`, inclusive**.
 
@@ -742,6 +755,31 @@ The numbers in `[lo, hi]` start at `lower_bound(lo)` (first element `>= lo`) and
 2
 1
 4
+```
+
+```stdin
+1
+5
+3
+5 5
+6 9
+-1 4
+```
+
+```expected hidden
+1
+0
+0
+```
+
+```stdin
+0
+1
+-5 5
+```
+
+```expected hidden
+0
 ```
 
 ```checks

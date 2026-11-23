@@ -446,7 +446,7 @@ std::shared_ptr<int> s = std::move(r); // 4
 A `unique_ptr` can't be copied, only moved. Moving a `unique_ptr` into a `shared_ptr` (line 4) is allowed.
 :::
 
-:::exercise Make it unique
+:::exercise Make it unique {easy}
 Read an integer `x`. Store it in a `std::unique_ptr<int>` created with `std::make_unique`, then square
 the value **through the smart pointer** and print it. Don't use `new` or `delete`.
 
@@ -506,6 +506,14 @@ int main() {
 0
 ```
 
+```stdin
+-40000
+```
+
+```expected hidden
+1600000000
+```
+
 ```checks
 must std::make_unique\s*<\s*int\s*> :: Create the smart pointer with std::make_unique<int>.
 mustnot \bnew\b :: Don't use new: make_unique does the allocation.
@@ -513,7 +521,7 @@ mustnot \bdelete\b :: Don't use delete: the unique_ptr frees the memory.
 ```
 :::
 
-:::exercise Pass the baton
+:::exercise Pass the baton {medium}
 Practice moving ownership. Read an integer `x` and:
 
 1. create `auto first = std::make_unique<int>(x);`
@@ -624,7 +632,7 @@ must finish\s*\(\s*std::move\s*\(\s*second\s*\)\s*\) :: Pass second into finish 
 ```
 :::
 
-:::exercise Shared ownership count
+:::exercise Shared ownership count {medium}
 Read `n` (0 to 10). Create `auto original = std::make_shared<int>(n);` and a `std::weak_ptr<int>`
 watcher of it. Then:
 
@@ -732,7 +740,7 @@ must expired\s*\(\s*\) :: Check the watcher with expired().
 ```
 :::
 
-:::exercise Running totals buffer
+:::exercise Running totals buffer {easy}
 Read `n` (1 or more) and allocate a buffer of `n` ints with `std::make_unique<int[]>(n)`. Read the `n`
 values into it, then replace each element with the **running total** up to and including it, and print
 the buffer.
@@ -810,9 +818,269 @@ Running total in place: for `i` from 1, `buffer[i] += buffer[i - 1];`.
 10 0 10 0 3
 ```
 
+```stdin
+3
+-1 -1 -1
+```
+
+```expected hidden
+-1 -2 -3
+```
+
 ```checks
 must make_unique\s*<\s*int\s*\[\s*\]\s*> :: Allocate with std::make_unique<int[]>(n).
 mustnot \bnew\b :: Don't use new.
 mustnot std::vector :: Use the unique_ptr<int[]> buffer instead of std::vector.
+```
+:::
+
+:::exercise Owning linked list {hard}
+A **singly linked list** stores each value in its own heap node, and each node points to the next one.
+Here every link **owns** the rest of the list, so the whole list is freed automatically:
+
+```cpp
+struct Node {
+    int value = 0;
+    std::unique_ptr<Node> next;   // owns the following node (empty at the end of the list)
+};
+
+std::unique_ptr<Node> head;       // owns the first node (empty when the list is empty)
+```
+
+Process commands until the input ends:
+
+| Command | Effect |
+| --- | --- |
+| `push X` | insert `X` at the front |
+| `append X` | insert `X` at the back |
+| `pop` | remove the front node, or print `empty` if there is none |
+| `remove X` | remove the **first** node holding `X`, or print `not found` |
+| `reverse` | reverse the list **in place**, by relinking the existing nodes |
+| `print` | print the values front to back, separated by spaces, or `(empty)` |
+
+Use `std::make_unique` and `std::move` only: no `new`, `delete`, `std::vector` or `std::list`.
+
+**Input:** at most 1000 commands, one per line.
+**Output:** one line for each `print` and for each failed `pop` or `remove`.
+
+```cpp starter
+#include <iostream>
+#include <memory>
+
+struct Node {
+    int value = 0;
+    std::unique_ptr<Node> next;
+};
+
+int main() {
+    std::unique_ptr<Node> head;
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <memory>
+#include <string>
+#include <utility>
+
+struct Node {
+    int value = 0;
+    std::unique_ptr<Node> next;
+};
+
+void pushFront(std::unique_ptr<Node>& head, int value) {
+    auto node = std::make_unique<Node>();
+    node->value = value;
+    node->next = std::move(head);        // the old list now hangs off the new node
+    head = std::move(node);
+}
+
+void pushBack(std::unique_ptr<Node>& head, int value) {
+    std::unique_ptr<Node>* link = &head; // a pointer to the link we may have to fill
+    while (*link) {
+        link = &(*link)->next;
+    }
+    *link = std::make_unique<Node>();
+    (*link)->value = value;
+}
+
+bool popFront(std::unique_ptr<Node>& head) {
+    if (!head) {
+        return false;
+    }
+    head = std::move(head->next);        // the old first node is deleted here
+    return true;
+}
+
+bool removeFirst(std::unique_ptr<Node>& head, int value) {
+    std::unique_ptr<Node>* link = &head;
+    while (*link && (*link)->value != value) {
+        link = &(*link)->next;
+    }
+    if (!*link) {
+        return false;
+    }
+    *link = std::move((*link)->next);    // unlink it: the node is deleted, the rest stays
+    return true;
+}
+
+void reverse(std::unique_ptr<Node>& head) {
+    std::unique_ptr<Node> reversed;      // the part that is already reversed
+    while (head) {
+        std::unique_ptr<Node> rest = std::move(head->next);
+        head->next = std::move(reversed);
+        reversed = std::move(head);
+        head = std::move(rest);
+    }
+    head = std::move(reversed);
+}
+
+void print(const std::unique_ptr<Node>& head) {
+    if (!head) {
+        std::cout << "(empty)\n";
+        return;
+    }
+    for (const Node* p = head.get(); p != nullptr; p = p->next.get()) {   // raw pointers just look
+        std::cout << p->value << (p->next ? " " : "\n");
+    }
+}
+
+int main() {
+    std::unique_ptr<Node> head;
+    std::string command;
+    while (std::cin >> command) {
+        if (command == "push" || command == "append" || command == "remove") {
+            int x;
+            std::cin >> x;
+            if (command == "push") pushFront(head, x);
+            else if (command == "append") pushBack(head, x);
+            else if (!removeFirst(head, x)) std::cout << "not found\n";
+        } else if (command == "pop") {
+            if (!popFront(head)) std::cout << "empty\n";
+        } else if (command == "reverse") {
+            reverse(head);
+        } else if (command == "print") {
+            print(head);
+        }
+    }
+}
+```
+
+```hint
+Pass the list to your functions as `std::unique_ptr<Node>& head`, so they can change which node is
+first. To read the list without owning anything, walk a raw `const Node*` from `head.get()` through
+`p->next.get()`.
+```
+
+```hint
+Inserting at the front: create the node, `node->next = std::move(head);`, then `head = std::move(node);`.
+Removing the front: `head = std::move(head->next);`.
+```
+
+```hint
+For `append` and `remove`, walk a **pointer to a link**: `std::unique_ptr<Node>* link = &head;` and
+advance with `link = &(*link)->next;`. When it stops, `*link` is exactly the `unique_ptr` you have to
+fill (append) or replace with `std::move((*link)->next)` (remove).
+```
+
+```hint
+To reverse, repeatedly take the first node off the list and push it onto the front of a second list,
+`reversed`. When the original is empty, move `reversed` back into `head`.
+```
+
+```stdin
+push 2
+push 1
+append 3
+print
+reverse
+print
+```
+
+```expected
+1 2 3
+3 2 1
+```
+
+```stdin
+print
+pop
+append 5
+remove 7
+remove 5
+print
+```
+
+```expected
+(empty)
+empty
+not found
+(empty)
+```
+
+```stdin
+append 1
+append 2
+append 1
+append 3
+remove 1
+print
+remove 3
+print
+append 4
+pop
+print
+```
+
+```expected hidden
+2 1 3
+2 1
+1 4
+```
+
+```stdin
+reverse
+print
+push 9
+reverse
+print
+append 8
+push 7
+reverse
+print
+```
+
+```expected hidden
+(empty)
+9
+8 9 7
+```
+
+```stdin
+append -1
+append -2
+append -3
+reverse
+remove -2
+append 0
+reverse
+print
+pop
+pop
+pop
+pop
+print
+```
+
+```expected hidden
+0 -1 -3
+empty
+(empty)
+```
+
+```checks
+must std::unique_ptr\s*<\s*Node\s*> :: Link the nodes with std::unique_ptr<Node>.
+mustnot \bnew\b|\bdelete\b :: Let the unique_ptrs allocate and free the nodes (no new or delete).
+mustnot std::vector|std::list|std::deque|std::forward_list :: Build the list from your own nodes.
 ```
 :::

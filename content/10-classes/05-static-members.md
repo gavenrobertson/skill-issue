@@ -244,7 +244,7 @@ With no object involved, there's no `this`, so no direct access to non-static me
 (which qualifies `this`) makes no sense.
 :::
 
-:::exercise Instance counter
+:::exercise Instance counter {easy}
 Complete the `Tracker` class with two **static** counters:
 
 - `alive`: how many `Tracker` objects currently exist,
@@ -346,7 +346,7 @@ must \bstatic\s+int\s+\w+\s*=|\binline\s+static\b|static\s+inline\b|int\s+Tracke
 ```
 :::
 
-:::exercise Ticket numbers
+:::exercise Ticket numbers {easy}
 Write a class `Ticket` that gives every new ticket a unique number, starting at **1**, from a **static**
 counter. The constructor takes the holder's name. Add:
 
@@ -441,7 +441,7 @@ must Ticket::issued\s*\( :: Call it as Ticket::issued().
 ```
 :::
 
-:::exercise Named constructors
+:::exercise Named constructors {medium}
 Write a `Distance` class that stores a length in **meters**. Its constructor must be **private**;
 objects are created only through three **static** factory functions:
 
@@ -541,5 +541,215 @@ Since `Distance` has no default constructor, you can't write `Distance d;` and a
 must static\s+Distance\s+fromMiles\s*\( :: Write a static fromMiles factory.
 must Distance::fromKilometers\s*\( :: Create objects through the factories, e.g. Distance::fromKilometers(...).
 mustnot public\s*:[^}]*explicit\s+Distance\s*\(\s*double :: The Distance(double) constructor must be private.
+```
+:::
+
+:::exercise Recycled session IDs {hard}
+A chat server gives every logged-in user a `Session` with a numeric id. Ids are **recycled**: a new
+session always gets the **smallest positive id not used by a live session**. Design `Session` so the
+class itself manages this with **static** members:
+
+- The constructor `explicit Session(std::string user)` takes the smallest free id; the destructor
+  gives it back. No outside code ever chooses or frees an id.
+- Static member functions `active()` (live sessions), `peak()` (the largest number of sessions that were
+  ever alive at the same time) and `created()` (sessions ever created).
+- A copy would hold the same id as the original, so `Session` must **not** be copyable.
+
+**Input:** commands until end of input:
+
+| Command | Output |
+| --- | --- |
+| `login NAME` | `NAME got id ID`, or `NAME already logged in` |
+| `logout NAME` | `NAME logged out (id ID)`, or `NAME not logged in` |
+| `stats` | `active A, peak P, created C` |
+
+```cpp starter
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
+
+class Session {
+    // TODO
+};
+
+int main() {
+    // read commands until end of input
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Session {
+    inline static std::vector<bool> inUse_{false};   // inUse_[id]; index 0 is never used
+    inline static int active_ = 0;
+    inline static int peak_ = 0;
+    inline static int created_ = 0;
+
+    std::string user_;
+    int id_;
+
+    static int acquire() {
+        for (std::size_t i = 1; i < inUse_.size(); ++i) {
+            if (!inUse_[i]) {
+                inUse_[i] = true;
+                return static_cast<int>(i);
+            }
+        }
+        inUse_.push_back(true);
+        return static_cast<int>(inUse_.size()) - 1;
+    }
+
+public:
+    explicit Session(std::string user) : user_(std::move(user)), id_(acquire()) {
+        ++created_;
+        ++active_;
+        if (active_ > peak_) peak_ = active_;
+    }
+    ~Session() {
+        inUse_[id_] = false;
+        --active_;
+    }
+    Session(const Session&) = delete;
+    Session& operator=(const Session&) = delete;
+
+    int id() const { return id_; }
+    const std::string& user() const { return user_; }
+
+    static int active() { return active_; }
+    static int peak() { return peak_; }
+    static int created() { return created_; }
+};
+
+int main() {
+    std::map<std::string, std::unique_ptr<Session>> sessions;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "stats") {
+            std::cout << "active " << Session::active() << ", peak " << Session::peak()
+                      << ", created " << Session::created() << '\n';
+            continue;
+        }
+        std::string name;
+        std::cin >> name;
+        auto it = sessions.find(name);
+        if (cmd == "login") {
+            if (it != sessions.end()) {
+                std::cout << name << " already logged in\n";
+            } else {
+                auto s = std::make_unique<Session>(name);
+                std::cout << name << " got id " << s->id() << '\n';
+                sessions[name] = std::move(s);
+            }
+        } else if (cmd == "logout") {
+            if (it == sessions.end()) {
+                std::cout << name << " not logged in\n";
+            } else {
+                int id = it->second->id();
+                sessions.erase(it);              // the Session's destructor frees the id
+                std::cout << name << " logged out (id " << id << ")\n";
+            }
+        }
+    }
+}
+```
+
+```hint
+The pool of ids belongs to the class, not to any session: an `inline static std::vector<bool>` where
+element `i` says whether id `i` is taken works well. A private static helper can find (or append) the
+smallest free slot.
+```
+
+```hint
+In `main`, a `std::map<std::string, std::unique_ptr<Session>>` keyed by user name lets you find a
+session, and `erase` destroys it (running the destructor that frees the id). Delete the copy
+constructor and copy assignment with `= delete`.
+```
+
+```stdin
+login ann
+login bob
+login cy
+logout bob
+login dan
+stats
+```
+
+```expected
+ann got id 1
+bob got id 2
+cy got id 3
+bob logged out (id 2)
+dan got id 2
+active 3, peak 3, created 4
+```
+
+```stdin
+stats
+logout ghost
+login ann
+login ann
+logout ann
+logout ann
+login ann
+stats
+```
+
+```expected hidden
+active 0, peak 0, created 0
+ghost not logged in
+ann got id 1
+ann already logged in
+ann logged out (id 1)
+ann not logged in
+ann got id 1
+active 1, peak 1, created 2
+```
+
+```stdin
+login a
+login b
+login c
+login d
+logout a
+logout c
+stats
+login e
+login f
+login g
+logout d
+logout b
+login h
+stats
+```
+
+```expected hidden
+a got id 1
+b got id 2
+c got id 3
+d got id 4
+a logged out (id 1)
+c logged out (id 3)
+active 2, peak 4, created 4
+e got id 1
+f got id 3
+g got id 5
+d logged out (id 4)
+b logged out (id 2)
+h got id 2
+active 4, peak 5, created 8
+```
+
+```checks
+must \bstatic\s+int\s+active\s*\( :: Provide a static member function active().
+must Session\s*\(\s*const\s+Session\s*&\s*\)\s*=\s*delete :: Make Session non-copyable (delete the copy constructor).
+must ~\s*Session\s*\( :: Free the id in Session's destructor.
 ```
 :::

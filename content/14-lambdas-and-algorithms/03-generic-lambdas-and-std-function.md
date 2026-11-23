@@ -405,7 +405,7 @@ just calls its argument once?
 a template keeps the real type and costs nothing extra.
 :::
 
-:::exercise Bigger of two
+:::exercise Bigger of two {easy}
 Write **one** generic lambda `bigger` that takes two values of the same type and returns the larger
 one (the first, if they're equal). Use it on three pairs read from input: two integers, two decimals,
 and two words (compared alphabetically with `<`).
@@ -482,12 +482,24 @@ cat cats
 cats
 ```
 
+```stdin
+0 -1
+2.5 2.5
+B a
+```
+
+```expected hidden
+0
+2.5
+a
+```
+
 ```checks
 must \(\s*(const\s+)?auto\s*&?\s*\w+\s*,\s*(const\s+)?auto|<\s*typename\s+\w+\s*> :: Make bigger generic with auto parameters (or a template lambda).
 ```
 :::
 
-:::exercise Operator table
+:::exercise Operator table {medium}
 Build a calculator from a table of operations: a
 `std::map<char, std::function<long long(long long, long long)>>` that maps `+`, `-`, `*`, `/`, and
 `%` to lambdas. Then read expressions until the end of input and evaluate each one.
@@ -582,13 +594,25 @@ division by zero
 1000000000000
 ```
 
+```stdin
+-7 / 2
+-7 % 3
+3 - -4
+```
+
+```expected hidden
+-3
+-1
+7
+```
+
 ```checks
 must std::function :: Store the operations in std::function objects.
 must std::map :: Keep the operations in a std::map.
 ```
 :::
 
-:::exercise Recursive factorial
+:::exercise Recursive factorial {medium}
 Compute `n!` (n factorial: `1 * 2 * ... * n`, and `0! = 1`) with a **recursive lambda** defined
 inside `main`. Don't write any named function other than `main`, and don't use a loop.
 
@@ -654,6 +678,14 @@ and call it as `fact(fact, n)`.
 
 ```expected hidden
 20! = 2432902008176640000
+```
+
+```stdin
+13
+```
+
+```expected hidden
+13! = 6227020800
 ```
 
 ```checks

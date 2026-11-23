@@ -318,7 +318,7 @@ A variable declared in an `if` initializer lives until the end of the whole `if`
 all `else` branches, but not after it.
 :::
 
-:::exercise Absolute value
+:::exercise Absolute value {easy}
 Read an integer and print its absolute value, using the conditional operator `?:` (no `if`).
 
 **Input:** one integer `x`.
@@ -374,13 +374,21 @@ int main() {
 |0| = 0
 ```
 
+```stdin
+-2147483647
+```
+
+```expected hidden
+|-2147483647| = 2147483647
+```
+
 ```checks
 must \? :: Use the conditional operator ?:.
 mustnot \bif\b :: Solve it without an if statement.
 ```
 :::
 
-:::exercise Pluralize
+:::exercise Pluralize {easy}
 Read a count and a noun, and print them with the noun in plural form unless the count is exactly 1.
 The plural is formed by adding `s`.
 
@@ -460,7 +468,7 @@ mustnot \bif\b :: Solve it without an if statement.
 ```
 :::
 
-:::exercise Divisible
+:::exercise Divisible {medium}
 Read two integers `a` and `b` and report whether `a` is divisible by `b`. Compute the remainder in an
 **`if` initializer** so it only exists inside the `if` statement.
 
@@ -541,12 +549,36 @@ cannot divide by zero
 0 is divisible by 9
 ```
 
+```stdin
+-7 2
+```
+
+```expected hidden
+-7 % 2 = -1
+```
+
+```stdin
+7 -2
+```
+
+```expected hidden
+7 % -2 = 1
+```
+
+```stdin
+-6 3
+```
+
+```expected hidden
+-6 is divisible by 3
+```
+
 ```checks
 must if\s*\(\s*(const\s+)?(int|auto)\s+\w+\s*=[^;)]*; :: Declare the remainder in an if initializer: if (int r = ...; ...).
 ```
 :::
 
-:::exercise Size class
+:::exercise Size class {medium}
 Read an integer and classify it with a single chain of conditional operators (no `if`).
 
 **Input:** one integer `n`.
@@ -617,8 +649,223 @@ small
 large
 ```
 
+```stdin
+1
+```
+
+```expected hidden
+small
+```
+
+```stdin
+-1
+```
+
+```expected hidden
+negative
+```
+
+```stdin
+2147483647
+```
+
+```expected hidden
+large
+```
+
 ```checks
 must \?[\s\S]*\?[\s\S]*\? :: Use a chain of three conditional operators.
 mustnot \bif\b :: Solve it without an if statement.
+```
+:::
+
+:::exercise Time ago {hard}
+Social apps show timestamps like "5 minutes ago". Write that formatter.
+
+**Input:** one integer `s`, the number of seconds since an event (`|s| <= 1000000000`). A negative `s`
+means the event is in the **future**.
+**Output:** one line:
+
+- `just now` if `s` is 0.
+- Otherwise pick the **largest** unit that fits into `|s|` at least once: day (86400 s), hour (3600 s),
+  minute (60 s), or second. The count is `|s|` divided by that unit, rounded **down**.
+- Use the singular (`1 hour`) when the count is exactly 1, otherwise the plural (`2 hours`).
+- Past events end with ` ago`; future events start with `in `.
+
+| `s` | Output |
+| --- | --- |
+| `45` | `45 seconds ago` |
+| `60` | `1 minute ago` |
+| `86399` | `23 hours ago` |
+| `-7200` | `in 2 hours` |
+
+Use at least one `if` with an initializer and the conditional operator `?:` for the plural.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    long long s = 0;
+    std::cin >> s;
+    std::cout << s << " seconds ago\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+int main() {
+    long long s = 0;
+    std::cin >> s;
+
+    if (s == 0) {
+        std::cout << "just now\n";
+        return 0;
+    }
+
+    long long a = s < 0 ? -s : s;
+    std::string unit;
+    long long count = 0;
+    if (long long days = a / 86400; days > 0) {
+        unit = "day";
+        count = days;
+    } else if (long long hours = a / 3600; hours > 0) {
+        unit = "hour";
+        count = hours;
+    } else if (long long minutes = a / 60; minutes > 0) {
+        unit = "minute";
+        count = minutes;
+    } else {
+        unit = "second";
+        count = a;
+    }
+
+    std::string text = std::to_string(count) + " " + unit + (count == 1 ? "" : "s");
+    std::cout << (s > 0 ? text + " ago" : "in " + text) << '\n';
+}
+```
+
+```hint
+Work with the absolute value `|s|` for choosing the unit, and remember the sign only for the final
+`ago` / `in` decision.
+```
+
+```hint
+Try the units from the largest down: `if (long long days = a / 86400; days > 0) { ... } else if (...)`.
+```
+
+```hint
+`std::to_string(n)` turns a number into a `std::string`, and `+` joins strings. That lets you build the
+text once and then decide between `text + " ago"` and `"in " + text`.
+```
+
+```stdin
+45
+```
+
+```expected
+45 seconds ago
+```
+
+```stdin
+60
+```
+
+```expected
+1 minute ago
+```
+
+```stdin
+-7200
+```
+
+```expected
+in 2 hours
+```
+
+```stdin
+0
+```
+
+```expected hidden
+just now
+```
+
+```stdin
+1
+```
+
+```expected hidden
+1 second ago
+```
+
+```stdin
+-1
+```
+
+```expected hidden
+in 1 second
+```
+
+```stdin
+86399
+```
+
+```expected hidden
+23 hours ago
+```
+
+```stdin
+172800
+```
+
+```expected hidden
+2 days ago
+```
+
+```stdin
+59
+```
+
+```expected hidden
+59 seconds ago
+```
+
+```stdin
+3599
+```
+
+```expected hidden
+59 minutes ago
+```
+
+```stdin
+-86400
+```
+
+```expected hidden
+in 1 day
+```
+
+```stdin
+1000000000
+```
+
+```expected hidden
+11574 days ago
+```
+
+```stdin
+-1000000000
+```
+
+```expected hidden
+in 11574 days
+```
+
+```checks
+must if\s*\([^;)]*;[^)]*\) :: Use an if statement with an initializer.
+must \? :: Use the conditional operator ?: (for example for the plural).
 ```
 :::

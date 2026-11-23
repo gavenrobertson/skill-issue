@@ -244,7 +244,7 @@ Which of these is undefined behavior in C++20?
 is defined, but useless: it leaves `i` unchanged.)
 :::
 
-:::exercise Before and after
+:::exercise Before and after {easy}
 Read an integer `n`, then print, each on its own line and **each with its own statement**, the value of
 these expressions in this order:
 
@@ -313,6 +313,18 @@ Trace it with `5`: `n++` prints 5 (n is 6), `n` prints 6, `++n` prints 7, `n--` 
 -1
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+0
+1
+2
+2
+0
+```
+
 ```checks
 must \bn\s*\+\+ :: Use postfix n++.
 must \+\+\s*n\b :: Use prefix ++n.
@@ -321,7 +333,7 @@ must --\s*n\b :: Use prefix --n.
 ```
 :::
 
-:::exercise Now serving
+:::exercise Now serving {easy}
 A bakery's ticket machine starts at number `t`. Three customers take tickets, one after another. For
 each one, print `Now serving <ticket>` using a **postfix** increment (`t++`) to hand out the current
 number and advance the machine. Finally print the number the next customer will get.
@@ -385,13 +397,24 @@ Now serving 1
 Next ticket: 2
 ```
 
+```stdin
+2147483644
+```
+
+```expected hidden
+Now serving 2147483644
+Now serving 2147483645
+Now serving 2147483646
+Next ticket: 2147483647
+```
+
 ```checks
 must \bt\s*\+\+ :: Use postfix t++ to hand out tickets.
 mustnot t\s*\+\s*1|t\s*\+=|\+\+\s*t\b :: Hand out tickets with t++ only.
 ```
 :::
 
-:::exercise Prefix pays first
+:::exercise Prefix pays first {medium}
 Read two integers `a` and `b`. In **one** declaration compute `int c = ++a * b--;` and then print `a`,
 `b` and `c` separated by spaces. Predict the output before you run it!
 
@@ -450,5 +473,117 @@ int main() {
 
 ```checks
 must \+\+\s*a\s*\*\s*b\s*-- :: Compute c with ++a * b--
+```
+:::
+
+:::exercise Left to right {hard}
+An old program contains this line:
+
+```cpp
+int r = a++ + a++ * --b;
+```
+
+It modifies `a` twice in one expression, which is **undefined behavior**. The author *assumed* the
+operands are evaluated strictly left to right, with every `++`/`--` taking effect immediately:
+
+1. the first `a++` produces the current `a`, then `a` goes up by one;
+2. the second `a++` produces the **new** current `a`, then `a` goes up again;
+3. `--b` decrements `b` and produces the new `b`;
+4. normal precedence applies: `r = first + second * third`.
+
+Rewrite it so it is well-defined and does exactly what the author intended. Use the `++`/`--` operators,
+but **at most one per statement**.
+
+**Input:** two integers `a b`.
+**Output:** the final `a`, `b` and `r`, separated by spaces, newline. For `2 5`: the parts are 2, 3 and
+4, so print `4 4 14`.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int a{}, b{};
+    std::cin >> a >> b;
+    int r = 0;
+    std::cout << a << ' ' << b << ' ' << r << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    int a{}, b{};
+    std::cin >> a >> b;
+    int first = a++;
+    int second = a++;
+    int third = --b;
+    int r = first + second * third;
+    std::cout << a << ' ' << b << ' ' << r << '\n';
+}
+```
+
+```hint
+Give each part its own variable and its own statement: `int first = a++;` and so on. Separate
+statements are always sequenced, top to bottom.
+```
+
+```hint
+Trace `2 5` on paper: `first` is 2 (a becomes 3), `second` is 3 (a becomes 4), `third` is 4 (b becomes 4),
+and `r = 2 + 3 * 4`.
+```
+
+```stdin
+2 5
+```
+
+```expected
+4 4 14
+```
+
+```stdin
+0 0
+```
+
+```expected
+2 -1 -1
+```
+
+```stdin
+-3 1
+```
+
+```expected hidden
+-1 0 -3
+```
+
+```stdin
+10 -10
+```
+
+```expected hidden
+12 -11 -111
+```
+
+```stdin
+1 1
+```
+
+```expected hidden
+3 0 1
+```
+
+```stdin
+-1 -1
+```
+
+```expected hidden
+1 -2 -1
+```
+
+```checks
+must \+\+ :: Use the ++ operator.
+must -- :: Use the -- operator.
+mustnot (\+\+|--)[^;]*(\+\+|--) :: Use at most one ++ or -- per statement.
 ```
 :::

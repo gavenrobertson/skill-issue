@@ -251,7 +251,7 @@ A computer *has a* CPU and a playlist *has a* list of songs. A savings account *
 triangle *is a* shape.
 :::
 
-:::exercise Fix the default access
+:::exercise Fix the default access {easy}
 `Manager` is supposed to be an `Employee`, but the code doesn't compile because of the default
 inheritance access of `class`. Fix the class declaration (don't change `main`).
 
@@ -345,7 +345,7 @@ must class\s+Manager\s*:\s*public\s+Employee :: Manager should publicly inherit 
 ```
 :::
 
-:::exercise Stack by composition
+:::exercise Stack by composition {easy}
 Implement a `Stack` of ints using **composition**: a private `std::vector<int>` member. Do **not**
 inherit from anything. Provide exactly the stack operations: `push(int)`, `pop()` (does nothing when
 empty), `top() const` (only called when non-empty), `empty() const`, and `size() const`.
@@ -465,7 +465,7 @@ mustnot class\s+Stack\s*: :: Don't inherit; use composition.
 ```
 :::
 
-:::exercise Private base, public subset
+:::exercise Private base, public subset {medium}
 Sometimes you do want private inheritance. Write `class Scores : private std::vector<int>` that exposes
 **only** `size` and `operator[]` from the vector (using-declarations), and adds:
 
@@ -557,9 +557,244 @@ first: none
 best: -1
 ```
 
+```stdin
+0 100 50 -1 101
+```
+
+```expected hidden
+count: 3
+first: 0
+best: 100
+```
+
 ```checks
 must private\s+std::vector\s*<\s*int\s*> :: Inherit privately from std::vector<int>.
 must using\s+std::vector\s*<\s*int\s*>\s*::\s*size :: Re-expose size with a using-declaration.
 must using\s+std::vector\s*<\s*int\s*>\s*::\s*operator\s*\[\s*\] :: Re-expose operator[] with a using-declaration.
+```
+:::
+
+:::exercise Undo and redo {hard}
+Build a tiny text editor with **unlimited undo and redo**, using composition throughout:
+
+- `History`: a small class you write that **has** a private `std::vector<std::string>` and offers
+  exactly the operations a history needs: `push(text)`, `pop()` (removes and returns the newest entry),
+  `empty()` and `clear()`.
+- `Editor`: **has** the current text (a `std::string`) and **two** `History` members, one for undo and
+  one for redo. Nothing inherits from a standard library type.
+
+**Input:** commands until end of input:
+
+| Command | Effect |
+| --- | --- |
+| `type WORD` | append `WORD`, preceded by one space unless the text is empty |
+| `del N` | delete the last `N` characters (`N >= 1`; everything, if `N` is at least the length). On an empty text it does nothing and is **not** recorded as an edit |
+| `undo` | revert the most recent edit that hasn't been undone, or print `nothing to undo` |
+| `redo` | re-apply the most recently undone edit, or print `nothing to redo` |
+| `print` | print the text in brackets, e.g. `[hello world]` |
+
+`type` and `del` are **edits**. Every edit clears the redo history (you can't redo after changing the
+text in a new direction).
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <vector>
+
+// write class History and class Editor here
+
+int main() {
+    // read commands until end of input
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <vector>
+
+class History {
+    std::vector<std::string> entries_;
+public:
+    void push(const std::string& text) { entries_.push_back(text); }
+    std::string pop() {
+        std::string top = entries_.back();
+        entries_.pop_back();
+        return top;
+    }
+    bool empty() const { return entries_.empty(); }
+    void clear() { entries_.clear(); }
+};
+
+class Editor {
+    std::string text_;
+    History undo_;
+    History redo_;
+
+    void beginEdit() {
+        undo_.push(text_);   // snapshot before changing anything
+        redo_.clear();
+    }
+
+public:
+    void type(const std::string& word) {
+        beginEdit();
+        if (!text_.empty()) text_ += ' ';
+        text_ += word;
+    }
+    void del(std::size_t n) {
+        if (text_.empty()) return;   // not an edit
+        beginEdit();
+        text_.erase(n >= text_.size() ? 0 : text_.size() - n);
+    }
+    bool undo() {
+        if (undo_.empty()) return false;
+        redo_.push(text_);
+        text_ = undo_.pop();
+        return true;
+    }
+    bool redo() {
+        if (redo_.empty()) return false;
+        undo_.push(text_);
+        text_ = redo_.pop();
+        return true;
+    }
+    const std::string& text() const { return text_; }
+};
+
+int main() {
+    Editor ed;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "type") {
+            std::string word;
+            std::cin >> word;
+            ed.type(word);
+        } else if (cmd == "del") {
+            std::size_t n;
+            std::cin >> n;
+            ed.del(n);
+        } else if (cmd == "undo") {
+            if (!ed.undo()) std::cout << "nothing to undo\n";
+        } else if (cmd == "redo") {
+            if (!ed.redo()) std::cout << "nothing to redo\n";
+        } else if (cmd == "print") {
+            std::cout << '[' << ed.text() << "]\n";
+        }
+    }
+}
+```
+
+```hint
+The simplest correct design stores **snapshots**: before every edit, push the current text onto the undo
+history and clear the redo history. `undo` pushes the current text onto *redo* and restores the newest
+undo snapshot; `redo` is the mirror image.
+```
+
+```hint
+Watch the two special cases: `del` on an empty text must not push a snapshot (otherwise `undo` would
+"undo" nothing), and `del N` with `N` larger than the text erases everything rather than going out of
+range.
+```
+
+```stdin
+type hello
+type world
+print
+del 3
+print
+undo
+print
+undo
+print
+redo
+print
+redo
+print
+redo
+```
+
+```expected
+[hello world]
+[hello wo]
+[hello world]
+[hello]
+[hello world]
+[hello wo]
+nothing to redo
+```
+
+```stdin
+undo
+redo
+del 5
+undo
+print
+type a
+type b
+undo
+type c
+redo
+print
+del 100
+print
+del 1
+undo
+print
+undo
+undo
+undo
+print
+undo
+```
+
+```expected hidden
+nothing to undo
+nothing to redo
+nothing to undo
+[]
+nothing to redo
+[a c]
+[]
+[a c]
+nothing to undo
+[]
+nothing to undo
+```
+
+```stdin
+type one
+type two
+type three
+undo
+undo
+undo
+redo
+redo
+print
+type four
+print
+redo
+undo
+undo
+print
+redo
+redo
+print
+```
+
+```expected hidden
+[one two]
+[one two four]
+nothing to redo
+[one]
+[one two four]
+```
+
+```checks
+must class\s+History\b :: Write a History class.
+must class\s+Editor\b :: Write an Editor class.
+must History\s+\w+\s*;[\s\S]*History\s+\w+\s*;|History\s+\w+\s*,\s*\w+\s*; :: Give Editor two History members (composition).
+mustnot class\s+\w+\s*:[^{;]*std:: :: Don't inherit from standard library types; use members.
 ```
 :::

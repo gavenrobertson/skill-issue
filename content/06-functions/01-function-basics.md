@@ -292,7 +292,7 @@ Which line is a function **declaration** (not a definition)?
 A declaration has no body and ends with a semicolon. Lines 3 and 4 are calls.
 :::
 
-:::exercise Square function
+:::exercise Square function {easy}
 Write a function `int square(int x)` that returns `x * x`. In `main`, read one integer and print
 its square using your function.
 
@@ -345,13 +345,29 @@ The definition looks like `int square(int x) { return ...; }` and goes **above**
 16
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+0
+```
+
+```stdin
+46340
+```
+
+```expected hidden
+2147395600
+```
+
 ```checks
 must int\s+square\s*\(\s*int\s+\w+\s*\) :: Define a function int square(int x).
 must square\s*\(\s*n\s*\) :: Call square(n) in main.
 ```
 :::
 
-:::exercise Draw a box
+:::exercise Draw a box {easy}
 Write a `void` function `printRow(int width)` that prints `width` asterisks (`*`) followed by a
 newline. In `main`, read `width` and `height` and call `printRow` `height` times to draw a
 rectangle.
@@ -413,12 +429,29 @@ In `main`, loop `height` times and call `printRow(width);` inside the loop.
 
 ```
 
+```stdin
+1 1
+```
+
+```expected hidden
+*
+```
+
+```stdin
+3 2
+```
+
+```expected hidden
+***
+***
+```
+
 ```checks
 must void\s+printRow\s*\( :: Define a void function named printRow.
 ```
 :::
 
-:::exercise Prototype first
+:::exercise Prototype first {easy}
 Write a program where `main` comes **first** in the file and calls two functions defined **below**
 it: `int maxOf(int a, int b)` (returns the larger value) and `int minOf(int a, int b)` (returns the
 smaller value). You'll need prototypes above `main`.
@@ -483,9 +516,149 @@ max=9 min=2
 max=-5 min=-5
 ```
 
+```stdin
+7 -3
+```
+
+```expected hidden
+max=7 min=-3
+```
+
+```stdin
+0 1
+```
+
+```expected hidden
+max=1 min=0
+```
+
 ```checks
 must int\s+maxOf\s*\([^)]*\)\s*;[\s\S]*int\s+main :: Declare maxOf with a prototype above main.
 must int\s+main[\s\S]*int\s+maxOf\s*\([^)]*\)\s*\{ :: Define maxOf below main.
 must int\s+main[\s\S]*int\s+minOf\s*\([^)]*\)\s*\{ :: Define minOf below main.
+```
+:::
+
+:::exercise Emirp check {hard}
+An **emirp** ("prime" backwards) is a prime that gives a **different** prime when its digits are
+reversed. 13 is an emirp (31 is prime), 11 is not (reversed it's 11 again), and 23 is not (32 isn't prime).
+
+Write at least these two functions and use them:
+
+- `bool isPrime(int n)`: whether `n` is prime (numbers below 2 are not).
+- `int reverseDigits(int n)`: the digits of a non-negative `n` in reverse order (`120` gives `21`).
+
+**Input:** integers until the end of input, each between `-1000000` and `1000000`.
+**Output:** one line per number: `N is an emirp`, `N is prime` (prime but not an emirp), or
+`N is not prime`.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int n = 0;
+    while (std::cin >> n) {
+        std::cout << n << " is not prime\n";
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+
+bool isPrime(int n) {
+    if (n < 2) {
+        return false;
+    }
+    for (int d = 2; d * d <= n; ++d) {
+        if (n % d == 0) {
+            return false;
+        }
+    }
+    return true;
+}
+
+int reverseDigits(int n) {
+    int reversed = 0;
+    while (n > 0) {
+        reversed = reversed * 10 + n % 10;
+        n /= 10;
+    }
+    return reversed;
+}
+
+int main() {
+    int n = 0;
+    while (std::cin >> n) {
+        if (!isPrime(n)) {
+            std::cout << n << " is not prime\n";
+        } else if (int r = reverseDigits(n); r != n && isPrime(r)) {
+            std::cout << n << " is an emirp\n";
+        } else {
+            std::cout << n << " is prime\n";
+        }
+    }
+}
+```
+
+```hint
+`isPrime`: try every divisor `d` from 2 while `d * d <= n`. Handle `n < 2` (including 0, 1 and
+negatives) first.
+```
+
+```hint
+`reverseDigits`: peel off the last digit with `n % 10` and append it to the result with
+`result = result * 10 + digit`.
+```
+
+```hint
+Palindromic primes like 11 or 101 reverse to themselves, so they are primes but not emirps.
+```
+
+```stdin
+13 11 23
+```
+
+```expected
+13 is an emirp
+11 is prime
+23 is prime
+```
+
+```stdin
+2 1 0 -7
+```
+
+```expected hidden
+2 is prime
+1 is not prime
+0 is not prime
+-7 is not prime
+```
+
+```stdin
+107 97 101 1000
+```
+
+```expected hidden
+107 is an emirp
+97 is an emirp
+101 is prime
+1000 is not prime
+```
+
+```stdin
+999983 991 1000000
+```
+
+```expected hidden
+999983 is an emirp
+991 is an emirp
+1000000 is not prime
+```
+
+```checks
+must bool\s+isPrime\s*\(\s*int :: Write bool isPrime(int n).
+must int\s+reverseDigits\s*\(\s*int :: Write int reverseDigits(int n).
 ```
 :::

@@ -107,7 +107,7 @@ In which order do these happen? (pick the correct sequence)
 Source is preprocessed first, then compiled to object code, then linked into an executable, then run.
 :::
 
-:::exercise Print the pipeline
+:::exercise Print the pipeline {easy}
 Print the four stages of building and running a C++ program, one per line, numbered exactly like this:
 
 ```

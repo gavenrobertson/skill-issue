@@ -388,7 +388,7 @@ Passing by value reuses the copy constructor. The swap can't fail, and the old c
 when the parameter is destroyed.
 :::
 
-:::exercise Copy labels
+:::exercise Copy labels {easy}
 Write the copy operations for `NameTag` so copies are labeled:
 
 - The **copy constructor** sets the new tag's name to the original's name followed by ` (copy)`.
@@ -488,7 +488,7 @@ must operator\s*=\s*\(\s*const\s+NameTag\s*& :: Write a copy assignment operator
 ```
 :::
 
-:::exercise Deep copy
+:::exercise Deep copy {medium}
 This `IntArray` has hand-written copy operations that are **shallow**: they copy the pointer. Changing a
 copy changes the original, and the program frees the same array twice. Rewrite both so they make
 **deep** copies. The copy assignment must also handle **self-assignment** (`main` does `a = alias;`
@@ -640,7 +640,7 @@ must this\s*[!=]=\s*&\s*other|&\s*other\s*[!=]=\s*this :: Check for self-assignm
 ```
 :::
 
-:::exercise Snapshot stack
+:::exercise Snapshot stack {medium}
 `IntStack` stores ints in a raw, growable heap array. It has a destructor but **no copy operations**,
 so copies are shallow and the program misbehaves. Add:
 
@@ -837,5 +837,247 @@ empty
 must IntStack\s*\(\s*const\s+IntStack\s*& :: Write a copy constructor.
 must \bswap\s*\(\s*\*\s*this :: Swap *this with the by-value parameter.
 must operator\s*=\s*\(\s*IntStack\s+\w+\s*\) :: Take the operator= parameter by value (copy-and-swap).
+```
+:::
+
+:::exercise Linked list, deeply {hard}
+Write a singly linked list of ints, `IntList`, that owns its nodes and follows the **rule of three**.
+The `Node` type is given; it counts how many nodes are alive, so leaks and double frees show up in the
+output.
+
+`IntList` needs: a destructor that frees every node, a **deep-copying** copy constructor that keeps the
+elements **in the same order**, a copy assignment operator that is safe for **self-assignment** and
+frees the nodes it replaces, plus `pushBack`, `pushFront`, `popFront` (does nothing when empty) and
+`print`.
+
+**Input:** commands until end of input. There are three lists named `a`, `b` and `c`, all empty at
+the start:
+
+| Command | Effect |
+| --- | --- |
+| `push L X` | append `X` to list `L` |
+| `front L X` | insert `X` at the front of `L` |
+| `pop L` | remove the front element of `L` (if any) |
+| `copy L M` | make `M` a copy of `L` (`M = L;`, which may be the same list) |
+| `show L` | print `L:` followed by each element preceded by a space, or `L: (empty)` |
+
+`main` (given) finally prints `nodes: N` (nodes alive while the lists still exist) and, after the lists
+are destroyed, `after: N`.
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <vector>
+
+struct Node {
+    inline static int alive = 0;
+    int value;
+    Node* next;
+    Node(int v, Node* n) : value(v), next(n) { ++alive; }
+    ~Node() { --alive; }
+    Node(const Node&) = delete;
+    Node& operator=(const Node&) = delete;
+};
+
+class IntList {
+    Node* head_ = nullptr;
+public:
+    void pushBack(int) {}
+    void pushFront(int) {}
+    void popFront() {}
+    void print(char name) const { std::cout << name << ": (empty)\n"; }
+};
+
+int main() {
+    {
+        std::vector<IntList> lists(3);
+        std::string cmd;
+        char l, m;
+        while (std::cin >> cmd >> l) {
+            IntList& list = lists[l - 'a'];
+            int x;
+            if (cmd == "push") { std::cin >> x; list.pushBack(x); }
+            else if (cmd == "front") { std::cin >> x; list.pushFront(x); }
+            else if (cmd == "pop") list.popFront();
+            else if (cmd == "copy") { std::cin >> m; lists[m - 'a'] = list; }
+            else if (cmd == "show") list.print(l);
+        }
+        std::cout << "nodes: " << Node::alive << '\n';
+    }
+    std::cout << "after: " << Node::alive << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+struct Node {
+    inline static int alive = 0;
+    int value;
+    Node* next;
+    Node(int v, Node* n) : value(v), next(n) { ++alive; }
+    ~Node() { --alive; }
+    Node(const Node&) = delete;
+    Node& operator=(const Node&) = delete;
+};
+
+class IntList {
+    Node* head_ = nullptr;
+    Node* tail_ = nullptr;
+public:
+    IntList() = default;
+    ~IntList() {
+        while (head_) popFront();
+    }
+
+    IntList(const IntList& other) {
+        for (Node* p = other.head_; p; p = p->next) pushBack(p->value);   // keeps the order
+    }
+
+    friend void swap(IntList& a, IntList& b) noexcept {
+        std::swap(a.head_, b.head_);
+        std::swap(a.tail_, b.tail_);
+    }
+
+    IntList& operator=(IntList other) {      // copy-and-swap: self-assignment safe, frees the old nodes
+        swap(*this, other);
+        return *this;
+    }
+
+    void pushBack(int x) {
+        Node* n = new Node(x, nullptr);
+        if (tail_) tail_->next = n;
+        else head_ = n;
+        tail_ = n;
+    }
+    void pushFront(int x) {
+        head_ = new Node(x, head_);
+        if (!tail_) tail_ = head_;
+    }
+    void popFront() {
+        if (!head_) return;
+        Node* old = head_;
+        head_ = head_->next;
+        if (!head_) tail_ = nullptr;
+        delete old;
+    }
+    void print(char name) const {
+        std::cout << name << ':';
+        if (!head_) std::cout << " (empty)";
+        for (Node* p = head_; p; p = p->next) std::cout << ' ' << p->value;
+        std::cout << '\n';
+    }
+};
+
+int main() {
+    {
+        std::vector<IntList> lists(3);
+        std::string cmd;
+        char l, m;
+        while (std::cin >> cmd >> l) {
+            IntList& list = lists[l - 'a'];
+            int x;
+            if (cmd == "push") { std::cin >> x; list.pushBack(x); }
+            else if (cmd == "front") { std::cin >> x; list.pushFront(x); }
+            else if (cmd == "pop") list.popFront();
+            else if (cmd == "copy") { std::cin >> m; lists[m - 'a'] = list; }
+            else if (cmd == "show") list.print(l);
+        }
+        std::cout << "nodes: " << Node::alive << '\n';
+    }
+    std::cout << "after: " << Node::alive << '\n';
+}
+```
+
+```hint
+Copying by walking the source and calling `pushFront` reverses the list. Walk it and `pushBack`
+instead; a `tail_` pointer makes appending cheap.
+```
+
+```hint
+Copy-and-swap handles the assignment's hard parts for you: take the parameter **by value** (the copy
+constructor does the copying), swap `head_` and `tail_` with it, and let its destructor free your old
+nodes. `lists[0] = lists[0];` then works too.
+```
+
+```stdin
+push a 1
+push a 2
+push a 3
+copy a b
+push b 4
+front a 0
+show a
+show b
+pop b
+show b
+show c
+```
+
+```expected
+a: 0 1 2 3
+b: 1 2 3 4
+b: 2 3 4
+c: (empty)
+nodes: 7
+after: 0
+```
+
+```stdin
+push a 5
+front a 4
+copy a a
+show a
+copy c a
+show a
+pop a
+show a
+```
+
+```expected hidden
+a: 4 5
+a: (empty)
+a: (empty)
+nodes: 0
+after: 0
+```
+
+```stdin
+push b 9
+push b 9
+push b 9
+push b 9
+push a 1
+push a 2
+copy a b
+copy b c
+push c 3
+pop a
+pop a
+pop a
+show a
+show b
+show c
+copy c b
+copy b b
+show b
+```
+
+```expected hidden
+a: (empty)
+b: 1 2
+c: 1 2 3
+b: 1 2 3
+nodes: 6
+after: 0
+```
+
+```checks
+must IntList\s*\(\s*const\s+IntList\s*& :: Write a copy constructor IntList(const IntList&).
+must ~\s*IntList\s*\( :: Free the nodes in a destructor.
+must operator\s*=\s*\( :: Write a copy assignment operator.
 ```
 :::

@@ -338,7 +338,7 @@ Which of these are undefined behavior on an **empty** `std::vector<int> v`? (sel
 Accessing or removing elements that don't exist is UB. `size()` returns 0, and `push_back` works on any vector.
 :::
 
-:::exercise Collect and reverse
+:::exercise Collect and reverse {easy}
 Read integers until the end of input into a `std::vector<int>` using `push_back`. Print how many
 there were, then the numbers in reverse order on one line separated by spaces. If there were none,
 print only `count: 0`.
@@ -408,12 +408,22 @@ count: 1
 42
 ```
 
+```stdin
+-1 0
+-1
+```
+
+```expected hidden
+count: 3
+-1 0 -1
+```
+
 ```checks
 must push_back :: Add the numbers with push_back.
 ```
 :::
 
-:::exercise Keep the evens
+:::exercise Keep the evens {easy}
 Write `std::vector<int> evens(const std::vector<int>& values)` that returns a **new** vector with only
 the even numbers, in their original order. Read numbers until the end of input, then print the
 result separated by spaces, or `none` if there are no even numbers.
@@ -494,12 +504,19 @@ none
 -4 0 8
 ```
 
+```stdin
+```
+
+```expected hidden
+none
+```
+
 ```checks
 must std::vector\s*<\s*int\s*>\s+evens\s*\(\s*const\s+std::vector\s*<\s*int\s*>\s*&\s*\w+\s*\) :: Write std::vector<int> evens(const std::vector<int>& values).
 ```
 :::
 
-:::exercise Stack machine
+:::exercise Stack machine {medium}
 Use a `std::vector<int>` as a **stack** (last in, first out). Process commands until the end of input:
 
 - `push X` adds `X` on top (`push_back`).
@@ -598,6 +615,31 @@ error: empty
 0
 ```
 
+```stdin
+push -3
+push 0
+size
+top
+pop
+top
+pop
+pop
+top
+push 7
+top
+size
+```
+
+```expected hidden
+2
+0
+-3
+error: empty
+error: empty
+7
+1
+```
+
 ```checks
 must pop_back :: Remove elements with pop_back.
 must \.back\s*\(\s*\) :: Read the top element with back().
@@ -605,7 +647,7 @@ must \.empty\s*\(\s*\) :: Check empty() before back() / pop_back().
 ```
 :::
 
-:::exercise Pascal's triangle
+:::exercise Pascal's triangle {medium}
 Read `n` (1 to 20) and build the first `n` rows of Pascal's triangle in a
 `std::vector<std::vector<long long>>`. Row `i` has `i + 1` numbers; the first and last are 1, and every
 other number is the sum of the two numbers above it. Print each row with numbers separated by single
@@ -675,7 +717,231 @@ Fill the middle with `row[j] = rows[i - 1][j - 1] + rows[i - 1][j];`, then `push
 1
 ```
 
+```stdin
+2
+```
+
+```expected hidden
+1
+1 1
+```
+
+```stdin
+20
+```
+
+```expected hidden
+1
+1 1
+1 2 1
+1 3 3 1
+1 4 6 4 1
+1 5 10 10 5 1
+1 6 15 20 15 6 1
+1 7 21 35 35 21 7 1
+1 8 28 56 70 56 28 8 1
+1 9 36 84 126 126 84 36 9 1
+1 10 45 120 210 252 210 120 45 10 1
+1 11 55 165 330 462 462 330 165 55 11 1
+1 12 66 220 495 792 924 792 495 220 66 12 1
+1 13 78 286 715 1287 1716 1716 1287 715 286 78 13 1
+1 14 91 364 1001 2002 3003 3432 3003 2002 1001 364 91 14 1
+1 15 105 455 1365 3003 5005 6435 6435 5005 3003 1365 455 105 15 1
+1 16 120 560 1820 4368 8008 11440 12870 11440 8008 4368 1820 560 120 16 1
+1 17 136 680 2380 6188 12376 19448 24310 24310 19448 12376 6188 2380 680 136 17 1
+1 18 153 816 3060 8568 18564 31824 43758 48620 43758 31824 18564 8568 3060 816 153 18 1
+1 19 171 969 3876 11628 27132 50388 75582 92378 92378 75582 50388 27132 11628 3876 969 171 19 1
+```
+
 ```checks
 must std::vector\s*<\s*std::vector\s*< :: Store the triangle in a vector of vectors.
+```
+:::
+
+:::exercise Matrix product {hard}
+Read two matrices `A` and `B` into 2D vectors and print their product `A × B`. The product is only
+defined when `A` has as many **columns** as `B` has **rows**; otherwise print `dimension mismatch`.
+
+If `A` is `r1 × c1` and `B` is `c1 × c2`, the product `C` is `r1 × c2`, and each entry is a row of `A`
+"dotted" with a column of `B`:
+
+```
+C[i][j] = A[i][0] * B[0][j] + A[i][1] * B[1][j] + ... + A[i][c1 - 1] * B[c1 - 1][j]
+```
+
+Write a function `std::vector<std::vector<long long>> multiply(const std::vector<std::vector<long long>>& a,
+const std::vector<std::vector<long long>>& b)` that returns the product.
+
+**Input:** `r1 c1`, then `r1` lines of `c1` integers (matrix `A`), then `r2 c2` and `r2` lines of `c2`
+integers (matrix `B`). All dimensions are between 1 and 10, and entries are between -1000000 and
+1000000 (so products need `long long`).
+**Output:** `r1` lines with `c2` numbers each, separated by single spaces, or `dimension mismatch`.
+
+```cpp starter
+#include <iostream>
+#include <vector>
+
+int main() {
+    int r1, c1;
+    std::cin >> r1 >> c1;
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <vector>
+
+std::vector<std::vector<long long>> readMatrix() {
+    int rows, cols;
+    std::cin >> rows >> cols;
+    std::vector<std::vector<long long>> m(rows, std::vector<long long>(cols));
+    for (auto& row : m) {
+        for (long long& x : row) {
+            std::cin >> x;
+        }
+    }
+    return m;
+}
+
+std::vector<std::vector<long long>> multiply(const std::vector<std::vector<long long>>& a,
+                                             const std::vector<std::vector<long long>>& b) {
+    std::size_t rows = a.size();
+    std::size_t inner = b.size();          // == a[0].size()
+    std::size_t cols = b[0].size();
+    std::vector<std::vector<long long>> c(rows, std::vector<long long>(cols, 0));
+    for (std::size_t i = 0; i < rows; ++i) {
+        for (std::size_t j = 0; j < cols; ++j) {
+            for (std::size_t k = 0; k < inner; ++k) {
+                c[i][j] += a[i][k] * b[k][j];
+            }
+        }
+    }
+    return c;
+}
+
+int main() {
+    std::vector<std::vector<long long>> a = readMatrix();
+    std::vector<std::vector<long long>> b = readMatrix();
+    if (a[0].size() != b.size()) {
+        std::cout << "dimension mismatch\n";
+        return 0;
+    }
+    for (const auto& row : multiply(a, b)) {
+        for (std::size_t j = 0; j < row.size(); ++j) {
+            std::cout << row[j] << (j + 1 < row.size() ? " " : "\n");
+        }
+    }
+}
+```
+
+```hint
+Read a matrix with `std::vector<std::vector<long long>> m(rows, std::vector<long long>(cols));` and a
+nested loop. Writing a small `readMatrix()` function lets you read both matrices the same way.
+```
+
+```hint
+The check is `columns of A == rows of B`, i.e. `a[0].size() == b.size()`. The result has `a.size()` rows
+and `b[0].size()` columns.
+```
+
+```hint
+Three nested loops: `i` over the rows of `A`, `j` over the columns of `B`, and `k` over the shared
+dimension, accumulating `a[i][k] * b[k][j]`.
+```
+
+```stdin
+2 3
+1 2 3
+4 5 6
+3 2
+7 8
+9 10
+11 12
+```
+
+```expected
+58 64
+139 154
+```
+
+```stdin
+2 3
+1 2 3
+4 5 6
+2 3
+1 2 3
+4 5 6
+```
+
+```expected
+dimension mismatch
+```
+
+```stdin
+1 2
+1 -1
+2 3
+1 2 3
+4 5 6
+```
+
+```expected hidden
+-3 -3 -3
+```
+
+```stdin
+2 3
+1 0 0
+0 1 0
+2 2
+1 2
+3 4
+```
+
+```expected hidden
+dimension mismatch
+```
+
+```stdin
+3 1
+1
+2
+3
+1 3
+-1 0 1
+```
+
+```expected hidden
+-1 0 1
+-2 0 2
+-3 0 3
+```
+
+```stdin
+1 1
+1000000
+1 1
+-1000000
+```
+
+```expected hidden
+-1000000000000
+```
+
+```stdin
+1 3
+1000000 1000000 1000000
+3 1
+1000000
+1000000
+1000000
+```
+
+```expected hidden
+3000000000000
+```
+
+```checks
+must std::vector\s*<\s*std::vector\s*<\s*long\s+long\s*>\s*>\s+multiply\s*\( :: Write std::vector<std::vector<long long>> multiply(...) returning the product.
 ```
 :::

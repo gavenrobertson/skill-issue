@@ -331,7 +331,7 @@ For `std::set<int> s{10, 20, 30};`, which statements are true? (select all that 
 Erasing by value removes every equal element. To remove just one, use `ms.erase(ms.find(7));`.
 :::
 
-:::exercise Distinct, biggest first
+:::exercise Distinct, biggest first {easy}
 Read `n` integers and store them in a `std::set` that keeps them in **decreasing** order (use
 `std::greater<int>` as the comparator).
 
@@ -406,12 +406,21 @@ distinct: 5
 distinct: 1
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+
+distinct: 0
+```
+
 ```checks
 must std::set\s*<\s*int\s*,\s*std::greater :: Use std::set<int, std::greater<int>>.
 ```
 :::
 
-:::exercise New or seen
+:::exercise New or seen {easy}
 Read words until the input ends. For each word, print `new` if this is the first time it appears and
 `seen` otherwise. Use a `std::set` and the `bool` returned by `insert` (don't search separately).
 
@@ -480,6 +489,17 @@ echo seen
 unique: 1
 ```
 
+```stdin
+A a A
+```
+
+```expected hidden
+A new
+a new
+A seen
+unique: 2
+```
+
 ```checks
 must std::set :: Use a std::set.
 must \.second|\[\s*\w+\s*,\s*\w+\s*\]\s*=\s*\w+\.insert :: Use the bool returned by insert.
@@ -487,7 +507,7 @@ mustnot \.(find|count|contains)\s*\( :: Don't search separately: use what insert
 ```
 :::
 
-:::exercise Closest at least
+:::exercise Closest at least {medium}
 Read a set of numbers, then answer queries: for each query `x`, print the smallest number in the set that
 is **greater than or equal to** `x`, or `none` if there isn't one. Use `lower_bound`.
 
@@ -568,12 +588,24 @@ none
 none
 ```
 
+```stdin
+3 -5 0 5
+4 5 6 -5 -6
+```
+
+```expected hidden
+5
+none
+-5
+-5
+```
+
 ```checks
 must \.lower_bound\s*\( :: Use the set's lower_bound member.
 ```
 :::
 
-:::exercise Ticket pool
+:::exercise Ticket pool {medium}
 A `std::multiset<int>` holds ticket numbers (duplicates allowed). Process commands until the input ends:
 
 - `add X`: add one ticket `X`.
@@ -676,8 +708,255 @@ count 2
 empty
 ```
 
+```stdin
+add 1
+add 1
+use 1
+use 1
+use 1
+count 1
+add -2
+add -2
+void 3
+count -2
+```
+
+```expected hidden
+0
+2
+-2 -2
+```
+
 ```checks
 must std::multiset :: Use a std::multiset.
 must \.find\s*\( :: Remove a single copy via find + erase(iterator).
+```
+:::
+
+:::exercise Room booking {hard}
+A meeting room is booked in half-open time intervals `[start, end)`: a booking `[1, 3)` ends exactly
+when `[3, 5)` begins, so those two **don't** overlap. Keep the bookings in a
+`std::set<std::pair<int, int>>` (pairs sort by start, then end) and process commands:
+
+| Command | Output |
+| --- | --- |
+| `book S E` | `invalid` if `S >= E`; otherwise `conflict with [a, b)` if it overlaps an existing booking (report the overlapping booking with the **smallest start**); otherwise add it and print `booked [S, E)` |
+| `cancel S` | remove the booking that starts at `S` and print `cancelled [S, E)`, or `no booking at S` |
+| `free T` | `free` if no booking contains time `T`, otherwise `busy [a, b)` |
+| `list` | all bookings in order, separated by single spaces, or `(none)` |
+
+There can be 200 000 commands, so each must be O(log n): use `lower_bound`/`upper_bound` and look at
+the **neighbors** of the position where a new booking would go, instead of scanning every booking.
+
+**Input:** one command per line until the input ends (times are integers, possibly negative).
+**Output:** one line per command, as above.
+
+```cpp starter
+#include <iostream>
+#include <set>
+#include <string>
+#include <utility>
+
+int main() {
+    std::set<std::pair<int, int>> bookings;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "book") {
+            int s, e;
+            std::cin >> s >> e;
+            bookings.insert({s, e});
+            std::cout << "booked [" << s << ", " << e << ")\n";
+        }
+        // cancel, free, list
+    }
+}
+```
+
+```cpp solution
+#include <climits>
+#include <iostream>
+#include <iterator>
+#include <set>
+#include <string>
+#include <utility>
+
+using Booking = std::pair<int, int>;
+
+std::string text(const Booking& b) {
+    return "[" + std::to_string(b.first) + ", " + std::to_string(b.second) + ")";
+}
+
+int main() {
+    std::set<Booking> bookings;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "book") {
+            int s, e;
+            std::cin >> s >> e;
+            if (s >= e) {
+                std::cout << "invalid\n";
+                continue;
+            }
+            auto next = bookings.lower_bound({s, INT_MIN});   // first booking starting at >= s
+            // Bookings never overlap each other, so if the one before overlaps, it has the smallest start.
+            if (next != bookings.begin() && std::prev(next)->second > s) {
+                std::cout << "conflict with " << text(*std::prev(next)) << '\n';
+            } else if (next != bookings.end() && next->first < e) {
+                std::cout << "conflict with " << text(*next) << '\n';
+            } else {
+                bookings.insert({s, e});
+                std::cout << "booked " << text({s, e}) << '\n';
+            }
+        } else if (cmd == "cancel") {
+            int s;
+            std::cin >> s;
+            auto it = bookings.lower_bound({s, INT_MIN});
+            if (it == bookings.end() || it->first != s) {
+                std::cout << "no booking at " << s << '\n';
+            } else {
+                std::cout << "cancelled " << text(*it) << '\n';
+                bookings.erase(it);
+            }
+        } else if (cmd == "free") {
+            int t;
+            std::cin >> t;
+            auto it = bookings.upper_bound({t, INT_MAX});      // first booking starting after t
+            if (it != bookings.begin() && std::prev(it)->second > t) {
+                std::cout << "busy " << text(*std::prev(it)) << '\n';
+            } else {
+                std::cout << "free\n";
+            }
+        } else if (cmd == "list") {
+            if (bookings.empty()) std::cout << "(none)";
+            bool first = true;
+            for (const auto& b : bookings) {
+                if (!first) std::cout << ' ';
+                std::cout << text(b);
+                first = false;
+            }
+            std::cout << '\n';
+        }
+    }
+}
+```
+
+```hint
+Because bookings never overlap each other, a new booking `[s, e)` can only collide with two
+candidates: the booking just **before** position `lower_bound({s, INT_MIN})` (does it end after `s`?)
+and the booking **at** that position (does it start before `e`?).
+```
+
+```hint
+Two intervals `[a, b)` and `[c, d)` overlap exactly when `a < d && c < b`. Touching ends (`b == c`) is
+not an overlap.
+```
+
+```hint
+For `free T`, the only booking that can contain `T` is the last one starting at or before `T`:
+`std::prev(bookings.upper_bound({t, INT_MAX}))`, if that exists.
+```
+
+```stdin
+book 10 20
+book 20 30
+book 5 10
+book 15 25
+book 0 100
+list
+free 20
+free 30
+```
+
+```expected
+booked [10, 20)
+booked [20, 30)
+booked [5, 10)
+conflict with [10, 20)
+conflict with [5, 10)
+[5, 10) [10, 20) [20, 30)
+busy [20, 30)
+free
+```
+
+```stdin
+book 5 5
+book 7 3
+cancel 4
+list
+free 0
+```
+
+```expected
+invalid
+invalid
+no booking at 4
+(none)
+free
+```
+
+```stdin
+book 1 5
+book 10 15
+book 6 9
+book 4 7
+book 8 11
+cancel 6
+book 4 7
+book 5 10
+list
+cancel 1
+cancel 1
+free 4
+free 5
+free -3
+```
+
+```expected hidden
+booked [1, 5)
+booked [10, 15)
+booked [6, 9)
+conflict with [1, 5)
+conflict with [6, 9)
+cancelled [6, 9)
+conflict with [1, 5)
+booked [5, 10)
+[1, 5) [5, 10) [10, 15)
+cancelled [1, 5)
+no booking at 1
+free
+busy [5, 10)
+free
+```
+
+```stdin
+book -10 -5
+book -6 -4
+book -5 0
+book -20 -10
+list
+free -10
+free -11
+cancel -5
+book -4 1
+list
+```
+
+```expected hidden
+booked [-10, -5)
+conflict with [-10, -5)
+booked [-5, 0)
+booked [-20, -10)
+[-20, -10) [-10, -5) [-5, 0)
+busy [-10, -5)
+busy [-20, -10)
+cancelled [-5, 0)
+booked [-4, 1)
+[-20, -10) [-10, -5) [-4, 1)
+```
+
+```checks
+must std::set\s*< :: Keep the bookings in a std::set.
+must std::pair\s*<\s*int\s*,\s*int\s*> :: Store each booking as a std::pair<int, int>.
+must lower_bound|upper_bound :: Use lower_bound / upper_bound to find the neighbors.
 ```
 :::

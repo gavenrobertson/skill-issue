@@ -209,7 +209,7 @@ Where does `noexcept` go?
 `noexcept` is a specifier that comes after the parameter list. It's not an attribute.
 :::
 
-:::exercise Leap years
+:::exercise Leap years {easy}
 Write `[[nodiscard]] bool isLeapYear(int year)`: a year is a leap year if it's divisible by 4, except
 years divisible by 100, which are leap years only if also divisible by 400. Also write
 `[[nodiscard]] int daysInYear(int year)` that uses it. Read years until the end of input and print
@@ -272,13 +272,30 @@ int main() {
 2400: 366
 ```
 
+```stdin
+```
+
+```expected hidden
+```
+
+```stdin
+1 4 100 400
+```
+
+```expected hidden
+1: 365
+4: 366
+100: 365
+400: 366
+```
+
 ```checks
 must \[\[\s*nodiscard\s*\]\]\s*bool\s+isLeapYear :: Mark isLeapYear [[nodiscard]].
 must \[\[\s*nodiscard\s*\]\]\s*int\s+daysInYear :: Mark daysInYear [[nodiscard]].
 ```
 :::
 
-:::exercise Stop on bad input
+:::exercise Stop on bad input {medium}
 Write `[[noreturn]] void stop(int total)` that prints `stopped, total = T` and then ends the program
 with `std::exit(0)` (from `<cstdlib>`). In `main`, read integers and keep a running total; print
 `total = T` after each number. If a **negative** number is read, call `stop(total)` without adding
@@ -358,13 +375,40 @@ done
 stopped, total = 0
 ```
 
+```stdin
+```
+
+```expected hidden
+done
+```
+
+```stdin
+0 0 -5 1
+```
+
+```expected hidden
+total = 0
+total = 0
+stopped, total = 0
+```
+
+```stdin
+3 0 -1
+```
+
+```expected hidden
+total = 3
+total = 3
+stopped, total = 3
+```
+
 ```checks
 must \[\[\s*noreturn\s*\]\]\s*void\s+stop :: Mark stop [[noreturn]].
 must exit\s*\( :: End the program with std::exit inside stop.
 ```
 :::
 
-:::exercise Unused on purpose
+:::exercise Unused on purpose {easy}
 All the "shape" functions below must take the same three parameters, `(int a, int b, int c)`, so they
 can be used interchangeably, but `rectangle` doesn't need `c` and `square` only needs `a`. Write them
 so they compile **without unused-parameter warnings**, using `[[maybe_unused]]`, and mark all three
@@ -450,6 +494,30 @@ square 9 0 0
 
 ```expected hidden
 81
+```
+
+```stdin
+box -2 3 0
+```
+
+```expected hidden
+0
+```
+
+```stdin
+square -3 7 7
+```
+
+```expected hidden
+9
+```
+
+```stdin
+rectangle -4 5 0
+```
+
+```expected hidden
+-20
 ```
 
 ```checks

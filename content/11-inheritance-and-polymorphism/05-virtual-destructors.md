@@ -204,7 +204,7 @@ The virtual call reaches `~Circle` first; after its body (and its members) are d
 destroyed. Destruction always goes from most derived to base.
 :::
 
-:::exercise Clean shutdown
+:::exercise Clean shutdown {easy}
 `Resource` is a polymorphic base, but its destructor isn't virtual, so when `main` destroys the
 resources through `std::unique_ptr<Resource>`, the derived destructors never run. Fix the base class
 so cleanup is complete. (GCC also warns about this in the starter: read the warning!)
@@ -338,7 +338,7 @@ must virtual\s*~\s*Resource :: Make ~Resource() virtual.
 ```
 :::
 
-:::exercise Leak detector
+:::exercise Leak detector {medium}
 Each `BufferPlugin` allocates `n` ints in its constructor and frees them in its destructor, keeping a
 global count of how many ints are currently allocated. Write the abstract base `Plugin` so that deleting
 plugins through `Plugin*` frees everything:
@@ -450,7 +450,7 @@ must delete\s*\[\s*\] :: Free the buffer with delete[] in BufferPlugin's destruc
 ```
 :::
 
-:::exercise Three-level teardown
+:::exercise Three-level teardown {easy}
 Write a three-level hierarchy, `Base` → `Middle` → `Leaf`, where each destructor prints `~Base`,
 `~Middle`, or `~Leaf` (followed by a space, no newline). Make sure deleting through a
 `std::unique_ptr<Base>` runs **every** destructor that belongs to the object.

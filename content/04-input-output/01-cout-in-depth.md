@@ -306,7 +306,7 @@ Your program prints results with `std::cout` and error messages with `std::cerr`
 `>` redirects stdout only. `std::cerr` writes to stderr, which still goes to the terminal.
 :::
 
-:::exercise Chained arithmetic
+:::exercise Chained arithmetic {easy}
 The starter reads two integers `a` and `b`. Using **one single `std::cout` statement** (chain with
 `<<`, one semicolon), print two lines: their sum and their product.
 
@@ -375,13 +375,31 @@ Remember the spaces: `" + "` and `" = "` contain spaces on both sides.
 -5 * 0 = 0
 ```
 
+```stdin
+-3 -4
+```
+
+```expected hidden
+-3 + -4 = -7
+-3 * -4 = 12
+```
+
+```stdin
+100000 20000
+```
+
+```expected hidden
+100000 + 20000 = 120000
+100000 * 20000 = 2000000000
+```
+
 ```checks
 must cout :: Print with std::cout.
 mustnot cout[\s\S]*cout :: Use only one std::cout statement (chain everything with <<).
 ```
 :::
 
-:::exercise Comparisons as words
+:::exercise Comparisons as words {easy}
 Read two integers `a` and `b` and print the results of three comparisons as `true` / `false`
 (not `1` / `0`).
 
@@ -462,7 +480,7 @@ must boolalpha :: Use std::boolalpha to print true/false.
 ```
 :::
 
-:::exercise Keep stdout clean
+:::exercise Keep stdout clean {easy}
 The starter prints a debug message to standard output, which pollutes the real output. Move the
 debug message to **standard error** so that stdout contains only the result.
 
@@ -512,12 +530,20 @@ Result: 49
 Result: 9
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+Result: 0
+```
+
 ```checks
 must \bcerr\b|\bclog\b :: Send the debug message to std::cerr (or std::clog).
 ```
 :::
 
-:::exercise Type tour
+:::exercise Type tour {medium}
 Read a `char`, an `int`, and a `double`, then print information about them.
 
 **Input:** a character `c`, an integer `i`, and a floating-point number `d`, separated by spaces.
@@ -597,4 +623,28 @@ next char: {
 int: -7
 double: 1.23457e+06
 ```
+```stdin
+0 0 100.0
+```
+
+```expected hidden
+char: 0
+code: 48
+next char: 1
+int: 0
+double: 100
+```
+
+```stdin
+9 2147483647 0.000123456789
+```
+
+```expected hidden
+char: 9
+code: 57
+next char: :
+int: 2147483647
+double: 0.000123457
+```
+
 :::

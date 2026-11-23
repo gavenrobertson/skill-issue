@@ -385,7 +385,7 @@ Which keyword guarantees compile-time initialization but still allows the variab
 `constinit` only constrains the **initialization**. `constexpr` variables are also `const`.
 :::
 
-:::exercise Ticket machine
+:::exercise Ticket machine {easy}
 Write `int nextId()` that returns `1000` the first time it's called, then `1001`, `1002`, and so on.
 Keep the counter in a **`static` local variable** inside `nextId` (no global variables).
 
@@ -457,6 +457,19 @@ solo -> 1000
 issued: 1
 ```
 
+```stdin
+a b c d e
+```
+
+```expected hidden
+a -> 1000
+b -> 1001
+c -> 1002
+d -> 1003
+e -> 1004
+issued: 5
+```
+
 ```expected
 issued: 0
 ```
@@ -467,7 +480,7 @@ mustnot ^(?:static\s+)?int\s+\w+\s*(?:=|;|\{) :: Don't use a global variable for
 ```
 :::
 
-:::exercise Cached Fibonacci
+:::exercise Cached Fibonacci {medium}
 Write `long long fib(int n)` (`fib(0) = 0`, `fib(1) = 1`, `fib(n) = fib(n-1) + fib(n-2)`) that
 **remembers** results in a `static std::map<int, long long>` (or `std::unordered_map`) local to the
 function, so each value is computed only once across all calls.
@@ -557,6 +570,23 @@ computed: 91
 ```
 
 ```stdin
+5
+3
+7
+0
+7
+```
+
+```expected hidden
+fib(5) = 5
+fib(3) = 2
+fib(7) = 13
+fib(0) = 0
+fib(7) = 13
+computed: 8
+```
+
+```stdin
 0
 ```
 
@@ -571,7 +601,7 @@ must namespace\s*\{ :: Keep the counter in an anonymous namespace.
 ```
 :::
 
-:::exercise Lifetime tracer
+:::exercise Lifetime tracer {medium}
 Demonstrate all the storage durations by writing a `struct Tracer` whose constructor prints
 `construct <name>` and whose destructor prints `destroy <name>`. Then create:
 

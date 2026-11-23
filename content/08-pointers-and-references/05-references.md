@@ -313,7 +313,7 @@ You want to read every `std::string` in a vector without copying them. Which loo
 allows writes, and `auto` copies each string.
 :::
 
-:::exercise Alias it
+:::exercise Alias it {easy}
 Read an integer `x`. Create a reference `r` that refers to `x`. Using **only `r`**, add 10 to the value
 and then double it. Print `x` and `r`.
 
@@ -382,7 +382,7 @@ must \br\s*\+= :: Add 10 through the reference (r += 10).
 ```
 :::
 
-:::exercise Clamp every element
+:::exercise Clamp every element {easy}
 Read `n` and then `n` integers into a `std::vector<int>`, then two bounds `lo` and `hi`. Use a
 range-for loop **with a reference** to clamp every element in place: values below `lo` become `lo`,
 values above `hi` become `hi`. Then print the vector with another range-for that uses a `const`
@@ -480,12 +480,21 @@ the elements themselves.
 60 -60 50 -50
 ```
 
+```stdin
+0
+0 10
+```
+
+```expected hidden
+
+```
+
 ```checks
 must for\s*\(\s*const\s+(auto|int)\s*& :: Print with a const reference loop variable (const auto& x).
 ```
 :::
 
-:::exercise Min and max out
+:::exercise Min and max out {medium}
 Write a function `void minMax(const std::vector<int>& values, int& smallest, int& largest)` that
 stores the smallest and largest element into the two reference parameters. The vector parameter is a
 `const` reference because the function only reads it.
@@ -572,12 +581,21 @@ min=7 max=7
 min=-9 max=-2
 ```
 
+```stdin
+4
+5 6 7 -100
+```
+
+```expected hidden
+min=-100 max=7
+```
+
 ```checks
 must minMax\s*\(\s*const\s+std::vector<int>\s*&\s*\w+\s*,\s*int\s*&\s*\w+\s*,\s*int\s*&\s*\w+\s*\) :: Use the signature minMax(const std::vector<int>& values, int& smallest, int& largest).
 ```
 :::
 
-:::exercise Shout it
+:::exercise Shout it {easy}
 Read a whole line of text and convert every lowercase letter to uppercase **in place**, using a
 range-for loop over the `std::string` with a `char&` loop variable. Then print the line.
 
@@ -649,7 +667,214 @@ C++ 20 ROCKS
 
 ```
 
+```stdin
+a z A Z ` { @ [
+```
+
+```expected hidden
+A Z A Z ` { @ [
+```
+
 ```checks
 must for\s*\(\s*(char|auto)\s*&\s*\w+\s*: :: Loop with a reference: for (char& c : line).
+```
+:::
+
+:::exercise Bank transfers {hard}
+Simulate a tiny bank. Accounts are numbered from 1 to `n` and start with the given balances. Then
+process commands until the input ends:
+
+| Command | Effect |
+| --- | --- |
+| `deposit A X` | add `X` to account `A` |
+| `withdraw A X` | take `X` from account `A`, if its balance is at least `X` |
+| `transfer A B X` | move `X` from account `A` to account `B`, if `A`'s balance is at least `X` |
+| `show` | print all balances on one line, separated by single spaces |
+
+If a command names an account that doesn't exist, print `no such account` and do nothing. If there
+isn't enough money, print `insufficient funds` and do nothing. Successful commands print nothing.
+
+Write the operations as functions that take the balances **by reference**:
+`void deposit(long long& balance, long long amount)`, `bool withdraw(long long& balance, long long amount)`
+and `bool transfer(long long& from, long long& to, long long amount)` (they return `false` when there
+isn't enough money). Careful: a transfer from an account **to itself** is allowed, and must leave the
+balance unchanged.
+
+**Input:** `n` (1 to 100), then `n` balances, then the commands. Amounts are positive and at most
+10^12; balances never exceed 10^15.
+**Output:** one line for each `show` and for each failed command.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <vector>
+
+void deposit(long long& balance, long long amount) {
+    balance += amount;
+}
+
+bool withdraw(long long& balance, long long amount) {
+    if (balance < amount) {
+        return false;
+    }
+    balance -= amount;
+    return true;
+}
+
+bool transfer(long long& from, long long& to, long long amount) {
+    if (from < amount) {
+        return false;
+    }
+    from -= amount;       // if from and to are the same account, these two lines cancel out
+    to += amount;
+    return true;
+}
+
+bool exists(const std::vector<long long>& accounts, int id) {
+    return id >= 1 && id <= static_cast<int>(accounts.size());
+}
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<long long> accounts(n);
+    for (long long& balance : accounts) {
+        std::cin >> balance;
+    }
+
+    std::string command;
+    while (std::cin >> command) {
+        if (command == "show") {
+            for (std::size_t i = 0; i < accounts.size(); ++i) {
+                std::cout << accounts[i] << (i + 1 < accounts.size() ? " " : "\n");
+            }
+        } else if (command == "transfer") {
+            int a, b;
+            long long amount;
+            std::cin >> a >> b >> amount;
+            if (!exists(accounts, a) || !exists(accounts, b)) {
+                std::cout << "no such account\n";
+            } else if (!transfer(accounts[a - 1], accounts[b - 1], amount)) {
+                std::cout << "insufficient funds\n";
+            }
+        } else {
+            int a;
+            long long amount;
+            std::cin >> a >> amount;
+            if (!exists(accounts, a)) {
+                std::cout << "no such account\n";
+                continue;
+            }
+            long long& balance = accounts[a - 1];   // an alias for the element, not a copy
+            if (command == "deposit") {
+                deposit(balance, amount);
+            } else if (!withdraw(balance, amount)) {
+                std::cout << "insufficient funds\n";
+            }
+        }
+    }
+}
+```
+
+```hint
+Check that every account number is between 1 and `n` **before** touching any balance. Account `A` is
+`accounts[A - 1]`; pass that element straight to the function, and the reference parameter makes the
+function change the vector itself.
+```
+
+```hint
+"At least `X`" means a balance exactly equal to `X` is enough.
+```
+
+```hint
+In `transfer(accounts[a - 1], accounts[a - 1], x)`, `from` and `to` are two names for the **same**
+`long long`. `from -= amount; to += amount;` handles that correctly. Computing both new balances first
+and then assigning them would not: the second assignment would overwrite the first.
+```
+
+```stdin
+3
+100 50 0
+deposit 3 25
+withdraw 2 60
+transfer 1 2 30
+show
+```
+
+```expected
+insufficient funds
+70 80 25
+```
+
+```stdin
+2
+10 20
+transfer 2 1 20
+transfer 2 1 1
+withdraw 1 30
+show
+```
+
+```expected
+insufficient funds
+0 0
+```
+
+```stdin
+2
+5 5
+deposit 0 10
+withdraw 3 1
+transfer 1 -1 1
+transfer 9 1 100
+show
+```
+
+```expected hidden
+no such account
+no such account
+no such account
+no such account
+5 5
+```
+
+```stdin
+1
+100
+transfer 1 1 60
+show
+transfer 1 1 101
+show
+```
+
+```expected hidden
+100
+insufficient funds
+100
+```
+
+```stdin
+2
+1000000000000 0
+transfer 1 2 999999999999
+deposit 2 1000000000000
+show
+```
+
+```expected hidden
+1 1999999999999
+```
+
+```checks
+must bool\s+transfer\s*\(\s*long\s+long\s*&\s*\w+\s*,\s*long\s+long\s*&\s*\w+\s*,\s*long\s+long :: Write bool transfer(long long& from, long long& to, long long amount).
+must bool\s+withdraw\s*\(\s*long\s+long\s*& :: Write bool withdraw(long long& balance, long long amount).
+must void\s+deposit\s*\(\s*long\s+long\s*& :: Write void deposit(long long& balance, long long amount).
 ```
 :::

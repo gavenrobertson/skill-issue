@@ -343,12 +343,14 @@ Only `dynamic_cast` consults RTTI at run time. The others are resolved entirely 
 its static type (`Animal*`).
 :::
 
-:::exercise Find the dogs
+:::exercise Find the dogs {easy}
 Only `Dog` has a `fetch()` member. For every animal, print its name; if the animal is **really a dog**
 (check with `dynamic_cast`), also call `fetch()`. At the end, print how many of the animals were dogs.
 
-**Input:** lines until end of input, each `dog NAME`, `cat NAME`, or `bird NAME`.
-**Output:** for each animal a line `NAME`, followed for dogs by `NAME fetches!`. Then `dogs: D of N`.
+**Input:** lines until end of input, each `dog NAME`, `puppy NAME`, `cat NAME`, or `bird NAME`. A
+`Puppy` derives from `Dog`, so a puppy **is** a dog too.
+**Output:** for each animal a line `NAME`, followed for dogs (puppies included) by `NAME fetches!`. Then
+`dogs: D of N`.
 
 ```cpp starter
 #include <iostream>
@@ -370,6 +372,7 @@ public:
     void fetch() const { std::cout << name() << " fetches!\n"; }
 };
 
+class Puppy : public Dog { public: using Dog::Dog; };
 class Cat : public Animal { public: using Animal::Animal; };
 class Bird : public Animal { public: using Animal::Animal; };
 
@@ -378,6 +381,7 @@ int main() {
     std::string kind, name;
     while (std::cin >> kind >> name) {
         if (kind == "dog") zoo.push_back(std::make_unique<Dog>(name));
+        else if (kind == "puppy") zoo.push_back(std::make_unique<Puppy>(name));
         else if (kind == "cat") zoo.push_back(std::make_unique<Cat>(name));
         else zoo.push_back(std::make_unique<Bird>(name));
     }
@@ -410,6 +414,7 @@ public:
     void fetch() const { std::cout << name() << " fetches!\n"; }
 };
 
+class Puppy : public Dog { public: using Dog::Dog; };
 class Cat : public Animal { public: using Animal::Animal; };
 class Bird : public Animal { public: using Animal::Animal; };
 
@@ -418,6 +423,7 @@ int main() {
     std::string kind, name;
     while (std::cin >> kind >> name) {
         if (kind == "dog") zoo.push_back(std::make_unique<Dog>(name));
+        else if (kind == "puppy") zoo.push_back(std::make_unique<Puppy>(name));
         else if (kind == "cat") zoo.push_back(std::make_unique<Cat>(name));
         else zoo.push_back(std::make_unique<Bird>(name));
     }
@@ -435,6 +441,11 @@ int main() {
 
 ```hint
 `a.get()` gives the raw `Animal*`. Then `if (const Dog* d = dynamic_cast<const Dog*>(a.get())) { ... }`.
+```
+
+```hint
+Comparing `typeid(*a) == typeid(Dog)` is an *exact* match, so it misses puppies. `dynamic_cast` accepts
+anything that is-a `Dog`.
 ```
 
 ```stdin
@@ -463,13 +474,32 @@ Solo
 dogs: 0 of 1
 ```
 
+```stdin
+puppy Bit
+cat Tom
+dog Rex
+puppy Byte
+```
+
+```expected hidden
+Bit
+Bit fetches!
+Tom
+Rex
+Rex fetches!
+Byte
+Byte fetches!
+dogs: 3 of 4
+```
+
 ```checks
 must dynamic_cast\s*<\s*(const\s+)?Dog\s*\* :: Use dynamic_cast to Dog* to check the real type.
 mustnot static_cast\s*<\s*(const\s+)?Dog :: static_cast doesn't check; use dynamic_cast.
+mustnot typeid :: typeid only matches the exact type; use dynamic_cast so puppies count as dogs.
 ```
 :::
 
-:::exercise Checked reference cast
+:::exercise Checked reference cast {easy}
 Write `void inspect(const Shape& s)` that uses `dynamic_cast` to a **reference** `const Square&`:
 
 - If it succeeds, print `square with side X`.
@@ -595,7 +625,7 @@ must catch\s*\(\s*(const\s+)?std::bad_cast :: Catch std::bad_cast.
 ```
 :::
 
-:::exercise Same type?
+:::exercise Same type? {medium}
 A factory creates shapes from names. For each pair of names, create both shapes and report whether
 they have **exactly the same dynamic type**, using `typeid` on the objects (not on the pointers, and not
 by comparing names or strings).

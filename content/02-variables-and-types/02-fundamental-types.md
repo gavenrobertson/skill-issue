@@ -386,7 +386,7 @@ Which type should you use by default for a number with a fractional part?
 `float` only has about 7.
 :::
 
-:::exercise Byte counter
+:::exercise Byte counter {easy}
 An array of `n` integers takes `n * sizeof(int)` bytes. Read `n` and print how many bytes `n` ints
 take, **using `sizeof`** (don't hard-code `4`).
 
@@ -446,7 +446,7 @@ must sizeof\s*\(\s*int\s*\) :: Use sizeof(int) instead of hard-coding the size.
 ```
 :::
 
-:::exercise Unsigned wraparound
+:::exercise Unsigned wraparound {medium}
 Read two non-negative numbers `a` and `b` and print `a - b` computed with **`unsigned int`**
 arithmetic, so that a "negative" result wraps around.
 
@@ -504,12 +504,36 @@ Change the variables' type to `unsigned int`. Unsigned subtraction wraps modulo 
 4294967295
 ```
 
+```stdin
+4000000000 0
+```
+
+```expected hidden
+4000000000
+```
+
+```stdin
+0 4000000000
+```
+
+```expected hidden
+294967296
+```
+
+```stdin
+5 5
+```
+
+```expected hidden
+0
+```
+
 ```checks
 must \bunsigned\b|uint32_t :: Use an unsigned type.
 ```
 :::
 
-:::exercise Big multiplication
+:::exercise Big multiplication {medium}
 Read two integers and print their product. The numbers can be as large as two billion in size, so the
 product does **not** fit in an `int` (and signed overflow is undefined behavior!). Use a 64-bit type.
 
@@ -568,7 +592,154 @@ Both variables must be 64-bit **before** you multiply. If they are `int`, the mu
 4000000000000000000
 ```
 
+```stdin
+-2000000000 -2000000000
+```
+
+```expected hidden
+4000000000000000000
+```
+
+```stdin
+0 -5
+```
+
+```expected hidden
+0
+```
+
+```stdin
+-2000000000 2000000000
+```
+
+```expected hidden
+-4000000000000000000
+```
+
 ```checks
 must long\s+long|int64_t :: Use a 64-bit integer type (long long or std::int64_t).
+```
+:::
+
+:::exercise Midpoint without overflow {hard}
+Read two `unsigned int` values `a` and `b` and print their midpoint, rounded down: ⌊(a + b) / 2⌋.
+
+The catch: both values can be as large as 4,294,967,295, the maximum of `unsigned int`, and you may
+**only use `unsigned int`** variables. No `long long`, no 64-bit types, no floating point and no
+`std::midpoint`. The obvious `(a + b) / 2` wraps around when the sum doesn't fit: for
+`4294967295 4294967295` it prints `2147483647`.
+
+**Input:** two integers `a b` (0 ≤ a, b ≤ 4,294,967,295).
+**Output:** the rounded-down midpoint, newline. For `3 5` print `4`; for `7 2` print `4`.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    unsigned int a{}, b{};
+    std::cin >> a >> b;
+    std::cout << (a + b) / 2 << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    unsigned int a{}, b{};
+    std::cin >> a >> b;
+    unsigned int halves = a / 2 + b / 2;              // can't overflow
+    unsigned int leftovers = (a - a / 2 * 2) + (b - b / 2 * 2);   // 0, 1 or 2
+    std::cout << halves + leftovers / 2 << '\n';
+}
+```
+
+```hint
+Halve first, then add: `a / 2 + b / 2` is at most 4,294,967,294, so it can't overflow. But it is
+sometimes 1 too small. When?
+```
+
+```hint
+Integer division throws away a remainder of 0 or 1 for each number. `a - a / 2 * 2` is exactly that
+remainder. You lose a whole 1 only when **both** remainders are 1.
+```
+
+```stdin
+3 5
+```
+
+```expected
+4
+```
+
+```stdin
+4294967295 4294967295
+```
+
+```expected
+4294967295
+```
+
+```stdin
+4294967295 4294967294
+```
+
+```expected hidden
+4294967294
+```
+
+```stdin
+1 1
+```
+
+```expected hidden
+1
+```
+
+```stdin
+0 0
+```
+
+```expected hidden
+0
+```
+
+```stdin
+0 4294967295
+```
+
+```expected hidden
+2147483647
+```
+
+```stdin
+7 2
+```
+
+```expected hidden
+4
+```
+
+```stdin
+4294967295 1
+```
+
+```expected hidden
+2147483648
+```
+
+```stdin
+4294967294 4294967294
+```
+
+```expected hidden
+4294967294
+```
+
+```checks
+must \bunsigned\b :: Use unsigned int.
+mustnot \blong\b|int64_t|uint64_t|size_t|__int128 :: Only unsigned int is allowed: no wider integer types.
+mustnot \bdouble\b|\bfloat\b :: No floating point.
+mustnot midpoint :: Work it out yourself instead of using std::midpoint.
 ```
 :::

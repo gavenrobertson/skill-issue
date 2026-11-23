@@ -318,7 +318,7 @@ List nodes never move. Only the erased element's iterators become invalid. That 
 few real reasons to choose a list.
 :::
 
-:::exercise Double-ended commands
+:::exercise Double-ended commands {easy}
 Process commands on a `std::deque<int>` until the input ends:
 
 - `push_front X` and `push_back X` add `X` at that end,
@@ -408,6 +408,25 @@ pop_back
 empty
 ```
 
+```stdin
+push_front 1
+push_front 2
+push_back 3
+pop_front
+push_front -4
+```
+
+```expected hidden
+-4 1 3
+```
+
+```stdin
+```
+
+```expected hidden
+empty
+```
+
 ```checks
 must std::deque :: Use a std::deque.
 must push_front\s*\( :: Use push_front.
@@ -415,7 +434,7 @@ must pop_front\s*\( :: Use pop_front.
 ```
 :::
 
-:::exercise Splice the lists
+:::exercise Splice the lists {medium}
 Read two lists of integers, `a` and `b`, and a number `k`. Move **all** elements of `b` into `a` so that
 they come right after the first `k` elements of `a` (`0 <= k <= size of a`), using `splice` (no copying
 element by element).
@@ -526,12 +545,23 @@ b size: 0
 b size: 0
 ```
 
+```stdin
+2 1 2
+0
+1
+```
+
+```expected hidden
+1 2
+b size: 0
+```
+
 ```checks
 must \.splice\s*\( :: Use splice.
 ```
 :::
 
-:::exercise Sorted unique words
+:::exercise Sorted unique words {easy}
 Read words into a `std::list<std::string>` until the input ends. Use the list's own `sort()` and
 `unique()` member functions to keep one copy of each word in alphabetical order.
 
@@ -596,6 +626,15 @@ same
 count: 1
 ```
 
+```stdin
+b B a A b
+```
+
+```expected hidden
+A B a b
+count: 4
+```
+
 ```checks
 must std::list :: Use a std::list.
 must \.sort\s*\(\s*\) :: Use the member function sort().
@@ -604,7 +643,7 @@ mustnot std::sort :: std::sort doesn't work on lists; use the member function.
 ```
 :::
 
-:::exercise Forward list cleanup
+:::exercise Forward list cleanup {easy}
 Read `n` integers and add each one to a `std::forward_list<int>` with `push_front` (so they end up in
 reverse order). Then remove every occurrence of a given value `x` using the list's `remove` member.
 
@@ -686,9 +725,208 @@ int main() {
 empty
 ```
 
+```stdin
+0
+5
+```
+
+```expected hidden
+empty
+```
+
+```stdin
+4
+1 2 3 4
+9
+```
+
+```expected hidden
+4 3 2 1
+```
+
 ```checks
 must std::forward_list :: Use a std::forward_list.
 must push_front\s*\( :: Add elements with push_front.
 must \.remove\s*\( :: Use the member function remove.
+```
+:::
+
+:::exercise Cursor editor {hard}
+Simulate a one-line text editor with a cursor. The cursor sits **between** characters (or before the
+first, or after the last). It starts at the end of the initial text. Commands:
+
+| Command | Effect |
+| --- | --- |
+| `L` / `R` | move the cursor one character left / right (ignored at the start / end) |
+| `H` / `E` | move the cursor to the very start / end |
+| `B` | backspace: delete the character **before** the cursor (ignored at the start) |
+| `D` | delete: remove the character **after** the cursor (ignored at the end) |
+| `P c` | type character `c`: insert it before the cursor (the cursor ends up after it) |
+
+The text can have 100 000 characters and there can be 500 000 commands, so every command must be O(1).
+A `std::string` or `std::vector` won't do (inserting in the middle shifts everything). Store the text
+in a `std::list<char>` and the cursor as an **iterator** to the character just after it (`end()` when
+the cursor is at the end). List iterators stay valid when you insert or erase *other* elements.
+
+**Input:** the initial text (one word, at least one character), then `m`, then `m` commands.
+**Output:** the final text, or `(empty)` if nothing is left.
+
+Example: text `abc`, commands `L`, `L`, `P x`, `E`, `B` give `axb`.
+
+```cpp starter
+#include <iostream>
+#include <iterator>
+#include <list>
+#include <string>
+
+int main() {
+    std::string text;
+    int m;
+    std::cin >> text >> m;
+    for (int i = 0; i < m; ++i) {
+        char cmd;
+        std::cin >> cmd;
+        // apply the command
+    }
+    std::cout << text << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <iterator>
+#include <list>
+#include <string>
+
+int main() {
+    std::string text;
+    int m;
+    std::cin >> text >> m;
+    std::list<char> chars(text.begin(), text.end());
+    auto cursor = chars.end();               // points at the character AFTER the cursor
+
+    for (int i = 0; i < m; ++i) {
+        char cmd;
+        std::cin >> cmd;
+        if (cmd == 'L') {
+            if (cursor != chars.begin()) --cursor;
+        } else if (cmd == 'R') {
+            if (cursor != chars.end()) ++cursor;
+        } else if (cmd == 'H') {
+            cursor = chars.begin();
+        } else if (cmd == 'E') {
+            cursor = chars.end();
+        } else if (cmd == 'B') {
+            if (cursor != chars.begin()) chars.erase(std::prev(cursor));   // cursor stays valid
+        } else if (cmd == 'D') {
+            if (cursor != chars.end()) cursor = chars.erase(cursor);       // erase returns the next one
+        } else if (cmd == 'P') {
+            char c;
+            std::cin >> c;
+            chars.insert(cursor, c);       // goes before cursor; cursor still points at the same char
+        }
+    }
+
+    if (chars.empty()) std::cout << "(empty)";
+    for (char c : chars) std::cout << c;
+    std::cout << '\n';
+}
+```
+
+```hint
+Keep `auto cursor = chars.end();` and think of it as "the character right after the cursor". Then
+`chars.insert(cursor, c)` puts `c` exactly where you type, and `cursor` doesn't need to change.
+```
+
+```hint
+Backspace erases `std::prev(cursor)` (only if `cursor != chars.begin()`). Erasing a different element
+never invalidates `cursor`. For `D`, the erased element **is** the one `cursor` points at, so use the
+iterator returned by `erase`.
+```
+
+```stdin
+abc
+5
+L
+L
+P x
+E
+B
+```
+
+```expected
+axb
+```
+
+```stdin
+hello
+7
+H
+D
+D
+P J
+R
+R
+P y
+```
+
+```expected
+Jllyo
+```
+
+```stdin
+ab
+6
+B
+B
+B
+L
+D
+P z
+```
+
+```expected hidden
+z
+```
+
+```stdin
+xyz
+8
+H
+L
+B
+E
+R
+D
+P 1
+P 2
+```
+
+```expected hidden
+xyz12
+```
+
+```stdin
+abcd
+9
+L
+L
+L
+L
+L
+P >
+E
+P <
+H
+```
+
+```expected hidden
+>abcd<
+```
+
+```checks
+must std::list\s*<\s*char\s*> :: Store the text in a std::list<char>.
+must \.insert\s*\( :: Insert characters at the cursor with insert.
+must \.erase\s*\( :: Delete characters with erase.
 ```
 :::

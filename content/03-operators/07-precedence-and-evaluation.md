@@ -212,7 +212,7 @@ What does `std::cout << 3 + 4 << 1;` print?
 `+` binds tighter than `<<`, so it's `(std::cout << (3 + 4)) << 1`: it prints `7`, then `1`.
 :::
 
-:::exercise Fix the average
+:::exercise Fix the average {easy}
 This program should print the average of two integers (integer division is fine), but it prints the
 wrong answer because of precedence. Fix it with parentheses.
 
@@ -267,12 +267,20 @@ int main() {
 1
 ```
 
+```stdin
+3 5
+```
+
+```expected hidden
+4
+```
+
 ```checks
 must \(\s*a\s*\+\s*b\s*\) :: Group a + b with parentheses.
 ```
 :::
 
-:::exercise Shift then add
+:::exercise Shift then add {easy}
 Read an integer `n` (0 ≤ n ≤ 1000) and print `n` shifted left by 2 bits, plus 1. The starter tries
 `std::cout << n << 2 + 1`, which is parsed as two **stream insertions**. Use parentheses so `<<` means
 a shift.
@@ -332,12 +340,20 @@ Run the starter with `3`: it prints `33`, because it inserts `3` and then `2 + 1
 4001
 ```
 
+```stdin
+1
+```
+
+```expected hidden
+5
+```
+
 ```checks
 must \(\s*n\s*<<\s*2\s*\) :: Write the shift as (n << 2).
 ```
 :::
 
-:::exercise Low nibble check
+:::exercise Low nibble check {medium}
 Read a non-negative integer `x` and print whether its lowest 4 bits are exactly `1010` (that is,
 `x & 15` equals `10`). The starter writes `x & 15 == 10`, which GCC warns about and which computes the
 wrong thing. Fix the grouping.
@@ -405,7 +421,169 @@ true
 false
 ```
 
+```stdin
+1050
+```
+
+```expected hidden
+true
+```
+
+```stdin
+11
+```
+
+```expected hidden
+false
+```
+
+```stdin
+15
+```
+
+```expected hidden
+false
+```
+
 ```checks
 must \(\s*x\s*&\s*\w+\s*\)\s*== :: Parenthesize (x & 15) before comparing.
+```
+:::
+
+:::exercise FAT dates {hard}
+The FAT file system (still used on USB sticks and SD cards) stores a file's date in one 16-bit number:
+
+```
+bit:   15 14 13 12 11 10  9 | 8  7  6  5 | 4  3  2  1  0
+        year - 1980 (0-127) |   month    |      day
+```
+
+Write a decoder and an encoder. Decode the fields exactly as stored, without checking whether the
+date is valid. Think about precedence for every shift, mask and `|`: which parentheses are needed,
+and which aren't?
+
+**Input:** two lines. The first holds a packed date `p` (0 ≤ p ≤ 65535) to decode. The second holds a
+date `y m d` (1980 ≤ y ≤ 2107, 1 ≤ m ≤ 12, 1 ≤ d ≤ 31) to encode.
+**Output:** two lines: the decoded `year month day` separated by spaces, then the packed value of
+`y m d` in decimal. For
+
+```
+22127
+2023 3 15
+```
+
+print
+
+```
+2023 3 15
+22127
+```
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    unsigned int p{};
+    std::cin >> p;
+    unsigned int y{}, m{}, d{};
+    std::cin >> y >> m >> d;
+    // decode p, then encode y m d
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    unsigned int p{};
+    std::cin >> p;
+    unsigned int year = (p >> 9 & 0x7F) + 1980;   // >> binds tighter than &, + tighter than >>
+    unsigned int month = p >> 5 & 0xF;
+    unsigned int day = p & 0x1F;
+
+    unsigned int y{}, m{}, d{};
+    std::cin >> y >> m >> d;
+    unsigned int packed = (y - 1980) << 9 | m << 5 | d;   // - before <<, << before |
+
+    std::cout << year << ' ' << month << ' ' << day << '\n';
+    std::cout << packed << '\n';
+}
+```
+
+```hint
+To read a field: shift it down to bit 0, then mask off everything above it. Month is 4 bits wide, so its
+mask is `0xF` (binary `1111`); day is 5 bits, mask `0x1F`.
+```
+
+```hint
+`p >> 9 + 1980` shifts by 1989 (`+` binds tighter than `>>`), and `p & 0x1E0 >> 5` shifts the
+**mask** (`>>` binds tighter than `&`). When in doubt, add parentheses.
+```
+
+```stdin
+22127
+2023 3 15
+```
+
+```expected
+2023 3 15
+22127
+```
+
+```stdin
+0
+1980 1 1
+```
+
+```expected
+1980 0 0
+33
+```
+
+```stdin
+65535
+2107 12 31
+```
+
+```expected hidden
+2107 15 31
+65439
+```
+
+```stdin
+20000
+2000 2 29
+```
+
+```expected hidden
+2019 1 0
+10333
+```
+
+```stdin
+512
+1981 1 31
+```
+
+```expected hidden
+1981 0 0
+575
+```
+
+```stdin
+31
+2024 10 1
+```
+
+```expected hidden
+1980 0 31
+22849
+```
+
+```checks
+must >> :: Use >> to decode.
+must << :: Use << to encode.
+must & :: Use & to mask the fields.
+must \| :: Combine the fields with |.
 ```
 :::

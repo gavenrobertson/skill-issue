@@ -406,7 +406,7 @@ v.erase(std::unique(v.begin(), v.end()), v.end());
 `unique` only collapses **adjacent** equal elements. Sort first if you want every value once.
 :::
 
-:::exercise Square everything
+:::exercise Square everything {easy}
 Read `n` integers and print their squares, in the same order, using `std::transform`.
 
 **Input:** `n`, then `n` integers (each between -10000 and 10000).
@@ -481,7 +481,7 @@ must std::transform|std::ranges::transform :: Use std::transform.
 ```
 :::
 
-:::exercise Keep the evens
+:::exercise Keep the evens {easy}
 Read `n` integers and copy the **even** ones (in order) into a new, initially empty vector using
 `std::copy_if` and `std::back_inserter`. Print the new vector, or `none` if it's empty.
 
@@ -564,13 +564,30 @@ int main() {
 none
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+none
+```
+
+```stdin
+4
+-2 -3 0 8
+```
+
+```expected hidden
+-2 0 8
+```
+
 ```checks
 must copy_if :: Use std::copy_if.
 must back_inserter :: Write into the new vector with std::back_inserter.
 ```
 :::
 
-:::exercise Distinct values
+:::exercise Distinct values {easy}
 Read `n` integers and print each **distinct** value once, in ascending order, followed by how many
 distinct values there are. Use `std::sort` and `std::unique` (with `erase`).
 
@@ -662,7 +679,7 @@ mustnot std::set :: Practice sort + unique here instead of a std::set.
 ```
 :::
 
-:::exercise Clean and rotate
+:::exercise Clean and rotate {medium}
 Read `n` integers and a number `k`. Then:
 
 1. Remove every **negative** number (use `std::erase_if`, or the erase-remove idiom with `std::remove_if`).
@@ -761,6 +778,26 @@ Then `std::rotate(v.begin(), v.begin() + k % size, v.end())`.
 
 ```expected hidden
 empty
+```
+
+```stdin
+4
+0 0 -1 5
+0
+```
+
+```expected hidden
+-1 -1 5
+```
+
+```stdin
+3
+0 5 6
+3
+```
+
+```expected hidden
+-1 5 6
 ```
 
 ```checks

@@ -15,8 +15,9 @@ inline int add(int a, int b) {
 }
 ```
 
-Today, compilers ignore that hint. They inline (or don't) based on their own analysis, with or
-without the keyword. So what is `inline` for?
+Today, compilers treat that hint as weak at best (GCC only nudges its heuristics a little). They
+inline (or don't) based on their own analysis, with or without the keyword, and they happily inline
+functions that aren't marked `inline` at all. So what is `inline` for?
 
 **`inline` means "this definition may appear in more than one source file."** Normally the
 **One Definition Rule (ODR)** says a function must be defined exactly once in the whole program.
@@ -90,8 +91,9 @@ int main() {
 
 Since C++14, and much more since C++20, nearly normal code: local variables, `if`, `switch`,
 loops, recursion, even `std::string` and `std::vector` used temporarily inside it (C++20). The main
-restrictions are no `static` local variables, no I/O, no calling non-`constexpr` functions, and no
-undefined behavior (the compiler checks for UB during constant evaluation and refuses to compile).
+restrictions are no `static` local variables (C++23 allows `static constexpr` ones), and, on any path that runs at
+compile time, no I/O, no calls to non-`constexpr` functions, and no undefined behavior (the compiler
+checks for UB during constant evaluation and refuses to compile).
 
 ```cpp run
 #include <iostream>
@@ -245,7 +247,7 @@ How does `consteval` differ from `constexpr`?
 `consteval` makes every call an immediate, compile-time evaluation.
 :::
 
-:::exercise Compile-time factorial
+:::exercise Compile-time factorial {easy}
 Write a `constexpr` function `long long factorial(int n)` (using a loop or recursion). Add **two**
 `static_assert`s proving that `factorial(0) == 1` and `factorial(5) == 120` at compile time. Then
 read `n` at run time and print `factorial(n)`.
@@ -316,6 +318,22 @@ Put `constexpr` in front of the return type. Then `static_assert(factorial(5) ==
 2432902008176640000
 ```
 
+```stdin
+1
+```
+
+```expected hidden
+1
+```
+
+```stdin
+13
+```
+
+```expected hidden
+6227020800
+```
+
 ```checks
 must constexpr\s+long\s+long\s+factorial :: Make factorial constexpr.
 must static_assert\s*\(\s*factorial\s*\(\s*0\s*\)\s*==\s*1 :: static_assert that factorial(0) == 1.
@@ -323,7 +341,7 @@ must static_assert\s*\(\s*factorial\s*\(\s*5\s*\)\s*==\s*120 :: static_assert th
 ```
 :::
 
-:::exercise Fix the consteval
+:::exercise Fix the consteval {easy}
 This program doesn't compile: `toCelsius` is `consteval`, but `main` calls it with a value read at
 run time. Change it so it works for **both** the compile-time `boiling` constant and the run-time
 input. Keep the `static_assert`.
@@ -390,13 +408,40 @@ boiling: 100
 -40
 ```
 
+```stdin
+212
+```
+
+```expected hidden
+boiling: 100
+100
+```
+
+```stdin
+0
+```
+
+```expected hidden
+boiling: 100
+-17
+```
+
+```stdin
+98
+```
+
+```expected hidden
+boiling: 100
+36
+```
+
 ```checks
 must constexpr\s+int\s+toCelsius :: toCelsius should be constexpr.
 must static_assert :: Keep the static_assert.
 ```
 :::
 
-:::exercise Prime table
+:::exercise Prime table {medium}
 Write `constexpr bool isPrime(int n)` and use it twice:
 
 1. At compile time: `static_assert(isPrime(2) && isPrime(97) && !isPrime(1) && !isPrime(91));`
@@ -478,8 +523,199 @@ none
 2 3
 ```
 
+```stdin
+2 2
+```
+
+```expected hidden
+2
+```
+
+```stdin
+1 1
+```
+
+```expected hidden
+none
+```
+
+```stdin
+97 100
+```
+
+```expected hidden
+97
+```
+
+```stdin
+30 10
+```
+
+```expected hidden
+none
+```
+
+```stdin
+-10 -1
+```
+
+```expected hidden
+none
+```
+
 ```checks
 must constexpr\s+bool\s+isPrime :: Make isPrime constexpr.
 must static_assert\s*\(\s*isPrime :: Add the static_assert that uses isPrime.
+```
+:::
+
+:::exercise Narcissistic numbers {hard}
+A **narcissistic** (or Armstrong) number equals the sum of its own digits, each raised to the power of
+the number of digits: `153 = 1^3 + 5^3 + 3^3`, and `9474 = 9^4 + 4^4 + 7^4 + 4^4`. Every single-digit
+number, including `0`, is narcissistic.
+
+Write a `constexpr bool isNarcissistic(int n)` (plus any `constexpr` helpers you like; note that
+`std::pow` is **not** `constexpr` in C++20, so write your own integer power). Prove it works with
+`static_assert`s for at least `153`, `9474`, `0` and the non-example `100`. Then answer queries at run
+time.
+
+**Input:** two integers `lo` and `hi` (`0 <= lo`, `hi <= 1000000`).
+**Output:** all narcissistic numbers `n` with `lo <= n <= hi`, separated by single spaces on one line,
+or `none`.
+
+| Input | Output |
+| --- | --- |
+| `100 500` | `153 370 371 407` |
+| `10 99` | `none` |
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int lo = 0, hi = 0;
+    std::cin >> lo >> hi;
+    std::cout << "none\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+
+constexpr int countDigits(int n) {
+    int digits = 1;
+    while (n >= 10) {
+        n /= 10;
+        ++digits;
+    }
+    return digits;
+}
+
+constexpr long long ipow(long long base, int exp) {
+    long long result = 1;
+    for (int i = 0; i < exp; ++i) {
+        result *= base;
+    }
+    return result;
+}
+
+constexpr bool isNarcissistic(int n) {
+    int k = countDigits(n);
+    long long sum = 0;
+    for (int rest = n; rest > 0; rest /= 10) {
+        sum += ipow(rest % 10, k);
+    }
+    return sum == n;
+}
+
+static_assert(isNarcissistic(153));
+static_assert(isNarcissistic(9474));
+static_assert(isNarcissistic(0));
+static_assert(!isNarcissistic(100));
+
+int main() {
+    int lo = 0, hi = 0;
+    std::cin >> lo >> hi;
+    bool first = true;
+    for (int n = lo; n <= hi; ++n) {
+        if (isNarcissistic(n)) {
+            if (!first) std::cout << ' ';
+            std::cout << n;
+            first = false;
+        }
+    }
+    if (first) std::cout << "none";
+    std::cout << '\n';
+}
+```
+
+```hint
+Count the digits first (a loop that divides by 10). `0` has one digit.
+```
+
+```hint
+Then sum `digit^k` over the digits with your own `constexpr` power function, and compare with `n`.
+```
+
+```stdin
+100 500
+```
+
+```expected
+153 370 371 407
+```
+
+```stdin
+10 99
+```
+
+```expected
+none
+```
+
+```stdin
+0 9
+```
+
+```expected hidden
+0 1 2 3 4 5 6 7 8 9
+```
+
+```stdin
+9000 10000
+```
+
+```expected hidden
+9474
+```
+
+```stdin
+1 1000000
+```
+
+```expected hidden
+1 2 3 4 5 6 7 8 9 153 370 371 407 1634 8208 9474 54748 92727 93084 548834
+```
+
+```stdin
+370 371
+```
+
+```expected hidden
+370 371
+```
+
+```stdin
+154 369
+```
+
+```expected hidden
+none
+```
+
+```checks
+must constexpr\s+bool\s+isNarcissistic :: Make isNarcissistic constexpr.
+must static_assert\s*\(\s*isNarcissistic\s*\(\s*153\s*\) :: static_assert that 153 is narcissistic.
+must static_assert\s*\(\s*!\s*isNarcissistic\s*\(\s*100\s*\) :: static_assert that 100 is not.
+mustnot \bpow\s*\( :: std::pow isn't constexpr in C++20: write your own power function.
 ```
 :::

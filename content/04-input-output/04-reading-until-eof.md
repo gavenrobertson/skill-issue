@@ -287,7 +287,7 @@ Why is `while (!std::cin.eof()) { std::cin >> x; ... }` wrong? (select all that 
 Make the read the condition instead: `while (std::cin >> x)`.
 :::
 
-:::exercise Sum everything
+:::exercise Sum everything {easy}
 Read integers until the end of input and print their sum.
 
 **Input:** zero or more integers, separated by any whitespace (spaces and/or newlines).
@@ -347,12 +347,32 @@ Sum: 65
 Sum: 0
 ```
 
+```stdin
+-5
+```
+
+```expected hidden
+Sum: -5
+```
+
+```stdin
+  
+
+ 7 
+
+
+```
+
+```expected hidden
+Sum: 7
+```
+
 ```checks
 must while\s*\(\s*(std::)?cin\s*>> :: Use the idiom while (std::cin >> x).
 ```
 :::
 
-:::exercise Count and average
+:::exercise Count and average {medium}
 Read numbers (they may have decimals) until the end of input. Print how many there were and their
 average.
 
@@ -437,12 +457,39 @@ Average: 1.75
 No numbers
 ```
 
+```stdin
+-1.5 -2.5
+```
+
+```expected hidden
+Count: 2
+Average: -2
+```
+
+```stdin
+0
+```
+
+```expected hidden
+Count: 1
+Average: 0
+```
+
+```stdin
+7
+```
+
+```expected hidden
+Count: 1
+Average: 7
+```
+
 ```checks
 must while\s*\( :: Use a while loop to read until the end of input.
 ```
 :::
 
-:::exercise Number the lines
+:::exercise Number the lines {easy}
 Read every line of the input and print it with its line number in front. Empty lines count too.
 
 **Input:** any number of lines.
@@ -520,12 +567,32 @@ last line with   spaces
 2: last line with   spaces
 ```
 
+```stdin
+only one line
+```
+
+```expected hidden
+1: only one line
+```
+
+```stdin
+
+
+third
+```
+
+```expected hidden
+1:
+2:
+3: third
+```
+
 ```checks
 must while\s*\(\s*(std::)?getline :: Loop with while (std::getline(std::cin, line)).
 ```
 :::
 
-:::exercise N then N values
+:::exercise N then N values {easy}
 The first number in the input is a count `n`. Then come `n` integers. Print their total. Any input after
 those `n` integers must be ignored.
 
@@ -599,7 +666,183 @@ Total of 5 numbers: 5
 Total of 0 numbers: 0
 ```
 
+```stdin
+1
+-7
+8
+```
+
+```expected hidden
+Total of 1 numbers: -7
+```
+
+```stdin
+4 -1 -2 -3 -4 100
+```
+
+```expected hidden
+Total of 4 numbers: -10
+```
+
 ```checks
 must while\s*\( :: Use a while loop.
+```
+:::
+
+:::exercise Min, max and why it stopped {hard}
+Read integers until the input ends **or** something that isn't an integer shows up. Then report how many
+numbers were read, the smallest and largest of them, and why reading stopped.
+
+**Input:** zero or more integers, possibly followed by junk.
+**Output:**
+
+```
+Count: <how many>
+Min: <smallest>
+Max: <largest>
+Ended: <end of input | bad input>
+```
+
+If no number was read at all, leave out the `Min` and `Max` lines.
+
+For `4 4 x 100` the output is:
+
+```
+Count: 2
+Min: 4
+Max: 4
+Ended: bad input
+```
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int x = 0;
+    int count = 0;
+    while (std::cin >> x) {
+        ++count;
+    }
+    std::cout << "Count: " << count << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    int x = 0;
+    int count = 0;
+    int min = 0;
+    int max = 0;
+    while (std::cin >> x) {
+        if (count == 0 || x < min) {
+            min = x;
+        }
+        if (count == 0 || x > max) {
+            max = x;
+        }
+        ++count;
+    }
+
+    std::cout << "Count: " << count << '\n';
+    if (count > 0) {
+        std::cout << "Min: " << min << '\n';
+        std::cout << "Max: " << max << '\n';
+    }
+    if (std::cin.eof()) {
+        std::cout << "Ended: end of input\n";
+    } else {
+        std::cout << "Ended: bad input\n";
+    }
+}
+```
+
+```hint
+Don't start `max` at `0`: if every number is negative, `0` would wrongly win. Use the **first** number
+read as the starting value for both (`count == 0` tells you it's the first).
+```
+
+```hint
+After the loop, `std::cin.eof()` is true if the loop stopped because the input ran out, and false if it
+stopped on something that isn't a number.
+```
+
+```stdin
+3 -7 12
+```
+
+```expected
+Count: 3
+Min: -7
+Max: 12
+Ended: end of input
+```
+
+```stdin
+4 4 x 100
+```
+
+```expected
+Count: 2
+Min: 4
+Max: 4
+Ended: bad input
+```
+
+```stdin
+-5 -2 -9
+```
+
+```expected hidden
+Count: 3
+Min: -9
+Max: -2
+Ended: end of input
+```
+
+```stdin
+```
+
+```expected hidden
+Count: 0
+Ended: end of input
+```
+
+```stdin
+abc 1 2
+```
+
+```expected hidden
+Count: 0
+Ended: bad input
+```
+
+```stdin
+2147483647
+-2147483648
+```
+
+```expected hidden
+Count: 2
+Min: -2147483648
+Max: 2147483647
+Ended: end of input
+```
+
+```stdin
+7 8.5 9
+```
+
+```expected hidden
+Count: 2
+Min: 7
+Max: 8
+Ended: bad input
+```
+
+```checks
+must while\s*\(\s*(std::)?cin\s*>> :: Read with while (std::cin >> x).
+must \.eof\s*\( :: Use std::cin.eof() to find out why the loop stopped.
 ```
 :::

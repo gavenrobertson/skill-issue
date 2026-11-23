@@ -315,7 +315,7 @@ The capture list `[...]` and the body `{...}` are always required; everything el
 Without `[...]`, `(int x) { return x; }` isn't a lambda at all.
 :::
 
-:::exercise Square with a lambda
+:::exercise Square with a lambda {easy}
 Read one integer `n` and print `n * n`.
 
 Store a lambda named `square` in an `auto` variable and use it to compute the result.
@@ -373,13 +373,21 @@ The shape is `auto square = [](int x) { return x * x; };` and then `square(n)`.
 0
 ```
 
+```stdin
+-40000
+```
+
+```expected hidden
+1600000000
+```
+
 ```checks
 must auto\s+square\s*=\s*\[ :: Store a lambda in a variable: auto square = [...](...) { ... };
 must square\s*\( :: Call your lambda: square(n).
 ```
 :::
 
-:::exercise Grade with an IIFE
+:::exercise Grade with an IIFE {easy}
 Read an integer score and print its letter grade, using a lambda that is **called immediately** to
 initialize a `const char` variable.
 
@@ -460,13 +468,29 @@ Grade: F
 Grade: D
 ```
 
+```stdin
+59
+```
+
+```expected hidden
+Grade: F
+```
+
+```stdin
+70
+```
+
+```expected hidden
+Grade: C
+```
+
 ```checks
 must \}\s*\(\s*\w*\s*\)\s*; :: Call the lambda immediately by writing (...) right after its closing brace.
 mustnot \bif\s*\([^)]*\)\s*grade :: Compute grade inside the lambda, not with an if/else outside it.
 ```
 :::
 
-:::exercise Count with a predicate
+:::exercise Count with a predicate {easy}
 Read `n` integers and print how many of them are **even** and how many are **greater than 10**,
 using `std::count_if` with a lambda for each count.
 
@@ -534,6 +558,16 @@ big: 2
 ```expected hidden
 even: 0
 big: 0
+```
+
+```stdin
+3
+10 11 -2
+```
+
+```expected hidden
+even: 2
+big: 1
 ```
 
 ```checks

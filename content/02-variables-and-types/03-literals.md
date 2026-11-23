@@ -343,7 +343,7 @@ What does `sizeof("abc")` evaluate to?
 A string literal has a hidden null terminator `'\0'`, so `"abc"` is an array of 4 `char`s.
 :::
 
-:::exercise Three bases
+:::exercise Three bases {easy}
 Read a non-negative integer and print it in decimal, hexadecimal and octal, using the stream
 manipulators `std::dec`, `std::hex` and `std::oct` (no `0x` prefix, lowercase hex digits).
 
@@ -416,13 +416,33 @@ hex: 77359400
 oct: 16715312000
 ```
 
+```stdin
+8
+```
+
+```expected hidden
+dec: 8
+hex: 8
+oct: 10
+```
+
+```stdin
+4095
+```
+
+```expected hidden
+dec: 4095
+hex: fff
+oct: 7777
+```
+
 ```checks
 must std::hex :: Use std::hex.
 must std::oct :: Use std::oct.
 ```
 :::
 
-:::exercise Millions
+:::exercise Millions {medium}
 Read a number of millions `m` and print the full number. Write the constant one million **with
 digit separators** (`1'000'000`), and make sure large answers don't overflow an `int` (use a suffix
 or a 64-bit variable).
@@ -482,12 +502,20 @@ int main() {
 5000000000
 ```
 
+```stdin
+1000000
+```
+
+```expected hidden
+1000000000000
+```
+
 ```checks
 must 1'000'000 :: Write one million with digit separators: 1'000'000
 ```
 :::
 
-:::exercise Raw path
+:::exercise Raw path {easy}
 Read a user name (a single word) and print that user's Documents folder as a Windows path:
 
 **Input:** a single word `name`.
@@ -540,5 +568,140 @@ C:\Users\x\Documents
 
 ```checks
 must R" :: Use raw string literals for the path parts.
+```
+:::
+
+:::exercise Mixed bases {hard}
+A log file stores three counters in three different bases. Read them, convert them, and report their sum
+in several bases.
+
+The manipulators you used for output also work on **input**: `std::cin >> std::hex >> x;` reads `x`
+as a hexadecimal number. And they are sticky on `std::cin` too.
+
+**Input:** one line with three numbers: the first in **hexadecimal** (digits `0`-`9`, `a`-`f` or
+`A`-`F`, no `0x` prefix), the second in **octal**, the third in **decimal**. Each value is between 0 and
+2,147,483,647.
+**Output:** four lines:
+
+```
+<first> <second> <third>
+sum: <sum in decimal>
+hex: 0x<sum in lowercase hexadecimal>
+oct: 0<sum in octal>
+```
+
+The three values on the first line are printed in decimal. The `0x` and `0` prefixes are always
+printed, even when the sum is 0. For `ff 17 10`:
+
+```
+255 15 10
+sum: 280
+hex: 0x118
+oct: 0430
+```
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    long long first{}, second{}, third{};
+    std::cin >> first >> second >> third;
+    std::cout << first << ' ' << second << ' ' << third << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    long long first{}, second{}, third{};
+    std::cin >> std::hex >> first >> std::oct >> second >> std::dec >> third;
+    long long sum = first + second + third;
+    std::cout << first << ' ' << second << ' ' << third << '\n';
+    std::cout << "sum: " << sum << '\n';
+    std::cout << "hex: 0x" << std::hex << sum << '\n';
+    std::cout << "oct: 0" << std::oct << sum << '\n';
+}
+```
+
+```hint
+Switch the base right before each number: `std::cin >> std::hex >> first >> std::oct >> second ...`.
+Because the manipulators are sticky, the third number is read in octal unless you switch back with `std::dec`.
+```
+
+```hint
+The sum of three values up to 2,147,483,647 doesn't fit in an `int`. And `std::showbase` prints a zero
+as plain `0`, without `0x`, so write the prefixes yourself.
+```
+
+```stdin
+ff 17 10
+```
+
+```expected
+255 15 10
+sum: 280
+hex: 0x118
+oct: 0430
+```
+
+```stdin
+10 10 10
+```
+
+```expected
+16 8 10
+sum: 34
+hex: 0x22
+oct: 042
+```
+
+```stdin
+0 0 0
+```
+
+```expected hidden
+0 0 0
+sum: 0
+hex: 0x0
+oct: 00
+```
+
+```stdin
+7FFFFFFF 17777777777 2147483647
+```
+
+```expected hidden
+2147483647 2147483647 2147483647
+sum: 6442450941
+hex: 0x17ffffffd
+oct: 057777777775
+```
+
+```stdin
+aBc 0777 019
+```
+
+```expected hidden
+2748 511 19
+sum: 3278
+hex: 0xcce
+oct: 06316
+```
+
+```stdin
+1 1 1
+```
+
+```expected hidden
+1 1 1
+sum: 3
+hex: 0x3
+oct: 03
+```
+
+```checks
+must std::hex :: Read and print hexadecimal with std::hex.
+must std::oct :: Read and print octal with std::oct.
 ```
 :::

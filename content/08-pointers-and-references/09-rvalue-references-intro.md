@@ -281,7 +281,7 @@ Given `int x = 1;`, which declarations compile? (select all that apply)
 can't bind to the literal 7.
 :::
 
-:::exercise Lvalue or rvalue?
+:::exercise Lvalue or rvalue? {easy}
 Write two overloads:
 
 - `void describe(int& v)` prints `lvalue <v>`
@@ -384,7 +384,7 @@ must describe\s*\(\s*int\s*&\s*\w+\s*\) :: Write an overload taking int&.
 ```
 :::
 
-:::exercise Fix the bindings
+:::exercise Fix the bindings {easy}
 This program doesn't compile because two references bind to the wrong kind of value. Fix the
 **declarations** of `a` and `b` (keep the initializers `x * 2` and `x` as they are): make `a` an
 **rvalue reference** and `b` an **lvalue reference**.
@@ -457,7 +457,7 @@ must int\s*&\s*b\s*=\s*x\s*; :: Declare b as int& b = x;
 ```
 :::
 
-:::exercise Move into the vector
+:::exercise Move into the vector {easy}
 Read words until the input ends. Store each one in a `std::vector<std::string>` by **moving** it in
 (`push_back(std::move(word))`), since the variable `word` is overwritten by the next read anyway.
 
@@ -538,5 +538,130 @@ hello
 
 ```checks
 must push_back\s*\(\s*std::move\s*\(\s*word\s*\)\s*\) :: Move each word in with push_back(std::move(word)).
+```
+:::
+
+:::exercise Copy or move? {medium}
+Write two overloads that append a string to a log, and count how often each one runs:
+
+- `void add(std::vector<std::string>& log, const std::string& s)` **copies** `s` into the log and adds 1
+  to a `copies` counter;
+- `void add(std::vector<std::string>& log, std::string&& s)` **moves** `s` into the log (with
+  `std::move`) and adds 1 to a `moves` counter.
+
+(Use two global `int` counters, or pass them in by reference.) Then read words until the input ends.
+For a word with an **even** number of characters, call `add(log, word)`. For a word with an **odd**
+number of characters, call `add(log, word + "!")`. Let the compiler pick the overload: don't call
+`std::move` in `main`.
+
+**Input:** zero or more words.
+**Output:** `copies=<C> moves=<M>`, then the log entries joined with single spaces (an empty line if
+there are none).
+
+Example: `to be or not` gives `copies=3 moves=1` and `to be or not!`.
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+int main() {
+    std::vector<std::string> log;
+    std::string word;
+    while (std::cin >> word) {
+        log.push_back(word);
+    }
+    std::cout << "copies=0 moves=0\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+int copies = 0;
+int moves = 0;
+
+void add(std::vector<std::string>& log, const std::string& s) {
+    log.push_back(s);                 // s may still be needed by the caller: copy it
+    ++copies;
+}
+
+void add(std::vector<std::string>& log, std::string&& s) {
+    log.push_back(std::move(s));      // s is a named rvalue reference (an lvalue!): std::move it on
+    ++moves;
+}
+
+int main() {
+    std::vector<std::string> log;
+    std::string word;
+    while (std::cin >> word) {
+        if (word.size() % 2 == 0) {
+            add(log, word);           // lvalue: the const& overload
+        } else {
+            add(log, word + "!");     // temporary: the && overload
+        }
+    }
+    std::cout << "copies=" << copies << " moves=" << moves << '\n';
+    for (std::size_t i = 0; i < log.size(); ++i) {
+        if (i > 0) std::cout << ' ';
+        std::cout << log[i];
+    }
+    std::cout << '\n';
+}
+```
+
+```hint
+`word` is a named variable, so `add(log, word)` picks the `const std::string&` overload.
+`word + "!"` is a temporary, so `add(log, word + "!")` picks the `std::string&&` one.
+```
+
+```hint
+Inside the `&&` overload, `s` has a name, so it's an lvalue. `log.push_back(s)` would copy; write
+`log.push_back(std::move(s))` to actually move.
+```
+
+```stdin
+to be or not
+```
+
+```expected
+copies=3 moves=1
+to be or not!
+```
+
+```stdin
+hello world
+```
+
+```expected
+copies=0 moves=2
+hello! world!
+```
+
+```stdin
+```
+
+```expected hidden
+copies=0 moves=0
+```
+
+```stdin
+a bb ccc dddd
+```
+
+```expected hidden
+copies=2 moves=2
+a! bb ccc! dddd
+```
+
+```checks
+must void\s+add\s*\([^)]*const\s+std::string\s*& :: Write the overload taking const std::string&.
+must void\s+add\s*\([^)]*std::string\s*&& :: Write the overload taking std::string&&.
+must push_back\s*\(\s*std::move\s*\( :: Move the string into the log with push_back(std::move(s)).
+mustnot add\s*\([^;{]*std::move :: Let the compiler choose: don't std::move in the calls to add.
 ```
 :::

@@ -345,7 +345,7 @@ After a failed read, which sequence makes `std::cin` usable again and skips the 
 `clear()` resets the error flags; only then can `ignore()` actually remove the bad characters.
 :::
 
-:::exercise Average of three
+:::exercise Average of three {easy}
 Read three integers and print their sum and their average.
 
 **Input:** three integers, separated by any whitespace.
@@ -421,12 +421,21 @@ Sum: 0
 Average: 0
 ```
 
+```stdin
+-1 -1 0
+```
+
+```expected hidden
+Sum: -2
+Average: -0.666667
+```
+
 ```checks
 must cin\s*>> :: Read the numbers with std::cin >>.
 ```
 :::
 
-:::exercise Name and age
+:::exercise Name and age {easy}
 Read a first name (one word) and an age, then print two sentences.
 
 **Input:** a name and an integer age, e.g. `Ada 36`.
@@ -486,12 +495,21 @@ Bjarne is 0 years old.
 Next year Bjarne will be 1.
 ```
 
+```stdin
+Grace   -1
+```
+
+```expected hidden
+Grace is -1 years old.
+Next year Grace will be 0.
+```
+
 ```checks
 must cin\s*>> :: Read the input with std::cin >>.
 ```
 :::
 
-:::exercise Validate the number
+:::exercise Validate the number {easy}
 Read one integer and report whether the read worked.
 
 **Input:** one token, which may or may not be an integer.
@@ -559,12 +577,28 @@ You entered 12
 You entered -7
 ```
 
+```stdin
++15
+```
+
+```expected hidden
+You entered 15
+```
+
+```stdin
+- 5
+```
+
+```expected hidden
+Invalid input
+```
+
 ```checks
 must \bif\b :: Use an if statement to check whether the read worked.
 ```
 :::
 
-:::exercise Second chance
+:::exercise Second chance {medium}
 Read an integer. If the first line isn't a valid integer, print a message, recover the stream, skip
 the rest of that line, and read the integer from the next line instead.
 
@@ -656,8 +690,177 @@ Bad input, skipping line
 Value: -40
 ```
 
+```stdin
+hello 99
+7
+```
+
+```expected hidden
+Bad input, skipping line
+Value: 7
+```
+
+```stdin
+12abc
+99
+```
+
+```expected hidden
+Value: 12
+```
+
 ```checks
 must \.clear\s*\( :: Reset the stream with std::cin.clear().
 must \.ignore\s*\( :: Skip the bad line with std::cin.ignore(...).
+```
+:::
+
+:::exercise Strict record {hard}
+Read a record made of a name (one word), an age (an integer) and a height in meters (a number), in that
+order, and report **exactly** what went wrong if the record is incomplete or malformed.
+
+**Input:** up to three whitespace-separated fields: `name age height`. Any field may be missing (the input
+just ends early) or malformed (something that isn't a number where a number is expected).
+**Output:** exactly one line:
+
+| Situation | Output |
+| --- | --- |
+| the input is empty | `Missing name` |
+| no age at all (input ended) | `Missing age` |
+| the age isn't an integer | `Bad age` |
+| no height at all (input ended) | `Missing height` |
+| the height isn't a number | `Bad height` |
+| everything was read | `<name>: <age> years, <height> m` (height with plain `<<`) |
+
+Remember the rule from this lesson: `>>` reads as much as fits, so `36abc` gives the age `36` and leaves
+`abc` for the height. Examples:
+
+| Input | Output |
+| --- | --- |
+| `Ada 36 1.7` | `Ada: 36 years, 1.7 m` |
+| `Ada thirty 1.7` | `Bad age` |
+| `Ada 36` | `Missing height` |
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string name;
+    int age = 0;
+    double height = 0.0;
+    std::cin >> name >> age >> height;
+    std::cout << name << ": " << age << " years, " << height << " m\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string name;
+    int age = 0;
+    double height = 0.0;
+
+    if (!(std::cin >> name)) {
+        std::cout << "Missing name\n";
+    } else if (!(std::cin >> age)) {
+        if (std::cin.eof()) {
+            std::cout << "Missing age\n";
+        } else {
+            std::cout << "Bad age\n";
+        }
+    } else if (!(std::cin >> height)) {
+        if (std::cin.eof()) {
+            std::cout << "Missing height\n";
+        } else {
+            std::cout << "Bad height\n";
+        }
+    } else {
+        std::cout << name << ": " << age << " years, " << height << " m\n";
+    }
+}
+```
+
+```hint
+Read one field at a time and check each read right away: `if (!(std::cin >> age)) { ... }`.
+```
+
+```hint
+After a read **fails**, `std::cin.eof()` tells you why: true means the input ran out (missing), false
+means there was something that couldn't be converted (bad).
+```
+
+```hint
+Don't test `eof()` *before* checking whether the read failed: reading the last value of an input that
+has no trailing newline sets the eof flag even though that read **succeeded**.
+```
+
+```stdin
+Ada 36 1.7
+```
+
+```expected
+Ada: 36 years, 1.7 m
+```
+
+```stdin
+Ada thirty 1.7
+```
+
+```expected
+Bad age
+```
+
+```stdin
+Ada 36
+```
+
+```expected
+Missing height
+```
+
+```stdin
+```
+
+```expected hidden
+Missing name
+```
+
+```stdin
+Bjarne
+```
+
+```expected hidden
+Missing age
+```
+
+```stdin
+Linus 0 abc
+```
+
+```expected hidden
+Bad height
+```
+
+```stdin
+Grace 85abc 1.5
+```
+
+```expected hidden
+Bad height
+```
+
+```stdin
+Al -3 -0.5
+```
+
+```expected hidden
+Al: -3 years, -0.5 m
+```
+
+```checks
+must \.eof\s*\( :: Use std::cin.eof() to tell "missing" from "bad".
 ```
 :::

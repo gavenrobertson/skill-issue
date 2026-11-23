@@ -328,7 +328,7 @@ Which of these manipulators stay in effect after the statement they're used in? 
 Only `setw` is one-shot. All the others are sticky.
 :::
 
-:::exercise Price tag
+:::exercise Price tag {easy}
 Read a price and print it with exactly two decimal places.
 
 **Input:** one non-negative number, e.g. `3.5`.
@@ -392,13 +392,21 @@ Price: $0.00
 Price: $3.00
 ```
 
+```stdin
+1000000
+```
+
+```expected hidden
+Price: $1000000.00
+```
+
 ```checks
 must \bfixed\b :: Use std::fixed.
 must setprecision :: Use std::setprecision.
 ```
 :::
 
-:::exercise Right-aligned column
+:::exercise Right-aligned column {easy}
 Read three integers and print each on its own line, right-aligned in a field 6 characters wide,
 between `|` characters.
 
@@ -463,12 +471,22 @@ int main() {
 |-99999|
 ```
 
+```stdin
+-123456 5 999999
+```
+
+```expected hidden
+|-123456|
+|     5|
+|999999|
+```
+
 ```checks
 must setw :: Use std::setw.
 ```
 :::
 
-:::exercise Number bases
+:::exercise Number bases {medium}
 Read a non-negative integer and print it in decimal, hexadecimal, octal, and uppercase hexadecimal,
 with base prefixes.
 
@@ -553,6 +571,28 @@ oct: 0
 HEX: 0
 ```
 
+```stdin
+4096
+```
+
+```expected hidden
+dec: 4096
+hex: 0x1000
+oct: 010000
+HEX: 0X1000
+```
+
+```stdin
+1
+```
+
+```expected hidden
+dec: 1
+hex: 0x1
+oct: 01
+HEX: 0X1
+```
+
 ```checks
 must \bhex\b :: Use std::hex.
 must \boct\b :: Use std::oct.
@@ -560,7 +600,7 @@ must showbase :: Use std::showbase for the prefixes.
 ```
 :::
 
-:::exercise Score table
+:::exercise Score table {hard}
 Read names and scores until the end of input, and print them as a table followed by the average.
 
 **Input:** one or more lines, each with a name (one word) and an integer score.
@@ -675,6 +715,38 @@ Name       Score
 ----------------
 Bjarne         0
 Average     0.00
+```
+
+```stdin
+Al -5
+Bo 10
+Cy 0
+Di 1000000
+```
+
+```expected hidden
+Name       Score
+----------------
+Al            -5
+Bo            10
+Cy             0
+Di        1000000
+Average   250001.25
+```
+
+```stdin
+Bartholomew 77
+Zed 7
+Amy 8
+```
+
+```expected hidden
+Name       Score
+----------------
+Bartholomew    77
+Zed            7
+Amy            8
+Average    30.67
 ```
 
 ```checks

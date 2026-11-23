@@ -346,7 +346,7 @@ Which statements are true? (select all that apply)
 Shadowing warnings require `-Wshadow`, which isn't included in `-Wall` or `-Wextra`.
 :::
 
-:::exercise Fix the scope
+:::exercise Fix the scope {easy}
 This program doesn't compile because `kind` is used outside the blocks where it was declared. Fix it so
 it reads an integer and prints whether it's negative.
 
@@ -417,9 +417,17 @@ Inside the branches, *assign* to it (`kind = "negative";`) instead of declaring 
 ```expected hidden
 0 is non-negative
 ```
+```stdin
+-2147483648
+```
+
+```expected hidden
+-2147483648 is negative
+```
+
 :::
 
-:::exercise Shadowed total
+:::exercise Shadowed total {easy}
 This program should add up all the **positive** numbers in the input, but it always prints 0. Find the
 shadowing bug and fix it.
 
@@ -484,9 +492,24 @@ Total: 15
 ```expected hidden
 Total: 0
 ```
+```stdin
+```
+
+```expected hidden
+Total: 0
+```
+
+```stdin
+0 0 7
+```
+
+```expected hidden
+Total: 7
+```
+
 :::
 
-:::exercise Group sums
+:::exercise Group sums {medium}
 The input consists of **groups**. Each group starts with a count `k`, followed by `k` integers. Groups
 repeat until the end of input. Print the sum of each group.
 
@@ -582,7 +605,213 @@ Group 2: 1
 Group 3: 4
 ```
 
+```stdin
+0
+0
+0
+```
+
+```expected hidden
+Group 1: 0
+Group 2: 0
+Group 3: 0
+```
+
+```stdin
+3 -1 -2 -3
+```
+
+```expected hidden
+Group 1: -6
+```
+
 ```checks
 must while[\s\S]*\{[\s\S]*int\s+sum\s*= :: Declare the per-group sum inside the loop.
 ```
+:::
+
+:::exercise Best group {hard}
+The input is made of groups, as in the previous exercise: a count `k`, then `k` integers, repeated until
+the end of input. This time, report each group's sum **and** maximum, and find the best group.
+
+**Output:**
+
+- For each group, one line: `Group g: sum S, max M`, or `Group g: empty` when `k` is 0.
+- A last line: `Best: group G (S)` for the non-empty group with the **largest sum** (the earliest one if
+  several tie), or `Best: none` if there was no non-empty group.
+
+For the input
+
+```
+3 1 2 3
+2 10 20
+0
+```
+
+the output is
+
+```
+Group 1: sum 6, max 3
+Group 2: sum 30, max 20
+Group 3: empty
+Best: group 2 (30)
+```
+
+Think carefully about **where** each variable must be declared: some values belong to one group, others
+to the whole input.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int k = 0;
+    int group = 0;
+    while (std::cin >> k) {
+        ++group;
+        int sum = 0;
+        for (int i = 0; i < k; ++i) {
+            int x = 0;
+            std::cin >> x;
+            sum += x;
+        }
+        std::cout << "Group " << group << ": sum " << sum << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    int k = 0;
+    int group = 0;
+    bool haveBest = false;
+    int bestGroup = 0;
+    int bestSum = 0;
+
+    while (std::cin >> k) {
+        ++group;
+        if (k == 0) {
+            std::cout << "Group " << group << ": empty\n";
+            continue;
+        }
+        int sum = 0;
+        int max = 0;
+        for (int i = 0; i < k; ++i) {
+            int x = 0;
+            std::cin >> x;
+            sum += x;
+            if (i == 0 || x > max) {
+                max = x;
+            }
+        }
+        std::cout << "Group " << group << ": sum " << sum << ", max " << max << '\n';
+        if (!haveBest || sum > bestSum) {
+            haveBest = true;
+            bestGroup = group;
+            bestSum = sum;
+        }
+    }
+
+    if (haveBest) {
+        std::cout << "Best: group " << bestGroup << " (" << bestSum << ")\n";
+    } else {
+        std::cout << "Best: none\n";
+    }
+}
+```
+
+```hint
+The sum and the maximum of a group must start fresh for every group, so declare them **inside** the
+`while` body. The best group so far must survive across groups, so declare it **before** the loop.
+```
+
+```hint
+Sums and values can be negative. Start a group's maximum from its first value, and use a `bool` to know
+whether you have a best group yet.
+```
+
+```hint
+"The earliest one if several tie" means you only replace the best group when the new sum is strictly
+greater.
+```
+```stdin
+3 1 2 3
+2 10 20
+0
+```
+
+```expected
+Group 1: sum 6, max 3
+Group 2: sum 30, max 20
+Group 3: empty
+Best: group 2 (30)
+```
+
+```stdin
+2 -5 -1
+1 -3
+```
+
+```expected
+Group 1: sum -6, max -1
+Group 2: sum -3, max -3
+Best: group 2 (-3)
+```
+
+```stdin
+0
+0
+```
+
+```expected hidden
+Group 1: empty
+Group 2: empty
+Best: none
+```
+
+```stdin
+2 5 5
+1 10
+3 4 4 2
+```
+
+```expected hidden
+Group 1: sum 10, max 5
+Group 2: sum 10, max 10
+Group 3: sum 10, max 4
+Best: group 1 (10)
+```
+
+```stdin
+```
+
+```expected hidden
+Best: none
+```
+
+```stdin
+1 -7
+```
+
+```expected hidden
+Group 1: sum -7, max -7
+Best: group 1 (-7)
+```
+
+```stdin
+0
+2 -1 -1
+0
+1 -3
+```
+
+```expected hidden
+Group 1: empty
+Group 2: sum -2, max -1
+Group 3: empty
+Group 4: sum -3, max -3
+Best: group 2 (-2)
+```
+
 :::

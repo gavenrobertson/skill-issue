@@ -411,7 +411,7 @@ Too few arguments, a floating-point precision on an `int`, and mixing positional
 indexing are all compile-time errors. Extra unused arguments are allowed.
 :::
 
-:::exercise Braces in the output
+:::exercise Braces in the output {easy}
 Read two integers `x` and `y` and print them as a point in curly braces, using `std::format`.
 
 **Input:** two integers.
@@ -463,12 +463,20 @@ Point {3, 4}
 Point {-10, 0}
 ```
 
+```stdin
+0 -2147483648
+```
+
+```expected hidden
+Point {0, -2147483648}
+```
+
 ```checks
 must std::format :: Use std::format.
 ```
 :::
 
-:::exercise Receipt line
+:::exercise Receipt line {medium}
 Read an item name (one word), a quantity, and a unit price, and print one formatted receipt line.
 
 **Input:** a word, an integer, and a number, e.g. `Apples 3 0.5`.
@@ -543,13 +551,29 @@ Air 0 1
 Air       x  0 @   1.00 =     0.00
 ```
 
+```stdin
+Caviar 1 12345.678
+```
+
+```expected hidden
+Caviar    x  1 @ 12345.68 = 12345.68
+```
+
+```stdin
+Gum 1000 0.25
+```
+
+```expected hidden
+Gum       x1000 @   0.25 =   250.00
+```
+
 ```checks
 must std::format :: Use std::format.
 mustnot setw|setprecision :: Use format specs instead of <iomanip> manipulators.
 ```
 :::
 
-:::exercise Base converter
+:::exercise Base converter {medium}
 Read a non-negative integer and print it in four bases on one line, then its low 8 bits as zero-padded
 binary on a second line.
 
@@ -622,13 +646,31 @@ Zero-padding to width 8 is `{:08b}`. You can also reuse one argument with positi
 00000000
 ```
 
+```stdin
+1
+```
+
+```expected hidden
+1 0x1 01 0b1
+00000001
+```
+
+```stdin
+128
+```
+
+```expected hidden
+128 0x80 0200 0b10000000
+10000000
+```
+
 ```checks
 must std::format :: Use std::format.
 mustnot \bhex\b|\boct\b :: Use format specs, not std::hex/std::oct.
 ```
 :::
 
-:::exercise Centered banner
+:::exercise Centered banner {medium}
 Read a word and a width `w`, and print a banner of width `w` with the word centered inside it.
 
 **Input:** a word and an integer `w`.
@@ -714,7 +756,193 @@ toolong
 ***
 ```
 
+```stdin
+abc 4
+```
+
+```expected hidden
+****
+abc*
+****
+```
+
+```stdin
+x 1
+```
+
+```expected hidden
+*
+x
+*
+```
+
+```stdin
+mid 5
+```
+
+```expected hidden
+*****
+*mid*
+*****
+```
+
 ```checks
 must std::format :: Use std::format.
+```
+:::
+
+:::exercise Temperature table {hard}
+Print a Celsius-to-Fahrenheit conversion table with `std::format`.
+
+**Input:** three integers `from`, `to` and `step`.
+**Output:**
+
+- If `step` is `0`, or it points away from `to` (`step > 0` while `from > to`, or `step < 0` while
+  `from < to`), print only `Invalid step`.
+- Otherwise print a header line, a line of 20 dashes, and one row for each Celsius value `from`,
+  `from + step`, `from + 2*step`, ... as long as it hasn't gone past `to` (`to` itself is included if it's
+  reached exactly). When `from == to` there is exactly one row.
+- Header: `Celsius` right-aligned in 7, ` | `, `Fahrenheit` right-aligned in 10.
+- Row: the Celsius value right-aligned in 7, ` | `, the Fahrenheit value `c * 9 / 5 + 32` **computed
+  exactly** (no integer division!) with 1 decimal, right-aligned in 10.
+
+For `0 100 25`:
+
+```
+Celsius | Fahrenheit
+--------------------
+      0 |       32.0
+     25 |       77.0
+     50 |      122.0
+     75 |      167.0
+    100 |      212.0
+```
+
+```cpp starter
+#include <format>
+#include <iostream>
+
+int main() {
+    int from = 0, to = 0, step = 0;
+    std::cin >> from >> to >> step;
+}
+```
+
+```cpp solution
+#include <format>
+#include <iostream>
+
+int main() {
+    int from = 0, to = 0, step = 0;
+    std::cin >> from >> to >> step;
+
+    if (step == 0 || (step > 0 && from > to) || (step < 0 && from < to)) {
+        std::cout << "Invalid step\n";
+        return 0;
+    }
+
+    std::cout << std::format("{:>7} | {:>10}\n", "Celsius", "Fahrenheit");
+    std::cout << std::format("{:-<20}\n", "");
+    int c = from;
+    while ((step > 0 && c <= to) || (step < 0 && c >= to)) {
+        std::cout << std::format("{:>7} | {:>10.1f}\n", c, c * 9.0 / 5 + 32);
+        c += step;
+    }
+}
+```
+
+```hint
+`c * 9 / 5` with an `int` `c` truncates (`1 * 9 / 5` is `1`). Use `9.0` so the whole computation is
+done in `double`.
+```
+
+```hint
+The loop condition depends on the direction: keep going while `c <= to` when counting up, and while
+`c >= to` when counting down.
+```
+
+```hint
+A line of 20 dashes: `std::format("{:-<20}", "")`.
+```
+
+```stdin
+0 100 25
+```
+
+```expected
+Celsius | Fahrenheit
+--------------------
+      0 |       32.0
+     25 |       77.0
+     50 |      122.0
+     75 |      167.0
+    100 |      212.0
+```
+
+```stdin
+-40 -50 -5
+```
+
+```expected
+Celsius | Fahrenheit
+--------------------
+    -40 |      -40.0
+    -45 |      -49.0
+    -50 |      -58.0
+```
+
+```stdin
+10 0 5
+```
+
+```expected hidden
+Invalid step
+```
+
+```stdin
+0 0 7
+```
+
+```expected hidden
+Celsius | Fahrenheit
+--------------------
+      0 |       32.0
+```
+
+```stdin
+1 4 2
+```
+
+```expected hidden
+Celsius | Fahrenheit
+--------------------
+      1 |       33.8
+      3 |       37.4
+```
+
+```stdin
+5 5 0
+```
+
+```expected hidden
+Invalid step
+```
+
+```stdin
+-273 -270 1
+```
+
+```expected hidden
+Celsius | Fahrenheit
+--------------------
+   -273 |     -459.4
+   -272 |     -457.6
+   -271 |     -455.8
+   -270 |     -454.0
+```
+
+```checks
+must std::format :: Use std::format.
+mustnot setw|setprecision :: Use format specs instead of <iomanip> manipulators.
 ```
 :::

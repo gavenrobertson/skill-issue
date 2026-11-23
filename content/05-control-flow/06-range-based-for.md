@@ -326,7 +326,7 @@ being able to modify them by accident. Which loop?
 `const auto&` refers to each element directly (no copy) and makes it read-only.
 :::
 
-:::exercise Count vowels
+:::exercise Count vowels {easy}
 Read one word and count its vowels (`a e i o u`, lowercase only) using a range-based `for` loop.
 
 **Input:** one word in lowercase letters.
@@ -394,12 +394,28 @@ a
 Vowels: 1
 ```
 
+```stdin
+aeiouaeiou
+```
+
+```expected hidden
+Vowels: 10
+```
+
+```stdin
+queueing
+```
+
+```expected hidden
+Vowels: 5
+```
+
 ```checks
 must for\s*\([^;)]*[^:]:[^:] :: Use a range-based for loop (for (char c : word)).
 ```
 :::
 
-:::exercise Shout
+:::exercise Shout {easy}
 Read a whole line and convert every lowercase letter in it to uppercase **in place**, using a range-based
 `for` with a reference. Other characters stay as they are.
 
@@ -469,12 +485,26 @@ ALREADY LOUD
 ALREADY LOUD
 ```
 
+```stdin
+```
+
+```expected hidden
+```
+
+```stdin
+zebra-crossing at 9am!
+```
+
+```expected hidden
+ZEBRA-CROSSING AT 9AM!
+```
+
 ```checks
 must for\s*\(\s*(auto|char)\s*&[^;)]*: :: Loop with a reference: for (char& c : line) or for (auto& c : line).
 ```
 :::
 
-:::exercise Max and min of five
+:::exercise Max and min of five {easy}
 Read five integers into five variables, then find the largest and smallest by looping over a braced list
 of them: `for (int x : {a, b, c, d, e})`.
 
@@ -553,12 +583,30 @@ Max: -1
 Min: -9
 ```
 
+```stdin
+0 0 0 0 -1
+```
+
+```expected hidden
+Max: 0
+Min: -1
+```
+
+```stdin
+10 2 3 4 10
+```
+
+```expected hidden
+Max: 10
+Min: 2
+```
+
 ```checks
 must for\s*\([^;)]*:\s*\{ :: Loop over a braced list: for (int x : {a, b, c, d, e}).
 ```
 :::
 
-:::exercise Find the positions
+:::exercise Find the positions {medium}
 Read a word and a character, and print every position (counting from 0) where that character occurs in
 the word. Use a C++20 range-based `for` with an initializer to keep track of the position.
 
@@ -646,7 +694,178 @@ Mississippi s
 Found at: 2 3 5 6
 ```
 
+```stdin
+aaa a
+```
+
+```expected hidden
+Found at: 0 1 2
+```
+
+```stdin
+abcdef f
+```
+
+```expected hidden
+Found at: 5
+```
+
 ```checks
 must for\s*\([^;)]*;[^;)]*[^:]:[^:] :: Use a range-based for with an initializer: for (int i = 0; char c : word).
+```
+:::
+
+:::exercise Caesar shift {hard}
+Encrypt a line of text with a **Caesar cipher**: every letter is shifted `k` places through the
+alphabet, wrapping around from `z` back to `a`. Upper-case letters stay upper-case and lower-case stay
+lower-case; everything else (digits, spaces, punctuation) is unchanged.
+
+**Input:** an integer `k` on the first line (`-1000 <= k <= 1000`; negative shifts go backwards), and the
+text on the second line. The text may start with spaces, and those must be kept.
+**Output:** the shifted text.
+
+| `k` | Text | Output |
+| --- | --- | --- |
+| `3` | `Hello, World!` | `Khoor, Zruog!` |
+| `-1` | `abc XYZ` | `zab WXY` |
+| `26` | `Same` | `Same` |
+
+Change the string **in place** with a range-based `for` over references.
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    int k = 0;
+    std::cin >> k;
+    std::string text;
+    std::getline(std::cin, text);
+    std::cout << text << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <limits>
+#include <string>
+
+int main() {
+    int k = 0;
+    std::cin >> k;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');   // not std::ws: keep leading spaces
+    std::string text;
+    std::getline(std::cin, text);
+
+    int shift = ((k % 26) + 26) % 26;   // 0 to 25, also for negative k
+    for (char& c : text) {
+        if (c >= 'a' && c <= 'z') {
+            c = static_cast<char>('a' + (c - 'a' + shift) % 26);
+        } else if (c >= 'A' && c <= 'Z') {
+            c = static_cast<char>('A' + (c - 'A' + shift) % 26);
+        }
+    }
+    std::cout << text << '\n';
+}
+```
+
+```hint
+Reduce the shift to the range 0 to 25 first. In C++, `-1 % 26` is `-1`, so `((k % 26) + 26) % 26` is
+the safe way to get a non-negative remainder.
+```
+
+```hint
+For a lower-case letter, `c - 'a'` is its position (0 to 25). Add the shift, wrap with `% 26`, and add
+`'a'` back.
+```
+
+```hint
+After `std::cin >> k`, the rest of the first line (its newline) is still in the input. `std::ws` would
+also eat the text's leading spaces, so use `std::cin.ignore(...)` instead.
+```
+
+```stdin
+3
+Hello, World!
+```
+
+```expected
+Khoor, Zruog!
+```
+
+```stdin
+-1
+abc XYZ
+```
+
+```expected
+zab WXY
+```
+
+```stdin
+26
+Same
+```
+
+```expected hidden
+Same
+```
+
+```stdin
+-27
+Aa Zz
+```
+
+```expected hidden
+Zz Yy
+```
+
+```stdin
+1000
+xyz
+```
+
+```expected hidden
+jkl
+```
+
+```stdin
+0
+  2 leading spaces, 9 digits!
+```
+
+```expected hidden
+  2 leading spaces, 9 digits!
+```
+
+```stdin
+13
+The Quick Brown Fox Jumps Over The Lazy Dog.
+```
+
+```expected hidden
+Gur Dhvpx Oebja Sbk Whzcf Bire Gur Ynml Qbt.
+```
+
+```stdin
+-1000
+abc
+```
+
+```expected hidden
+opq
+```
+
+```stdin
+5
+   abc, xyz
+```
+
+```expected hidden
+   fgh, cde
+```
+
+```checks
+must for\s*\(\s*(auto|char)\s*&[^;)]*: :: Loop with a reference: for (char& c : text).
 ```
 :::

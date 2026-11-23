@@ -329,7 +329,7 @@ The parentheses group `*fp` first: `fp` is a pointer. What follows describes the
 to: parameters `(double)`, return type `int`.
 :::
 
-:::exercise Swap with pointers
+:::exercise Swap with pointers {easy}
 Write `void swapInts(int* a, int* b)` that swaps the two integers its arguments point to. In `main`,
 read two integers, call `swapInts(&x, &y)`, and print them.
 
@@ -406,7 +406,7 @@ mustnot std::swap :: Write the swap yourself.
 ```
 :::
 
-:::exercise Optional remainder
+:::exercise Optional remainder {medium}
 Write `bool divide(int a, int b, int* quotient, int* remainder)` like the one in the lesson: it
 returns `false` if `b` is 0; otherwise it stores `a / b` in `*quotient` and, **only if `remainder` is
 not `nullptr`**, stores `a % b` in `*remainder`.
@@ -516,13 +516,29 @@ error
 -3 -1
 ```
 
+```stdin
+4 0 quotient
+```
+
+```expected hidden
+error
+```
+
+```stdin
+-7 2 quotient
+```
+
+```expected hidden
+-3
+```
+
 ```checks
 must nullptr :: Pass nullptr when the remainder isn't wanted, and check for it.
 must divide\s*\([^;]*&\s*q :: Pass the address of q to divide.
 ```
 :::
 
-:::exercise Pocket calculator
+:::exercise Pocket calculator {medium}
 Implement `add`, `subtract`, and `multiply` as functions `int f(int, int)`. Define an alias
 `using BinaryOp = int (*)(int, int);` and write `BinaryOp pick(char symbol)` that returns the matching
 function for `+`, `-`, or `*`, or `nullptr` for any other symbol. `main` must call the operation
@@ -617,13 +633,21 @@ In `main`: `BinaryOp f = pick(op);`, check `f` for `nullptr`, then call `f(a, b)
 unknown operator
 ```
 
+```stdin
+-3 * -4
+```
+
+```expected hidden
+12
+```
+
 ```checks
 must using\s+BinaryOp\s*=\s*int\s*\(\s*\*\s*\)\s*\(\s*int\s*,\s*int\s*\) :: Define using BinaryOp = int (*)(int, int);
 must BinaryOp\s+pick\s*\(\s*char :: Write BinaryOp pick(char symbol).
 ```
 :::
 
-:::exercise Count with a predicate
+:::exercise Count with a predicate {medium}
 Write `int countIf(const int* arr, int size, bool (*pred)(int))` that returns how many elements make
 `pred` return `true`. Also write three predicates: `isEven`, `isPositive`, and `isSmall`
 (true when `-10 <= x <= 10`).
@@ -730,9 +754,209 @@ even
 0
 ```
 
+```stdin
+6
+-11 -10 10 11 0 3
+small
+```
+
+```expected hidden
+4
+```
+
+```stdin
+5
+0 -1 -2 3 -3
+even
+```
+
+```expected hidden
+2
+```
+
 ```checks
 must countIf\s*\([^)]*\(\s*\*\s*\w*\s*\)\s*\(\s*int\s*\) :: countIf must take a function pointer parameter like bool (*pred)(int).
 must isPositive :: Write the isPositive predicate.
 must isSmall :: Write the isSmall predicate.
+```
+:::
+
+:::exercise Sort with a comparator {hard}
+`std::sort` can sort in any order because you pass it a function that decides which of two elements
+comes first. Build the same thing yourself. Write
+
+```cpp
+void sortBy(int* arr, int size, bool (*before)(int, int));
+```
+
+which sorts the array so that `before(a, b)` is `true` exactly when `a` must come before `b`. Use
+**insertion sort**: take each element in turn and shift the elements in front of it one place to the
+right while the new element must come before them, then drop it into the gap.
+
+Then write four comparators and pick one with a function pointer:
+
+| Mode | Order |
+| --- | --- |
+| `ascending` | smallest first |
+| `descending` | largest first |
+| `abs` | smallest absolute value first; for equal absolute values, the negative one first (`-3` before `3`) |
+| `evens` | all even numbers before all odd numbers; ascending within each group |
+
+**Input:** `n` (0 to 100), then `n` integers (between -10^9 and 10^9), then the mode.
+**Output:** the sorted values separated by single spaces, followed by a newline (an empty line if `n` is 0).
+
+```cpp starter
+#include <iostream>
+
+int main() {
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+bool ascending(int a, int b) { return a < b; }
+bool descending(int a, int b) { return a > b; }
+
+bool byAbs(int a, int b) {
+    int absA = a < 0 ? -a : a;
+    int absB = b < 0 ? -b : b;
+    if (absA != absB) {
+        return absA < absB;
+    }
+    return a < b;                     // same size: the negative one first
+}
+
+bool evensFirst(int a, int b) {
+    bool evenA = a % 2 == 0;          // works for negatives too: -3 % 2 is -1
+    bool evenB = b % 2 == 0;
+    if (evenA != evenB) {
+        return evenA;                 // the even one comes first
+    }
+    return a < b;
+}
+
+void sortBy(int* arr, int size, bool (*before)(int, int)) {
+    for (int i = 1; i < size; ++i) {
+        int value = arr[i];
+        int j = i - 1;
+        while (j >= 0 && before(value, arr[j])) {
+            arr[j + 1] = arr[j];      // shift right to make room
+            --j;
+        }
+        arr[j + 1] = value;
+    }
+}
+
+int main() {
+    int n;
+    std::cin >> n;
+    int values[100]{};
+    for (int i = 0; i < n; ++i) {
+        std::cin >> values[i];
+    }
+    std::string mode;
+    std::cin >> mode;
+
+    bool (*before)(int, int) = ascending;
+    if (mode == "descending") before = descending;
+    else if (mode == "abs") before = byAbs;
+    else if (mode == "evens") before = evensFirst;
+
+    sortBy(values, n, before);
+    for (int i = 0; i < n; ++i) {
+        if (i > 0) std::cout << ' ';
+        std::cout << values[i];
+    }
+    std::cout << '\n';
+}
+```
+
+```hint
+Insertion sort: for `i` from 1, save `value = arr[i]`, then walk `j` down from `i - 1` while `j >= 0`
+and `before(value, arr[j])`, copying `arr[j]` to `arr[j + 1]`. Finally `arr[j + 1] = value;`.
+```
+
+```hint
+A comparator must be **strict**: `before(x, x)` has to be `false`. Write each one as "decide by the main
+rule if it differs, otherwise fall back to the tie-breaker".
+```
+
+```hint
+Test for even with `x % 2 == 0`, not for odd with `x % 2 == 1`: in C++, `-3 % 2` is `-1`.
+```
+
+```stdin
+6
+5 -2 9 0 -7 3
+ascending
+```
+
+```expected
+-7 -2 0 3 5 9
+```
+
+```stdin
+5
+3 -3 1 -2 2
+abs
+```
+
+```expected
+1 -2 2 -3 3
+```
+
+```stdin
+7
+4 -3 7 -8 0 5 2
+evens
+```
+
+```expected hidden
+-8 0 2 4 -3 5 7
+```
+
+```stdin
+6
+1 3 3 -1 2 1
+descending
+```
+
+```expected hidden
+3 3 2 1 1 -1
+```
+
+```stdin
+0
+ascending
+```
+
+```expected hidden
+```
+
+```stdin
+1
+-5
+abs
+```
+
+```expected hidden
+-5
+```
+
+```stdin
+5
+-1000000000 1000000000 0 -1 1
+abs
+```
+
+```expected hidden
+0 -1 1 -1000000000 1000000000
+```
+
+```checks
+must void\s+sortBy\s*\(\s*int\s*\*\s*\w+\s*,\s*int\s+\w+\s*,\s*bool\s*\(\s*\*\s*\w+\s*\)\s*\(\s*int\s*,\s*int\s*\)\s*\) :: Write void sortBy(int* arr, int size, bool (*before)(int, int)).
+mustnot std::sort|std::stable_sort|qsort :: Write the sorting loop yourself.
 ```
 :::

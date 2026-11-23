@@ -354,7 +354,7 @@ std::cout << ' ' << n;
 `n` goes 3 → 1 → -1. The body runs for 3 and 1; at -1 the condition is false.
 :::
 
-:::exercise Countdown
+:::exercise Countdown {easy}
 Read `n` and count down from `n` to 1, one number per line, then print `Liftoff!`.
 
 **Input:** one integer `n` (0 or more).
@@ -418,12 +418,25 @@ Liftoff!
 Liftoff!
 ```
 
+```stdin
+5
+```
+
+```expected hidden
+5
+4
+3
+2
+1
+Liftoff!
+```
+
 ```checks
 must \bwhile\s*\( :: Use a while loop.
 ```
 :::
 
-:::exercise Sentinel sum
+:::exercise Sentinel sum {easy}
 Read integers until a `0` appears (or the input ends) and print how many numbers came before it and
 their sum. The `0` itself isn't counted, and anything after it is ignored.
 
@@ -509,12 +522,20 @@ Count: 2
 Sum: 8
 ```
 
+```stdin
+```
+
+```expected hidden
+Count: 0
+Sum: 0
+```
+
 ```checks
 must \bwhile\s*\( :: Use a while loop.
 ```
 :::
 
-:::exercise Digits
+:::exercise Digits {medium}
 Read an integer (possibly 0 or negative) and print how many digits it has and the sum of its digits.
 Use a `do`-`while` loop so that `0` correctly counts as one digit. The minus sign is not a digit.
 
@@ -611,12 +632,30 @@ Digits: 1
 Digit sum: 7
 ```
 
+```stdin
+-1000000000
+```
+
+```expected hidden
+Digits: 10
+Digit sum: 1
+```
+
+```stdin
+-7
+```
+
+```expected hidden
+Digits: 1
+Digit sum: 7
+```
+
 ```checks
 must \bdo\s*\{ :: Use a do-while loop.
 ```
 :::
 
-:::exercise Validated input
+:::exercise Validated input {medium}
 Read integers until one between 1 and 10 (inclusive) is found. Report every rejected number, then the
 accepted one.
 
@@ -705,7 +744,220 @@ No valid input
 Accepted: 1
 ```
 
+```stdin
+```
+
+```expected hidden
+No valid input
+```
+
+```stdin
+11 10
+```
+
+```expected hidden
+11 is out of range
+Accepted: 10
+```
+
 ```checks
 must \bwhile\s*\( :: Use a loop.
+```
+:::
+
+:::exercise Guessing game referee {hard}
+You're the referee of a number-guessing game. The secret is between 1 and 100. Read the guesses and
+respond to each one, keeping track of what the player **already knows** from your earlier answers.
+
+**Input:** the secret number, then the player's guesses until the end of input.
+**Output:** one line per guess, until the game ends:
+
+- A guess outside 1 to 100: `<g> is out of range`. It doesn't count as an attempt.
+- A wrong guess: `<g> is too low` or `<g> is too high`. If the player could already have known that from
+  your earlier answers (the guess is at or below a number you already called too low, or at or above one
+  you called too high), add ` (wasted)` to the line.
+- The right guess: `Correct! <g> found in N attempts` (`1 attempt` when N is 1). Stop reading there.
+- If the input ends before the secret was found: `Gave up after N attempts` (again `1 attempt` for one).
+
+For secret `60` and guesses `0 70 80 101 55 60`:
+
+```
+0 is out of range
+70 is too high
+80 is too high (wasted)
+101 is out of range
+55 is too low
+Correct! 60 found in 4 attempts
+```
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int secret = 0;
+    std::cin >> secret;
+    int guess = 0;
+    while (std::cin >> guess) {
+        if (guess < secret) {
+            std::cout << guess << " is too low\n";
+        } else {
+            std::cout << guess << " is too high\n";
+        }
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    int secret = 0;
+    std::cin >> secret;
+
+    int low = 1;      // the secret is known to be in [low, high]
+    int high = 100;
+    int attempts = 0;
+    bool found = false;
+    int guess = 0;
+
+    while (!found && std::cin >> guess) {
+        if (guess < 1 || guess > 100) {
+            std::cout << guess << " is out of range\n";
+        } else {
+            ++attempts;
+            bool wasted = guess < low || guess > high;
+            if (guess == secret) {
+                std::cout << "Correct! " << guess << " found in " << attempts
+                          << (attempts == 1 ? " attempt" : " attempts") << '\n';
+                found = true;
+            } else if (guess < secret) {
+                std::cout << guess << " is too low" << (wasted ? " (wasted)" : "") << '\n';
+                if (guess + 1 > low) {
+                    low = guess + 1;
+                }
+            } else {
+                std::cout << guess << " is too high" << (wasted ? " (wasted)" : "") << '\n';
+                if (guess - 1 < high) {
+                    high = guess - 1;
+                }
+            }
+        }
+    }
+
+    if (!found) {
+        std::cout << "Gave up after " << attempts << (attempts == 1 ? " attempt" : " attempts") << '\n';
+    }
+}
+```
+
+```hint
+Keep the range the secret can still be in: `low` starts at 1 and `high` at 100. "Too low" for `g` means
+the secret is at least `g + 1`; "too high" means it's at most `g - 1`.
+```
+
+```hint
+A guess is wasted when it's outside `[low, high]` **before** you update the range.
+```
+
+```hint
+Make the loop stop after a correct guess, for example with a flag in the condition:
+`while (!found && std::cin >> guess)`. After the loop, the same flag tells you whether to print
+`Gave up ...`.
+```
+
+```stdin
+42
+50 25 37 43 40 42
+```
+
+```expected
+50 is too high
+25 is too low
+37 is too low
+43 is too high
+40 is too low
+Correct! 42 found in 6 attempts
+```
+
+```stdin
+60
+0 70 80 101 55 60
+```
+
+```expected
+0 is out of range
+70 is too high
+80 is too high (wasted)
+101 is out of range
+55 is too low
+Correct! 60 found in 4 attempts
+```
+
+```stdin
+7
+7
+```
+
+```expected
+Correct! 7 found in 1 attempt
+```
+
+```stdin
+10
+5 20
+```
+
+```expected hidden
+5 is too low
+20 is too high
+Gave up after 2 attempts
+```
+
+```stdin
+1
+```
+
+```expected hidden
+Gave up after 0 attempts
+```
+
+```stdin
+100
+99 99 100
+```
+
+```expected hidden
+99 is too low
+99 is too low (wasted)
+Correct! 100 found in 3 attempts
+```
+
+```stdin
+50
+40 30 60 70 45 55 50 50
+```
+
+```expected hidden
+40 is too low
+30 is too low (wasted)
+60 is too high
+70 is too high (wasted)
+45 is too low
+55 is too high
+Correct! 50 found in 7 attempts
+```
+
+```stdin
+5
+4
+```
+
+```expected hidden
+4 is too low
+Gave up after 1 attempt
+```
+
+```checks
+must \bwhile\s*\( :: Use a while loop.
 ```
 :::

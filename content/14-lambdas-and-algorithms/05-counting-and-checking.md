@@ -296,7 +296,7 @@ std::cout << (lo - v.begin()) << (hi - v.begin())
 `minmax_element` gives the first minimum (index 1) and the **last** maximum (index 2). `max_element` gives the **first** maximum (index 0).
 :::
 
-:::exercise Count matches
+:::exercise Count matches {easy}
 Read a target value, then `n` integers. Print how many integers are **equal** to the target (with
 `std::count`), and how many are **greater** than the target (with `std::count_if`).
 
@@ -362,13 +362,24 @@ equal: 0
 greater: 0
 ```
 
+```stdin
+5
+4
+5 5 6 4
+```
+
+```expected hidden
+equal: 2
+greater: 1
+```
+
 ```checks
 must std::count\s*\( :: Use std::count for the equal count.
 must count_if :: Use std::count_if for the greater count.
 ```
 :::
 
-:::exercise Score report
+:::exercise Score report {easy}
 Read `n` exam scores and answer three questions with `std::all_of`, `std::any_of`, and
 `std::none_of`:
 
@@ -465,6 +476,17 @@ any perfect: no
 none negative: yes
 ```
 
+```stdin
+2
+100 100
+```
+
+```expected hidden
+all passed: yes
+any perfect: yes
+none negative: yes
+```
+
 ```checks
 must all_of :: Use std::all_of.
 must any_of :: Use std::any_of.
@@ -472,7 +494,7 @@ must none_of :: Use std::none_of.
 ```
 :::
 
-:::exercise Clamp and report
+:::exercise Clamp and report {easy}
 Read a lower limit `lo` and an upper limit `hi`, then `n` integers (`n >= 1`).
 
 1. Print the minimum and maximum of the **original** numbers (use `std::minmax_element`, or
@@ -553,13 +575,24 @@ min 9 max 9
 5
 ```
 
+```stdin
+-3 3
+4
+-10 10 -3 3
+```
+
+```expected hidden
+min -10 max 10
+-3 3 -3 3
+```
+
 ```checks
 must minmax_element|min_element :: Find the minimum with std::minmax_element or std::min_element.
 must clamp :: Use std::clamp.
 ```
 :::
 
-:::exercise First difference
+:::exercise First difference {medium}
 Read two words and print the index (0-based) of the first position where they differ, using
 `std::mismatch` (the four-iterator version). If one word is a prefix of the other, the first
 difference is at the length of the shorter word. If the words are identical, print `equal`.
@@ -636,6 +669,14 @@ car cartoon
 
 ```expected hidden
 3
+```
+
+```stdin
+abc ab
+```
+
+```expected hidden
+2
 ```
 
 ```checks

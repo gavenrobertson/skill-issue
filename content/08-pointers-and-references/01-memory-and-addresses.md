@@ -284,7 +284,7 @@ Locals and parameters are automatic (stack) variables. Globals live in static st
 program, and `new` allocates from the heap (free store).
 :::
 
-:::exercise Size lookup
+:::exercise Size lookup {easy}
 Read one type name and print how many bytes it occupies, using `sizeof`.
 
 **Input:** one word, one of: `char`, `bool`, `short`, `int`, `long`, `float`, `double`, `pointer`
@@ -364,13 +364,29 @@ string
 unknown
 ```
 
+```stdin
+long
+```
+
+```expected hidden
+8
+```
+
+```stdin
+Int
+```
+
+```expected hidden
+unknown
+```
+
 ```checks
 must sizeof\s*\(\s*double\s*\) :: Use sizeof(double) instead of hard-coding the number.
 must sizeof\s*\(\s*int\s*\*\s*\) :: Use sizeof(int*) for the pointer size.
 ```
 :::
 
-:::exercise Array footprint
+:::exercise Array footprint {easy}
 A program wants to store `n` values. Read `n` and print how many bytes an array of `n` `int`s, `n`
 `double`s, and `n` `char`s would occupy.
 
@@ -441,13 +457,23 @@ double: 8000000
 char: 1000000
 ```
 
+```stdin
+3000000000
+```
+
+```expected hidden
+int: 12000000000
+double: 24000000000
+char: 3000000000
+```
+
 ```checks
 must sizeof\s*\(\s*int\s*\) :: Use sizeof(int).
 must sizeof\s*\(\s*double\s*\) :: Use sizeof(double).
 ```
 :::
 
-:::exercise Stack or heap?
+:::exercise Stack or heap? {medium}
 A program's stack is limited, so large arrays should go on the heap. Read a count `n` and a type
 name, compute how many bytes an array of `n` elements of that type needs, and decide where it should go.
 
@@ -528,6 +554,30 @@ Compare with `<=`: exactly 65536 bytes still counts as `stack`.
 
 ```expected hidden
 0 bytes: stack
+```
+
+```stdin
+65537 char
+```
+
+```expected hidden
+65537 bytes: heap
+```
+
+```stdin
+8192 double
+```
+
+```expected hidden
+65536 bytes: stack
+```
+
+```stdin
+10000000000 double
+```
+
+```expected hidden
+80000000000 bytes: heap
 ```
 
 ```checks

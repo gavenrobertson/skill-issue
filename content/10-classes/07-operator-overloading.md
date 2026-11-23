@@ -509,7 +509,7 @@ How does the compiler tell postfix `x++` apart from prefix `++x` when you overlo
 `T operator++(int)` is postfix; `T& operator++()` is prefix. The `int` is a dummy that's always 0.
 :::
 
-:::exercise Vector arithmetic
+:::exercise Vector arithmetic {easy}
 Complete `Vec2` so `main` works:
 
 - member `Vec2& operator+=(const Vec2&)`,
@@ -619,7 +619,7 @@ must cout\s*<<\s*sum :: Print the sum with std::cout << sum.
 ```
 :::
 
-:::exercise Money ordering
+:::exercise Money ordering {medium}
 `Money` stores an amount in cents. Give it:
 
 - a defaulted three-way comparison `auto operator<=>(const Money&) const = default;`
@@ -733,7 +733,7 @@ must \bm\s*<\s*lo\b|\blo\s*>\s*m\b :: Compare Money objects directly with < or >
 ```
 :::
 
-:::exercise Fraction calculator
+:::exercise Fraction calculator {hard}
 Build a `Fraction` class that is always stored **reduced with a positive denominator**, and supports:
 
 - non-member `+ - * /` between two fractions,
@@ -863,6 +863,22 @@ Do the reducing in the constructor (flip signs if the denominator is negative, t
 -1/3
 ```
 
+```stdin
+7/1 * 1/7
+-1/2 + 1/3
+0/5 / 3/4
+1000/3 - 2000/6
+-12/18 * -9/4
+```
+
+```expected hidden
+1/1
+-1/6
+0/1
+0/1
+3/2
+```
+
 ```checks
 must operator\s*>>\s*\( :: Read fractions with an overloaded operator>>.
 must operator\s*<<\s*\( :: Print fractions with an overloaded operator<<.
@@ -871,7 +887,7 @@ must operator\s*\/\s*\( :: Overload operator/.
 ```
 :::
 
-:::exercise Polynomial object
+:::exercise Polynomial object {medium}
 Write a class `Polynomial` holding coefficients `c0, c1, ..., cn` (for `c0 + c1·x + ... + cn·xⁿ`):
 
 - `explicit Polynomial(int degree)` creates `degree + 1` zero coefficients.

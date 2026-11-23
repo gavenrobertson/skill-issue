@@ -191,7 +191,7 @@ Which declaration is **illegal**?
 Defaults must be trailing: once one parameter has a default, all following parameters need one too.
 :::
 
-:::exercise Power with default
+:::exercise Power with default {easy}
 Write `long long power(long long base, int exponent = 2)` that returns `base` raised to `exponent`
 (use a loop; `exponent` is never negative). Read a line containing either **one** number (base only)
 or **two** numbers (base and exponent). If only the base is given, call `power(base)` so the default
@@ -270,13 +270,53 @@ Start with `result = 1` and multiply by `base` exactly `exponent` times.
 1
 ```
 
+```stdin
+-3
+```
+
+```expected hidden
+9
+```
+
+```stdin
+-2 3
+```
+
+```expected hidden
+-8
+```
+
+```stdin
+0 0
+```
+
+```expected hidden
+1
+```
+
+```stdin
+1 62
+```
+
+```expected hidden
+1
+```
+
+```stdin
+2 62
+```
+
+```expected hidden
+4611686018427387904
+```
+
 ```checks
 must int\s+\w+\s*=\s*2\s*\) :: Give the exponent parameter a default value of 2.
 must power\s*\(\s*base\s*\) :: Call power(base) with one argument when the exponent is missing.
 ```
 :::
 
-:::exercise Formatted price
+:::exercise Formatted price {medium}
 Write `std::string formatPrice(int cents, const std::string& currency = "$", bool showCents = true)`
 **declared above `main` with the defaults** and **defined below `main` without them**. It turns a
 non-negative number of cents into text: with `showCents`, `1234` becomes `$12.34` (always two digits
@@ -376,9 +416,201 @@ $0
 $0.00
 ```
 
+```stdin
+5 full
+```
+
+```expected hidden
+$0.05
+```
+
+```stdin
+100 euro
+```
+
+```expected hidden
+EUR 1.00
+```
+
+```stdin
+12345 short
+```
+
+```expected hidden
+$123
+```
+
+```stdin
+199999 full
+```
+
+```expected hidden
+$1999.99
+```
+
 ```checks
 must formatPrice\s*\([^)]*=[^)]*\)\s*;[\s\S]*int\s+main :: Declare formatPrice with its defaults above main.
 must int\s+main[\s\S]*formatPrice\s*\([^)=]*\)\s*\{ :: Define formatPrice below main, without repeating the defaults.
 must formatPrice\s*\(\s*cents\s*\) :: Call formatPrice(cents) with just one argument for mode full.
+```
+:::
+
+:::exercise Progress bar {hard}
+Write
+
+```cpp
+std::string progressBar(int done, int total, int width = 10, char full = '#', char empty = '.');
+```
+
+that draws a text progress bar:
+
+- First clamp `done` into the range `0` to `total`. If `total <= 0`, the task counts as complete (100%).
+- `filled = done * width / total` characters are `full`, the remaining `width - filled` are `empty`
+  (integer division, so it rounds down).
+- The result is `[` + the bar + `] ` + the percentage `done * 100 / total` (rounded down) + `%`.
+
+**Input:** several lines until the end of input. Each line starts with `k` (2 to 5), the number of
+arguments to pass, followed by those `k` arguments in order: `done total [width [full [empty]]]`.
+Call `progressBar` with **exactly** `k` arguments, so the defaults fill in the rest.
+**Output:** one bar per line.
+
+For the input
+
+```
+2 3 10
+3 1 4 8
+5 2 3 6 * -
+```
+
+the output is
+
+```
+[###.......] 30%
+[##......] 25%
+[****--] 66%
+```
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    int k = 0;
+    while (std::cin >> k) {
+        int done = 0, total = 0;
+        std::cin >> done >> total;
+        std::cout << done << '/' << total << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+std::string progressBar(int done, int total, int width = 10, char full = '#', char empty = '.') {
+    int filled = width;
+    int percent = 100;
+    if (total > 0) {
+        if (done < 0) done = 0;
+        if (done > total) done = total;
+        filled = done * width / total;
+        percent = done * 100 / total;
+    }
+    return "[" + std::string(filled, full) + std::string(width - filled, empty) + "] " +
+           std::to_string(percent) + "%";
+}
+
+int main() {
+    int k = 0;
+    while (std::cin >> k) {
+        int done = 0, total = 0, width = 0;
+        char full = ' ', empty = ' ';
+        std::cin >> done >> total;
+        if (k == 2) {
+            std::cout << progressBar(done, total) << '\n';
+        } else if (k == 3) {
+            std::cin >> width;
+            std::cout << progressBar(done, total, width) << '\n';
+        } else if (k == 4) {
+            std::cin >> width >> full;
+            std::cout << progressBar(done, total, width, full) << '\n';
+        } else {
+            std::cin >> width >> full >> empty;
+            std::cout << progressBar(done, total, width, full, empty) << '\n';
+        }
+    }
+}
+```
+
+```hint
+`std::string(n, c)` makes a string of `n` copies of the character `c`. `std::to_string(n)` turns a
+number into text.
+```
+
+```hint
+Clamp first, then compute. Don't divide by `total` when it's zero or negative.
+```
+
+```hint
+In `main`, read `done` and `total`, then only as many more values as `k` says, and pick the call with
+the matching number of arguments.
+```
+
+```stdin
+2 3 10
+3 1 4 8
+5 2 3 6 * -
+```
+
+```expected
+[###.......] 30%
+[##......] 25%
+[****--] 66%
+```
+
+```stdin
+2 15 10
+2 -3 10
+2 0 0
+4 7 7 0 =
+```
+
+```expected hidden
+[##########] 100%
+[..........] 0%
+[##########] 100%
+[] 100%
+```
+
+```stdin
+3 999 1000 20
+```
+
+```expected hidden
+[###################.] 99%
+```
+
+```stdin
+4 1 3 5 o
+```
+
+```expected hidden
+[o....] 33%
+```
+
+```stdin
+2 -5 -1
+5 1 2 4 + _
+```
+
+```expected hidden
+[##########] 100%
+[++__] 50%
+```
+
+```checks
+must progressBar\s*\([^)]*=\s*10 :: Give width the default value 10.
+must progressBar\s*\(\s*\w+\s*,\s*\w+\s*\) :: Call progressBar with just two arguments when k is 2.
 ```
 :::

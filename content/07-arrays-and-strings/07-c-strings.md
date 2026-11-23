@@ -223,7 +223,7 @@ Four letters plus the null terminator `'\0'`.
 `strcmp` returns 0 for equal, negative if `a` sorts first, positive if `b` sorts first. So `if (strcmp(a, b))` means "if different".
 :::
 
-:::exercise Write your own strlen
+:::exercise Write your own strlen {easy}
 Write `std::size_t myStrlen(const char* s)` that counts the characters before the null terminator, by
 walking the string until `s[i] == '\0'`. Read words until the end of input and, for each, call
 `myStrlen(word.c_str())` and print `word: LENGTH`. Don't use `std::strlen` or `.size()`.
@@ -289,6 +289,12 @@ supercalifragilisticexpialidocious
 supercalifragilisticexpialidocious: 34
 ```
 
+```stdin
+```
+
+```expected hidden
+```
+
 ```checks
 must '\\0' :: Stop at the null terminator '\0'.
 mustnot \bstrlen\s*\(|\.size\s*\(|\.length\s*\( :: Count the characters yourself.
@@ -296,7 +302,7 @@ must c_str\s*\(\s*\) :: Pass the word as a C string with .c_str().
 ```
 :::
 
-:::exercise Compare like strcmp
+:::exercise Compare like strcmp {medium}
 Write `int compareC(const char* a, const char* b)` that compares two C strings character by
 character and returns `-1` if `a` comes first, `0` if they're equal, or `1` if `b` comes first
 (compare character codes; a string that is a prefix of the other comes first). Read pairs of words
@@ -374,12 +380,26 @@ Zebra apple
 -1
 ```
 
+```stdin
+Apple apple
+abcd abce
+x x
+abc ab
+```
+
+```expected hidden
+-1
+-1
+0
+1
+```
+
 ```checks
 mustnot strcmp|compare\s*\( :: Compare the characters yourself.
 ```
 :::
 
-:::exercise Reverse in a buffer
+:::exercise Reverse in a buffer {easy}
 Read one word (at most 30 characters). Copy it **character by character** into a C array
 `char buffer[32]`, add the null terminator yourself, then reverse the characters in place inside the
 buffer and print it with `std::cout << buffer`.
@@ -455,9 +475,176 @@ abcdefghijklmnopqrstuvwxyz1234
 4321zyxwvutsrqponmlkjihgfedcba
 ```
 
+```stdin
+ab
+```
+
+```expected hidden
+ba
+```
+
 ```checks
 must char\s+buffer\s*\[\s*32\s*\] :: Use the C array char buffer[32].
 must '\\0' :: Add the null terminator '\0' yourself.
 mustnot strcpy|reverse :: Copy and reverse the characters yourself.
+```
+:::
+
+:::exercise Find a substring {hard}
+Write `int findSub(const char* text, const char* pattern)` that returns the index of the **first**
+occurrence of `pattern` inside `text`, or `-1` if it doesn't occur. An empty pattern occurs at index 0
+(even in an empty text). Work directly on the C strings, walking them until their `'\0'`
+terminators: no `<cstring>` functions, and no `std::string` members inside `findSub`.
+
+Watch out for partial matches: in `aaab`, the pattern `aab` starts matching at index 0, fails at the
+`a` in position 2, and is really found at index 1.
+
+**Input:** pairs of lines until the input ends: a line of text, then a line with the pattern. Either line
+may be empty.
+**Output:** one index per pair.
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int findSub(const char* text, const char* pattern) {
+    return -1;
+}
+
+int main() {
+    std::string text, pattern;
+    while (std::getline(std::cin, text) && std::getline(std::cin, pattern)) {
+        std::cout << findSub(text.c_str(), pattern.c_str()) << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+int findSub(const char* text, const char* pattern) {
+    for (int start = 0;; ++start) {
+        // how many characters of pattern match text starting at 'start'?
+        int i = 0;
+        while (pattern[i] != '\0' && text[start + i] == pattern[i]) {
+            ++i;
+        }
+        if (pattern[i] == '\0') {
+            return start;                   // the whole pattern matched
+        }
+        if (text[start] == '\0') {
+            return -1;                      // no starting positions left
+        }
+    }
+}
+
+int main() {
+    std::string text, pattern;
+    while (std::getline(std::cin, text) && std::getline(std::cin, pattern)) {
+        std::cout << findSub(text.c_str(), pattern.c_str()) << '\n';
+    }
+}
+```
+
+```hint
+Try every starting position `start` in the text. From there, compare `text[start + i]` with
+`pattern[i]` for `i = 0, 1, 2, ...` as long as they're equal and the pattern hasn't ended.
+```
+
+```hint
+If you stopped because `pattern[i] == '\0'`, the whole pattern matched: return `start`. Otherwise move
+on to `start + 1`, but stop with `-1` once `text[start]` is the terminator.
+```
+
+```hint
+You never read past the text's end: its `'\0'` differs from every pattern character, so the inner
+comparison stops there by itself.
+```
+
+```stdin
+hello world
+world
+hello world
+o
+hello world
+xyz
+```
+
+```expected
+6
+4
+-1
+```
+
+```stdin
+aaab
+aab
+```
+
+```expected
+1
+```
+
+```stdin
+abababc
+ababc
+short
+shorter
+```
+
+```expected hidden
+2
+-1
+```
+
+```stdin
+anything
+
+Case
+case
+end
+end
+```
+
+```expected hidden
+0
+-1
+0
+```
+
+```stdin
+
+a
+
+
+x
+x
+```
+
+```expected hidden
+-1
+0
+0
+```
+
+```stdin
+mississippi
+issip
+mississippi
+pi
+mississippi
+ippis
+```
+
+```expected hidden
+4
+9
+-1
+```
+
+```checks
+mustnot strstr|strncmp|strcmp|strlen|\.find\s*\(|std::search :: Compare the characters yourself.
+must '\\0' :: Stop at the null terminator '\0'.
 ```
 :::

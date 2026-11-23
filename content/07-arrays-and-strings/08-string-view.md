@@ -251,7 +251,7 @@ The temporary string and the local string are destroyed while views still point 
 live for the whole program, and a parameter view is only used during the call.
 :::
 
-:::exercise Count by prefix
+:::exercise Count by prefix {easy}
 Write `bool hasPrefix(std::string_view word, std::string_view prefix)` that returns whether `word`
 starts with `prefix`, **without** using `starts_with`: compare `prefix.size()` and use `substr` on the
 view. Read a prefix, then words until the end of input, and print how many words start with it.
@@ -329,6 +329,14 @@ ab abc abcd
 2
 ```
 
+```stdin
+x
+```
+
+```expected hidden
+0
+```
+
 ```checks
 must bool\s+hasPrefix\s*\(\s*std::string_view\s+\w+\s*,\s*std::string_view\s+\w+\s*\) :: Write bool hasPrefix(std::string_view word, std::string_view prefix).
 mustnot starts_with :: Implement it yourself with size() and substr().
@@ -336,7 +344,7 @@ must \.substr\s*\( :: Use substr on the view.
 ```
 :::
 
-:::exercise Trim
+:::exercise Trim {easy}
 Write `std::string_view trim(std::string_view s)` that returns a view of `s` without leading and
 trailing spaces (only the `' '` character), using `remove_prefix`/`remove_suffix`. Read lines until the
 end of input and print each trimmed line inside square brackets.
@@ -416,13 +424,23 @@ x
 [x]
 ```
 
+```stdin
+	x  
+a  b
+```
+
+```expected hidden
+[	x]
+[a  b]
+```
+
 ```checks
 must remove_prefix :: Use remove_prefix.
 must remove_suffix :: Use remove_suffix.
 ```
 :::
 
-:::exercise Split into views
+:::exercise Split into views {medium}
 Write `std::vector<std::string_view> split(std::string_view text, char sep)` that splits `text` at
 every `sep` character and returns the pieces as **views** into the original text (no copies). Empty
 pieces count: `"a,,b"` has three pieces, and `""` has one empty piece. Read one line and a separator
@@ -517,7 +535,202 @@ no separators here
 0: no separators here
 ```
 
+```stdin
+,x,
+,
+```
+
+```expected hidden
+0:
+1: x
+2:
+```
+
+```stdin
+
+,
+```
+
+```expected hidden
+0:
+```
+
 ```checks
 must std::vector\s*<\s*std::string_view\s*>\s+split\s*\(\s*std::string_view :: Write std::vector<std::string_view> split(std::string_view text, char sep).
+```
+:::
+
+:::exercise Word wrap {hard}
+Text editors "re-flow" paragraphs to fit a width. Read a width `W`, then all the text until the end of
+the input (it can span several lines). A **word** is a maximal run of characters that aren't spaces,
+tabs or newlines. Re-flow the words **greedily**: put as many words on each output line as fit in `W`
+characters, separated by single spaces, then start a new line. A word longer than `W` gets a line of
+its own (words are never broken).
+
+Write `std::vector<std::string_view> splitWords(std::string_view text)` that returns the words as
+**views** into the text you read (so the text must stay alive while you use them).
+
+**Input:** `W` (1 to 80) on the first line, then zero or more lines of text.
+**Output:** the wrapped lines. Nothing at all if there are no words.
+
+Example, with `W = 20`: `The quick brown fox jumps over the lazy dog.` becomes
+`The quick brown fox` / `jumps over the lazy` / `dog.`.
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <string_view>
+#include <vector>
+
+int main() {
+    std::size_t width;
+    std::cin >> width;
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <string_view>
+#include <vector>
+
+bool isSpace(char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r';
+}
+
+std::vector<std::string_view> splitWords(std::string_view text) {
+    std::vector<std::string_view> words;
+    while (true) {
+        while (!text.empty() && isSpace(text.front())) {
+            text.remove_prefix(1);                  // skip the gap before the next word
+        }
+        if (text.empty()) {
+            return words;
+        }
+        std::size_t length = 0;
+        while (length < text.size() && !isSpace(text[length])) {
+            ++length;
+        }
+        words.push_back(text.substr(0, length));    // a view: no characters are copied
+        text.remove_prefix(length);
+    }
+}
+
+int main() {
+    std::size_t width;
+    std::cin >> width;
+
+    std::string text;                               // owns the characters the views look at
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        text += line;
+        text += '\n';
+    }
+
+    std::string current;
+    for (std::string_view word : splitWords(text)) {
+        if (current.empty()) {
+            current += word;
+        } else if (current.size() + 1 + word.size() <= width) {
+            current += ' ';
+            current += word;
+        } else {
+            std::cout << current << '\n';
+            current = std::string(word);
+        }
+    }
+    if (!current.empty()) {
+        std::cout << current << '\n';
+    }
+}
+```
+
+```hint
+Read everything into one `std::string`: `while (std::getline(std::cin, line)) { text += line; text += '\n'; }`.
+Newlines then become ordinary separators.
+```
+
+```hint
+To split: skip separators with `remove_prefix(1)`, count the length of the next word, take
+`text.substr(0, length)` (a view), then `remove_prefix(length)` and repeat until the view is empty.
+```
+
+```hint
+Build the current output line in a `std::string`. A word fits if
+`current.size() + 1 + word.size() <= width` (the `+ 1` is the space). If it doesn't fit, print the
+line and start a new one with the word. Don't forget the last line.
+```
+
+```stdin
+20
+The quick brown fox jumps over the lazy dog.
+```
+
+```expected
+The quick brown fox
+jumps over the lazy
+dog.
+```
+
+```stdin
+10
+a supercalifragilistic word
+```
+
+```expected
+a
+supercalifragilistic
+word
+```
+
+```stdin
+12
+  Hello,   world!	This
+is    a   test.
+
+  Bye
+```
+
+```expected hidden
+Hello,
+world! This
+is a test.
+Bye
+```
+
+```stdin
+5
+abc d efgh ij
+```
+
+```expected hidden
+abc d
+efgh
+ij
+```
+
+```stdin
+7
+   
+	
+```
+
+```expected hidden
+```
+
+```stdin
+1
+a b cd
+```
+
+```expected hidden
+a
+b
+cd
+```
+
+```checks
+must std::vector\s*<\s*std::string_view\s*>\s+splitWords\s*\(\s*std::string_view :: Write std::vector<std::string_view> splitWords(std::string_view text).
+must remove_prefix|substr :: Slice the text with string_view operations (substr, remove_prefix).
 ```
 :::

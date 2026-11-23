@@ -275,7 +275,7 @@ Which statements about a `static` local variable are true? (select all that appl
 Its *lifetime* is the whole program, but its *scope* is still just the function.
 :::
 
-:::exercise Ticket machine
+:::exercise Ticket machine {easy}
 Write `int nextTicket()` that returns `1` the first time it's called, `2` the second time, and so on,
 using a **static local** variable. Read `n` and print `Ticket #k` for `n` tickets.
 
@@ -340,13 +340,33 @@ Ticket #3
 
 ```
 
+```stdin
+5
+```
+
+```expected hidden
+Ticket #1
+Ticket #2
+Ticket #3
+Ticket #4
+Ticket #5
+```
+
+```stdin
+1
+```
+
+```expected hidden
+Ticket #1
+```
+
 ```checks
 must static\s+int :: Use a static local variable.
 mustnot nextTicket\s*\(\s*\w :: nextTicket takes no parameters.
 ```
 :::
 
-:::exercise Running average
+:::exercise Running average {easy}
 Write `double addSample(double x)` that remembers every sample it has been given (using **static
 local** variables for the sum and the count) and returns the average of all samples so far. Read
 numbers until the end of input and print the running average after each one.
@@ -412,12 +432,40 @@ You need two static locals: a running `sum` and a `count`.
 0.166667
 ```
 
+```stdin
+7
+```
+
+```expected hidden
+7
+```
+
+```stdin
+10 0 0 0
+```
+
+```expected hidden
+10
+5
+3.33333
+2.5
+```
+
+```stdin
+1 2
+```
+
+```expected hidden
+1
+1.5
+```
+
 ```checks
 must static\s+(double|int|long) :: Keep the sum and count in static local variables.
 ```
 :::
 
-:::exercise No globals allowed
+:::exercise No globals allowed {medium}
 Simulate a bank account **without any global variables**. Keep the balance as a local in `main` and
 write two functions that take it **by reference**:
 
@@ -499,6 +547,26 @@ withdraw 0
 ```
 
 ```expected hidden
+insufficient funds
+balance: 0
+```
+
+```stdin
+```
+
+```expected hidden
+```
+
+```stdin
+deposit 50
+withdraw 50
+withdraw 1
+deposit 0
+```
+
+```expected hidden
+balance: 50
+balance: 0
 insufficient funds
 balance: 0
 ```

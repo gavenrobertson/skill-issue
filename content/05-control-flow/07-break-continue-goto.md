@@ -354,7 +354,7 @@ Which are reasonable ways to exit two nested loops at once? (select all that app
 C++ has no multi-level `break`. The first three are the standard techniques, roughly from most to least common.
 :::
 
-:::exercise First negative
+:::exercise First negative {easy}
 Read integers until the end of input and print the first negative one, then stop reading.
 
 **Input:** zero or more integers.
@@ -434,12 +434,20 @@ First negative: -1
 No negatives
 ```
 
+```stdin
+0 0 0
+```
+
+```expected hidden
+No negatives
+```
+
 ```checks
 must \bbreak\s*; :: Stop the loop with break.
 ```
 :::
 
-:::exercise Skip the multiples of three
+:::exercise Skip the multiples of three {easy}
 Read `n` and print the numbers from 1 to `n` on one line, separated by spaces, **skipping** multiples of 3.
 
 **Input:** one integer `n` (1 or more).
@@ -514,12 +522,28 @@ A trailing space at the end of the line is fine; the checker ignores trailing wh
 1 2 4 5 7 8 10 11 13 14
 ```
 
+```stdin
+1
+```
+
+```expected hidden
+1
+```
+
+```stdin
+4
+```
+
+```expected hidden
+1 2 4
+```
+
 ```checks
 must \bcontinue\s*; :: Skip the multiples with continue.
 ```
 :::
 
-:::exercise Positive sum until zero
+:::exercise Positive sum until zero {medium}
 Read integers until the end of input. **Ignore** negative numbers, and **stop completely** at the first
 `0`. Print how many numbers were added and their sum.
 
@@ -600,13 +624,28 @@ Added 0 numbers, sum = 0
 Added 3 numbers, sum = 24
 ```
 
+```stdin
+```
+
+```expected hidden
+Added 0 numbers, sum = 0
+```
+
+```stdin
+3 3 3
+```
+
+```expected hidden
+Added 3 numbers, sum = 9
+```
+
 ```checks
 must \bbreak\s*; :: Stop at zero with break.
 must \bcontinue\s*; :: Skip negatives with continue.
 ```
 :::
 
-:::exercise Factor pair
+:::exercise Factor pair {medium}
 Read a target number `t` and a limit `n`. Search for the first pair `a`, `b` with `1 <= a <= b <= n`
 and `a * b == t`, trying `a` from 1 upward and, for each `a`, `b` from `a` upward. Stop searching as soon
 as you find one (exit **both** loops), using any technique from this lesson.
@@ -696,7 +735,216 @@ No pair
 7 x 7 = 49
 ```
 
+```stdin
+1 1
+```
+
+```expected hidden
+1 x 1 = 1
+```
+
+```stdin
+12 3
+```
+
+```expected hidden
+No pair
+```
+
+```stdin
+100 9
+```
+
+```expected hidden
+No pair
+```
+
 ```checks
 must for[\s\S]*\{[\s\S]*for\s*\( :: Use nested for loops.
+```
+:::
+
+:::exercise Sensor log {hard}
+A temperature sensor writes one reading per line. Analyze its log.
+
+**Input:** first an integer `limit`. Then the readings (integers) until the end of input, with two special
+values:
+
+- `-1` means "sensor offline". It's not a reading: skip it. It also **interrupts** any run (see below).
+- `-999` marks the end of the log. Stop there and ignore anything after it.
+
+**Output:** three lines:
+
+```
+Valid: <number of real readings>
+Max: <largest reading>
+Longest run above limit: <length>
+```
+
+- `Max: none` if there were no real readings.
+- A **run** is a sequence of consecutive real readings that are all strictly greater than `limit`, not
+  interrupted by an offline marker. Print the length of the longest one (`0` if there is none).
+
+For limit `20` and readings `18 25 30 -1 22 23 24 19 -999 50`:
+
+```
+Valid: 7
+Max: 30
+Longest run above limit: 3
+```
+
+(`25 30` is cut short by the `-1`; `22 23 24` is the longest run; `50` comes after the end marker.)
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int limit = 0;
+    std::cin >> limit;
+    int x = 0;
+    int valid = 0;
+    while (std::cin >> x) {
+        ++valid;
+    }
+    std::cout << "Valid: " << valid << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    int limit = 0;
+    std::cin >> limit;
+
+    int valid = 0;
+    int max = 0;
+    int run = 0;
+    int longest = 0;
+    int x = 0;
+    while (std::cin >> x) {
+        if (x == -999) {
+            break;
+        }
+        if (x == -1) {
+            run = 0;
+            continue;
+        }
+        if (valid == 0 || x > max) {
+            max = x;
+        }
+        ++valid;
+        if (x > limit) {
+            ++run;
+            if (run > longest) {
+                longest = run;
+            }
+        } else {
+            run = 0;
+        }
+    }
+
+    std::cout << "Valid: " << valid << '\n';
+    if (valid == 0) {
+        std::cout << "Max: none\n";
+    } else {
+        std::cout << "Max: " << max << '\n';
+    }
+    std::cout << "Longest run above limit: " << longest << '\n';
+}
+```
+
+```hint
+Inside the loop: `break` on `-999`, and `continue` on `-1` (after resetting the current run).
+```
+
+```hint
+Keep two counters: the length of the **current** run, and the **longest** one seen so far. A reading at
+or below the limit resets the current run to 0.
+```
+
+```hint
+Readings can be negative. Start `max` from the first real reading, not from 0.
+```
+
+```stdin
+20
+18 25 30 -1 22 23 24 19 -999 50
+```
+
+```expected
+Valid: 7
+Max: 30
+Longest run above limit: 3
+```
+
+```stdin
+0
+-1 -1
+```
+
+```expected
+Valid: 0
+Max: none
+Longest run above limit: 0
+```
+
+```stdin
+5
+6 7 -1 8
+```
+
+```expected hidden
+Valid: 3
+Max: 8
+Longest run above limit: 2
+```
+
+```stdin
+-10
+-5 -20 -3 -2 -999
+```
+
+```expected hidden
+Valid: 4
+Max: -2
+Longest run above limit: 2
+```
+
+```stdin
+100
+```
+
+```expected hidden
+Valid: 0
+Max: none
+Longest run above limit: 0
+```
+
+```stdin
+10
+-999 50 60
+```
+
+```expected hidden
+Valid: 0
+Max: none
+Longest run above limit: 0
+```
+
+```stdin
+0
+1 2 3 4 5
+```
+
+```expected hidden
+Valid: 5
+Max: 5
+Longest run above limit: 5
+```
+
+```checks
+must \bbreak\s*; :: Stop at the end marker with break.
+must \bcontinue\s*; :: Skip offline markers with continue.
 ```
 :::

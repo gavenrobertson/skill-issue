@@ -73,7 +73,7 @@ end of main
 | Object created with `new` | when you call `delete` on the pointer (never, if you forget!) |
 | Temporary, e.g. `Noisy("t")` | at the end of the full expression (roughly, at the `;`) |
 | Member of another object | right after the owner's destructor body runs |
-| Element of a `std::vector` or array | when the container is destroyed (or the element is erased) |
+| Element of a `std::vector` or array | when the container is destroyed (or the element is erased or the vector shrinks) |
 | `static` or global object | after `main` returns |
 
 The important property: for locals, **every** way out of a scope runs the destructor. Early returns,
@@ -135,7 +135,10 @@ construction**. Things built first are torn down last, like a stack of plates.
 - An object with members: members are constructed **first** (in declaration order), then the
   constructor body runs. On destruction, the destructor body runs **first**, then members are destroyed
   in reverse declaration order. (So a destructor body can still use every member.)
-- Elements of an array or `std::vector`: built first to last, destroyed last to first.
+- Elements of a built-in array: built first to last, destroyed last to first.
+- Elements of a `std::vector` are built first to last, but the standard doesn't promise an order for
+  destroying them (GCC's library destroys them first to last). Don't write code whose correctness
+  depends on it.
 
 ```cpp run
 #include <iostream>
@@ -340,7 +343,7 @@ Which statements about destructors are true? (select all that apply)
 There's one destructor, with no parameters, called automatically on every exit from the scope.
 :::
 
-:::exercise Hello and goodbye
+:::exercise Hello and goodbye {easy}
 Complete the `Greeter` class:
 
 - The constructor takes a name and prints `Hello, NAME!`
@@ -441,7 +444,7 @@ must ~Greeter\s*\(\s*\) :: Write a destructor ~Greeter().
 ```
 :::
 
-:::exercise Balanced tags
+:::exercise Balanced tags {easy}
 Write an RAII class `Tag` whose constructor prints an opening tag `<name>` and whose destructor prints
 the closing tag `</name>`. Nothing else prints a newline until the end.
 
@@ -546,7 +549,7 @@ must ~Tag\s*\(\s*\) :: Print the closing tag from the destructor ~Tag().
 ```
 :::
 
-:::exercise Owning buffer
+:::exercise Owning buffer {medium}
 Write an RAII class `Buffer` that owns a heap array of `int`:
 
 - `explicit Buffer(int n)`: allocates `n` ints with `new int[n]` and stores the size.
@@ -659,5 +662,174 @@ must new\s+int\s*\[ :: Allocate the array with new int[n].
 must delete\s*\[\s*\] :: Free the array with delete[] in the destructor.
 must ~Buffer\s*\( :: Write a destructor.
 must Buffer\s*\(\s*const\s+Buffer\s*&\s*\)\s*=\s*delete :: Delete the copy constructor.
+```
+:::
+
+:::exercise Scope tracer {hard}
+Write an interpreter for a tiny block-structured language in which **real C++ objects and scopes do
+the bookkeeping**. Every `new NAME` must create a real object of an RAII class `Tracer` (its
+constructor prints `+NAME`, its destructor prints `-NAME`), and that object must be destroyed exactly
+when its block ends. Don't keep your own list of names: the language's lifetimes should mirror C++'s.
+
+**Input:** commands (separated by whitespace) until end of input:
+
+| Command | Meaning |
+| --- | --- |
+| `new NAME` | create an object that lives until the end of the current block |
+| `{` | open a nested block |
+| `}` | close the current block: its objects die, newest first |
+| `say WORD` | print `WORD` on its own line |
+| `quit` | stop immediately: every live object dies (innermost and newest first) and the rest of the input is ignored |
+
+The whole input is an implicit outermost block that ends at end of input. Braces are always balanced
+(unless a `quit` cuts the program short).
+**Output:** one line per event.
+
+For `new a { new b say hi new c } new d say end` the output is:
+
+```
++a
++b
+hi
++c
+-c
+-b
++d
+end
+-d
+-a
+```
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+class Tracer {
+    // TODO
+};
+
+int main() {
+    // TODO: read and run the program
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+class Tracer {
+    std::string name_;
+public:
+    explicit Tracer(const std::string& name) : name_(name) { std::cout << '+' << name_ << '\n'; }
+    ~Tracer() { std::cout << '-' << name_ << '\n'; }
+    Tracer(const Tracer&) = delete;
+    Tracer& operator=(const Tracer&) = delete;
+};
+
+// Runs commands until the end of the current block.
+// Returns false if 'quit' was seen, so every caller unwinds immediately.
+bool runBlock() {
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "}") return true;
+        if (cmd == "quit") return false;
+        if (cmd == "{") {
+            if (!runBlock()) return false;
+        } else if (cmd == "say") {
+            std::string word;
+            std::cin >> word;
+            std::cout << word << '\n';
+        } else if (cmd == "new") {
+            std::string name;
+            std::cin >> name;
+            Tracer t(name);        // lives while the REST of this block runs...
+            return runBlock();     // ...which this recursive call executes
+        }
+    }
+    return true;                   // end of input closes the outermost block
+}
+
+int main() {
+    runBlock();
+}
+```
+
+```hint
+A loop can't keep an unknown number of locals alive. Recursion can: when you see `new NAME`, create
+the `Tracer` as a local and then **recursively run the rest of the same block** from there. When that
+call returns (because it reached `}`), your local dies, after everything created later.
+```
+
+```hint
+Let the recursive function return a `bool` meaning "keep going". `quit` returns `false`, and every caller
+that sees `false` returns `false` right away. The destructors still run on the way out.
+```
+
+```stdin
+new a
+{
+new b
+say hi
+new c
+}
+new d
+say end
+```
+
+```expected
++a
++b
+hi
++c
+-c
+-b
++d
+end
+-d
+-a
+```
+
+```stdin
+new x { new y { new z quit new never } } say unreachable
+```
+
+```expected hidden
++x
++y
++z
+-z
+-y
+-x
+```
+
+```stdin
+{ } { { new deep } say mid } new p new q { new r } say done
+```
+
+```expected hidden
++deep
+-deep
+mid
++p
++q
++r
+-r
+done
+-q
+-p
+```
+
+```stdin
+say nothing-to-clean
+```
+
+```expected hidden
+nothing-to-clean
+```
+
+```checks
+must ~Tracer\s*\(\s*\) :: Print the -NAME line from Tracer's destructor.
+mustnot std::(vector|stack|deque|list)\b :: Don't keep your own list of names: let scopes and destructors do the work.
+mustnot \bnew\s+Tracer\b :: Create Tracers as local objects, not with new.
 ```
 :::

@@ -208,7 +208,7 @@ Which exit code conventionally means "success"?
 `0` (`EXIT_SUCCESS`) means success. Any non-zero value signals failure.
 :::
 
-:::exercise Simulated echo
+:::exercise Simulated echo {medium}
 The grader can't pass command-line arguments, so let's simulate them. Read words from standard
 input until the end of input; treat them as the arguments `argv[1]`, `argv[2]`, ... of a program whose
 `argv[0]` is `./app`. Print `argc` and then every `argv[i]`, **including** `argv[0]`.
@@ -295,9 +295,37 @@ argv[1] = -v
 argv[2] = --name=Ada
 argv[3] = file.txt
 ```
+```stdin
+a
+b
+c
+d
+e
+f
+g
+h
+i
+j
+```
+
+```expected hidden
+argc = 11
+argv[0] = ./app
+argv[1] = a
+argv[2] = b
+argv[3] = c
+argv[4] = d
+argv[5] = e
+argv[6] = f
+argv[7] = g
+argv[8] = h
+argv[9] = i
+argv[10] = j
+```
+
 :::
 
-:::exercise Status codes
+:::exercise Status codes {easy}
 Write `int validateAge(int age)` that returns `EXIT_SUCCESS` if `0 <= age <= 150` and `EXIT_FAILURE`
 otherwise. Read ages until the end of input and print `AGE -> ok` or `AGE -> invalid` depending on the
 returned status. Finally, print `failures: N` (the number of invalid ages) and return
@@ -366,6 +394,27 @@ failures: 2
 
 ```expected hidden
 failures: 0
+```
+
+```stdin
+0 150 -150 1000
+```
+
+```expected hidden
+0 -> ok
+150 -> ok
+-150 -> invalid
+1000 -> invalid
+failures: 2
+```
+
+```stdin
+-1
+```
+
+```expected hidden
+-1 -> invalid
+failures: 1
 ```
 
 ```checks

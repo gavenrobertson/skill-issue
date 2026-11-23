@@ -251,7 +251,7 @@ Friendship is one-way, not inherited, and not transitive.
 A friend function is not a member, so it's called like any free function.
 :::
 
-:::exercise Friendly distance
+:::exercise Friendly distance {easy}
 `Point` keeps its coordinates private and has **no getters**. Write a **friend** function
 `double distance(const Point& a, const Point& b)` that returns the Euclidean distance between two points.
 
@@ -345,7 +345,7 @@ must distance\s*\(\s*a\s*,\s*b\s*\) :: Call distance(a, b) in main.
 ```
 :::
 
-:::exercise Vault auditor
+:::exercise Vault auditor {easy}
 `Vault` keeps its balance and transaction count private. Make class `Auditor` a **friend class** of
 `Vault`, and implement `Auditor::report`, which prints:
 
@@ -461,7 +461,7 @@ must friend\s+class\s+Auditor :: Make Auditor a friend class of Vault.
 ```
 :::
 
-:::exercise Matrix times vector
+:::exercise Matrix times vector {medium}
 Write a function `Vec multiply(const Matrix& m, const Vec& v)` that multiplies a 2×2 matrix by a
 2-element vector. Both classes keep their data private, so the function must be a **friend of both**.
 (You'll need a forward declaration.)
@@ -564,5 +564,211 @@ Both classes need the same line: `friend Vec multiply(const Matrix& m, const Vec
 ```checks
 must friend[\s\S]*friend :: multiply must be declared a friend in both classes.
 must class\s+Vec\s*; :: Forward-declare Vec.
+```
+:::
+
+:::exercise Playlist cursor {hard}
+A **container and its cursor** are the textbook case of two classes designed together. Write:
+
+- `Playlist`: keeps its songs in a **private** `std::vector<std::string>` and offers only `add(song)`
+  and `size()` publicly. It makes `Cursor` a **friend class**; there are no other ways to read the songs.
+- `Cursor`: built from a `Playlist&`, it remembers a position (starting at the first song) and reaches
+  into the playlist's private data to implement:
+
+| Command | Effect |
+| --- | --- |
+| `add SONG` | append a song to the playlist (the cursor doesn't move); no output |
+| `cur` | stay put |
+| `next` / `prev` | move one song forward / back, **wrapping around** at the ends |
+| `del` | remove the current song; the cursor moves to the song that followed it (or to the first song, if it removed the last one) |
+| `find SONG` | search forward **starting at the current song**, wrapping around, and move to the first match; print `SONG not found` (and don't move) if there is none |
+
+After every command except `add` (and except a failed `find`), print the current song, or `(empty)` if
+the playlist has no songs. `next`, `prev` and `del` on an empty playlist do nothing.
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <vector>
+
+class Playlist {
+    std::vector<std::string> songs_;
+public:
+    void add(const std::string& song) { songs_.push_back(song); }
+    std::size_t size() const { return songs_.size(); }
+};
+
+int main() {
+    Playlist list;
+    // write class Cursor, then read and run the commands
+}
+```
+
+```cpp solution
+#include <cstddef>
+#include <iostream>
+#include <string>
+#include <vector>
+
+class Playlist {
+    std::vector<std::string> songs_;
+    friend class Cursor;
+public:
+    void add(const std::string& song) { songs_.push_back(song); }
+    std::size_t size() const { return songs_.size(); }
+};
+
+class Cursor {
+    Playlist& list_;
+    std::size_t pos_ = 0;
+public:
+    explicit Cursor(Playlist& list) : list_(list) {}
+
+    std::string current() const {
+        if (list_.songs_.empty()) return "(empty)";
+        return list_.songs_[pos_];
+    }
+    void next() {
+        if (!list_.songs_.empty()) pos_ = (pos_ + 1) % list_.songs_.size();
+    }
+    void prev() {
+        if (!list_.songs_.empty()) pos_ = (pos_ + list_.songs_.size() - 1) % list_.songs_.size();
+    }
+    void remove() {
+        auto& songs = list_.songs_;
+        if (songs.empty()) return;
+        songs.erase(songs.begin() + static_cast<std::ptrdiff_t>(pos_));
+        if (pos_ == songs.size()) pos_ = 0;
+    }
+    bool find(const std::string& song) {
+        const auto& songs = list_.songs_;
+        for (std::size_t step = 0; step < songs.size(); ++step) {
+            std::size_t i = (pos_ + step) % songs.size();
+            if (songs[i] == song) {
+                pos_ = i;
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
+int main() {
+    Playlist list;
+    Cursor cursor(list);
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "add") {
+            std::string song;
+            std::cin >> song;
+            list.add(song);
+            continue;
+        }
+        if (cmd == "next") cursor.next();
+        else if (cmd == "prev") cursor.prev();
+        else if (cmd == "del") cursor.remove();
+        else if (cmd == "find") {
+            std::string song;
+            std::cin >> song;
+            if (!cursor.find(song)) {
+                std::cout << song << " not found\n";
+                continue;
+            }
+        }
+        std::cout << cursor.current() << '\n';
+    }
+}
+```
+
+```hint
+`friend class Cursor;` inside `Playlist` is all the declaration you need (it also introduces the name
+`Cursor`). Give `Cursor` two members: a `Playlist&` and a `std::size_t` position.
+```
+
+```hint
+Wrapping: forward is `(pos + 1) % n`, backward is `(pos + n - 1) % n` (adding `n` first avoids going
+below zero with an unsigned type). After erasing the current element, the position already points at
+the following song, unless it is now equal to the size.
+```
+
+```stdin
+add a
+add b
+add c
+cur
+next
+next
+next
+prev
+del
+cur
+find b
+```
+
+```expected
+a
+b
+c
+a
+c
+a
+a
+b
+```
+
+```stdin
+cur
+next
+del
+add x
+cur
+del
+add y
+add z
+find q
+prev
+find y
+```
+
+```expected hidden
+(empty)
+(empty)
+(empty)
+x
+(empty)
+q not found
+z
+y
+```
+
+```stdin
+add a
+add b
+add a
+add c
+next
+find a
+del
+find a
+del
+cur
+next
+next
+```
+
+```expected hidden
+b
+a
+c
+a
+b
+b
+c
+b
+```
+
+```checks
+must friend\s+class\s+Cursor :: Make Cursor a friend class of Playlist.
+must class\s+Cursor\b :: Write the Cursor class.
 ```
 :::

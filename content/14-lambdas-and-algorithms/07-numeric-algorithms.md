@@ -283,7 +283,7 @@ Why must the operation passed to `std::reduce` be associative and commutative?
 That freedom is what lets `reduce` split the work. With subtraction, different groupings give different answers. `accumulate` always goes strictly left to right.
 :::
 
-:::exercise Average
+:::exercise Average {easy}
 Read `n` decimal numbers and print their average with exactly two digits after the decimal point.
 Compute the sum with `std::accumulate` (watch the type of `init`!). If `n` is `0`, print `no data`.
 
@@ -362,13 +362,22 @@ average: 1.43
 no data
 ```
 
+```stdin
+2
+-1.5 -2.5
+```
+
+```expected hidden
+average: -2.00
+```
+
 ```checks
 must accumulate|reduce :: Sum the numbers with std::accumulate (or std::reduce).
 mustnot \bfor\s*\(\s*(double|auto|const)[^)]*:\s*v\s*\)\s*(sum|\{) :: Let accumulate do the summing instead of a loop.
 ```
 :::
 
-:::exercise Dot product
+:::exercise Dot product {easy}
 Read two vectors of the same length `n` and print their dot product (the sum of `a[i] * b[i]`) using
 `std::inner_product`. Values can be large, so the result needs a `long long`.
 
@@ -444,7 +453,7 @@ must inner_product :: Use std::inner_product.
 ```
 :::
 
-:::exercise Slice sums
+:::exercise Slice sums {medium}
 Read `n` integers, then `q` queries. Each query is `l r` (1-based, `1 <= l <= r <= n`); print the
 sum of elements `l` through `r` inclusive.
 
@@ -538,12 +547,23 @@ Then `prefix[i]` is the sum of the first `i` elements, and the sum of `l..r` is 
 -2000000000
 ```
 
+```stdin
+1
+7
+1
+1 1
+```
+
+```expected hidden
+7
+```
+
 ```checks
 must partial_sum|inclusive_scan :: Build the prefix sums with std::partial_sum.
 ```
 :::
 
-:::exercise GCD and LCM of a list
+:::exercise GCD and LCM of a list {medium}
 Read `n` positive integers (`n >= 1`) and print the greatest common divisor and the least common
 multiple of **all** of them. Fold the list with `std::accumulate`, using lambdas that call
 `std::gcd` and `std::lcm`.
@@ -620,6 +640,15 @@ gcd 7 lcm 7
 
 ```expected hidden
 gcd 1 lcm 999999000000
+```
+
+```stdin
+3
+5 5 5
+```
+
+```expected hidden
+gcd 5 lcm 5
 ```
 
 ```checks

@@ -381,7 +381,7 @@ What happens when an exception tries to leave a function declared `noexcept`?
 `noexcept` is a hard promise: no handler is searched; the program is terminated.
 :::
 
-:::exercise Mark it noexcept
+:::exercise Mark it noexcept {easy}
 The program below has three functions. Two of them can never throw; one can. Add `noexcept` to the
 two functions that can't fail, so that the program reports them correctly (it checks with the
 `noexcept` operator). Don't change what the functions do.
@@ -501,6 +501,17 @@ swapped: 0 5
 noexcept: add=yes checked_div=no swap_ints=yes
 ```
 
+```stdin
+-7 2
+```
+
+```expected hidden
+sum: -5
+quotient: -3
+swapped: 2 -7
+noexcept: add=yes checked_div=no swap_ints=yes
+```
+
 ```checks
 must add\s*\([^)]*\)\s*noexcept :: Mark add noexcept.
 must swap_ints\s*\([^)]*\)\s*noexcept :: Mark swap_ints noexcept.
@@ -508,7 +519,7 @@ mustnot checked_div\s*\([^)]*\)\s*noexcept\s*\{ :: checked_div can throw, so it 
 ```
 :::
 
-:::exercise Leak detector
+:::exercise Leak detector {easy}
 `Tracker` objects count how many of them are alive. `process` creates two trackers with `new` and
 deletes them at the end, but when it throws for a negative value, the `delete`s are skipped, so the
 trackers leak.
@@ -619,13 +630,26 @@ error: negative value
 live objects: 0
 ```
 
+```stdin
+0
+-5
+7
+```
+
+```expected hidden
+processed 0
+error: negative value
+processed 21
+live objects: 0
+```
+
 ```checks
 mustnot \bnew\b :: Don't use new: let RAII objects own the trackers.
 mustnot \bdelete\b :: No manual delete: RAII cleans up for you.
 ```
 :::
 
-:::exercise All or nothing
+:::exercise All or nothing {medium}
 Accounts are stored in a `std::vector<long long>` of balances (account numbers are indexes). A
 **batch** is a list of transfers `from to amount` that must be applied **all or nothing** (the strong
 guarantee): if any transfer in the batch fails, the balances must be exactly as they were before
@@ -785,6 +809,31 @@ batch 3: failed (bad account)
 batch 1: failed (insufficient funds)
 batch 2: ok
 10 10
+```
+
+```stdin
+3
+5 0 0
+4
+0
+2
+0 1 5
+1 1 5
+2
+1 2 5
+2 3 1
+3
+1 2 3
+2 0 3
+0 1 99
+```
+
+```expected hidden
+batch 1: ok
+batch 2: ok
+batch 3: failed (bad account)
+batch 4: failed (insufficient funds)
+0 5 0
 ```
 
 ```checks

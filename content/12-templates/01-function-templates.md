@@ -352,7 +352,7 @@ You declare a template in `util.h` and define its body in `util.cpp`. `main.cpp`
 type, so the linker can't find it. Define templates in headers.
 :::
 
-:::exercise Generic maximum
+:::exercise Generic maximum {easy}
 Write a function template `myMax` that takes two values of the same type `T` and returns the larger
 one. Use it for three different types.
 
@@ -424,13 +424,25 @@ Zebra zebra
 zebra
 ```
 
+```stdin
+-10 -3
+-0.5 -0.25
+apple apples
+```
+
+```expected hidden
+-3
+-0.25
+apples
+```
+
 ```checks
 must template\s*<\s*(typename|class)\s+\w+\s*> :: Define myMax as a function template.
 must myMax\s*\( :: Call your myMax template.
 ```
 :::
 
-:::exercise Swap anything
+:::exercise Swap anything {easy}
 Write a function template `mySwap(T& a, T& b)` that exchanges two values (don't use `std::swap`).
 
 **Input:** two integers on the first line, two words on the second line.
@@ -498,13 +510,23 @@ same same
 same same
 ```
 
+```stdin
+5 5
+b a
+```
+
+```expected hidden
+5 5
+a b
+```
+
 ```checks
 must template\s*< :: Write mySwap as a template.
 mustnot std::swap :: Implement the swap yourself instead of calling std::swap.
 ```
 :::
 
-:::exercise Count matches
+:::exercise Count matches {medium}
 Write a function template `countEqual(const std::vector<T>& v, const T& target)` that returns how many
 elements of `v` equal `target`. Use it once with integers and once with words.
 
@@ -606,13 +628,27 @@ z
 0
 ```
 
+```stdin
+3
+7 7 7
+7
+3
+to To to
+to
+```
+
+```expected hidden
+3
+2
+```
+
 ```checks
 must template\s*< :: Make countEqual a template.
 mustnot countEqual\s*\(\s*const\s+std::vector\s*<\s*int :: The template should work on std::vector<T>, not just std::vector<int>.
 ```
 :::
 
-:::exercise Print a pair of anything
+:::exercise Print a pair of anything {easy}
 Write `printPair` as an **abbreviated function template** (C++20 `auto` parameters) that prints its two
 arguments as `(first, second)`.
 
@@ -686,5 +722,161 @@ so the two arguments can be different types.
 ```checks
 must printPair\s*\(\s*(const\s+)?auto :: Use auto parameters (an abbreviated function template).
 mustnot template\s*< :: Use the abbreviated auto syntax instead of writing template <...>.
+```
+:::
+
+:::exercise Count inversions {hard}
+An **inversion** in a sequence is a pair of positions `i < j` whose values are out of order:
+`v[i] > v[j]`. It measures how unsorted a sequence is: a sorted sequence has 0 inversions, a
+reversed one has the most. Equal values are **not** an inversion.
+
+Write **one** function template `long long countInversions(std::vector<T>& v)` that returns the
+number of inversions (it may leave `v` sorted). Use it for a vector of integers and a vector of words.
+
+Checking every pair is O(n²), far too slow for 200 000 elements. Count while you **merge sort**: when
+merging two sorted halves, every element taken from the right half forms an inversion with each
+element still waiting in the left half.
+
+**Input:** `n` and `n` integers; then `m` and `m` words (`0 <= n, m <= 200000`).
+**Output:** two lines: `ints: K` and `words: K`.
+
+Example: `3 1 2` has the inversions `(3, 1)` and `(3, 2)`, so it prints `ints: 2`.
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> nums(n);
+    for (int& x : nums) std::cin >> x;
+    int m;
+    std::cin >> m;
+    std::vector<std::string> words(m);
+    for (auto& w : words) std::cin >> w;
+
+    std::cout << "ints: 0\nwords: 0\n";
+}
+```
+
+```cpp solution
+#include <cstddef>
+#include <iostream>
+#include <string>
+#include <vector>
+
+// Sorts v[lo, hi) and returns the number of inversions inside it.
+template <typename T>
+long long sortCount(std::vector<T>& v, std::vector<T>& buf, std::size_t lo, std::size_t hi) {
+    if (hi - lo < 2) return 0;
+    std::size_t mid = lo + (hi - lo) / 2;
+    long long count = sortCount(v, buf, lo, mid) + sortCount(v, buf, mid, hi);
+    std::size_t i = lo, j = mid, k = lo;
+    while (i < mid && j < hi) {
+        if (v[j] < v[i]) {                 // strictly smaller: inverted with every v[i..mid)
+            count += static_cast<long long>(mid - i);
+            buf[k++] = v[j++];
+        } else {
+            buf[k++] = v[i++];             // equal values go left first: not an inversion
+        }
+    }
+    while (i < mid) buf[k++] = v[i++];
+    while (j < hi) buf[k++] = v[j++];
+    for (std::size_t t = lo; t < hi; ++t) v[t] = buf[t];
+    return count;
+}
+
+template <typename T>
+long long countInversions(std::vector<T>& v) {
+    std::vector<T> buf(v.size());
+    return sortCount(v, buf, 0, v.size());
+}
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<int> nums(n);
+    for (int& x : nums) std::cin >> x;
+    int m;
+    std::cin >> m;
+    std::vector<std::string> words(m);
+    for (auto& w : words) std::cin >> w;
+
+    std::cout << "ints: " << countInversions(nums) << '\n';
+    std::cout << "words: " << countInversions(words) << '\n';
+}
+```
+
+```hint
+Write a recursive helper template that sorts `v[lo, hi)` and returns its inversion count: the count
+inside the left half, plus the right half, plus the "cross" inversions found while merging them.
+```
+
+```hint
+While merging, if `v[j] < v[i]` (the right element is strictly smaller), all `mid - i` elements left
+in the left half are bigger than `v[j]`: add `mid - i`. On a tie take the **left** element first, so
+equal values never count.
+```
+
+```hint
+The answer can exceed 2 billion for 200 000 elements, so count in a `long long`.
+```
+
+```stdin
+3 3 1 2
+4 pear apple fig kiwi
+```
+
+```expected
+ints: 2
+words: 3
+```
+
+```stdin
+5 1 2 3 4 5
+3 c b a
+```
+
+```expected
+ints: 0
+words: 3
+```
+
+```stdin
+6 2 2 1 1 3 3
+4 b b a a
+```
+
+```expected hidden
+ints: 4
+words: 4
+```
+
+```stdin
+0
+0
+```
+
+```expected hidden
+ints: 0
+words: 0
+```
+
+```stdin
+6 -1 -2 -3 -4 -5 -6
+5 Zoo apple Apple zoo Zoo
+```
+
+```expected hidden
+ints: 15
+words: 4
+```
+
+```checks
+must template\s*<\s*(typename|class)\s+\w+\s*> :: Write countInversions as a function template.
+must countInversions\s*\(\s*nums\s*\) :: Call countInversions on the integers.
+must countInversions\s*\(\s*words\s*\) :: Call countInversions on the words.
 ```
 :::

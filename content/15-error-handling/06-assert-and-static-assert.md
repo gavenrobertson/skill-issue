@@ -297,7 +297,7 @@ Which of these should be checked with `static_assert` rather than `assert`? (sel
 Only facts known at compile time can go in `static_assert`. User input must be validated with real error handling, and a pointer's value is known only at run time (use `assert`).
 :::
 
-:::exercise Guard the precondition
+:::exercise Guard the precondition {easy}
 Write `long long average(const std::vector<long long>& v)` that returns the integer average
 (`sum / size`, truncated toward zero). Its precondition is that `v` is **not empty**: state that with
 an `assert` at the top of the function.
@@ -387,13 +387,22 @@ no numbers
 average: -5
 ```
 
+```stdin
+1
+-9223372036854775807
+```
+
+```expected hidden
+average: -9223372036854775807
+```
+
 ```checks
 must #include\s*<cassert> :: Include <cassert>.
 must assert\s*\(\s*!\s*v\.empty\s*\(\s*\)|assert\s*\(\s*v\.size\s*\(\s*\)\s*(>|!=)\s*0 :: Assert that v is not empty inside average.
 ```
 :::
 
-:::exercise Compile-time guard
+:::exercise Compile-time guard {easy}
 Write a function template
 
 ```cpp
@@ -496,13 +505,24 @@ The namespace-scope one goes outside any function: `static_assert(sizeof(long lo
 0
 ```
 
+```stdin
+0
+3
+-1.5 2 0.25
+```
+
+```expected hidden
+0
+6.3125
+```
+
 ```checks
 must static_assert\s*\(\s*std::is_arithmetic(_v\s*<\s*T\s*>|\s*<\s*T\s*>\s*::\s*value) :: Use static_assert(std::is_arithmetic_v<T>, ...) inside the template.
 must static_assert\s*\(\s*sizeof\s*\(\s*long\s+long\s*\) :: Add a static_assert on sizeof(long long).
 ```
 :::
 
-:::exercise Side effects in asserts
+:::exercise Side effects in asserts {easy}
 This program is built in **release mode**: `#define NDEBUG` is at the top, so assertions are compiled
 out. Its author put the input reading *inside* an `assert`, so in release mode nothing is ever read
 and the results are wrong.
@@ -584,9 +604,287 @@ sum -16
 max -2
 ```
 
+```stdin
+1
+0
+```
+
+```expected hidden
+sum 0
+max 0
+```
+
 ```checks
 must #define\s+NDEBUG :: Keep #define NDEBUG: the program must work in release mode.
 must assert\s*\( :: Keep an assert that checks the input.
 mustnot assert\s*\([^;]*>> :: Don't read input inside assert().
+```
+:::
+
+:::exercise Checked ring buffer {medium}
+Put all three tools of this module to work in one small class: a **ring buffer**, a fixed-capacity
+FIFO queue that stores its elements in a `std::array` and wraps around at the end.
+
+Write `template <typename T, std::size_t N> class RingBuffer` with:
+
+- `bool empty() const`, `bool full() const`, `std::size_t size() const`;
+- `void push(const T& value)`: appends at the back. **Precondition:** not full;
+- `T pop()`: removes and returns the oldest element. **Precondition:** not empty;
+- `const T& front() const`: the oldest element. **Precondition:** not empty.
+
+Rules:
+
+- A `static_assert` inside the class rejects any `N` that isn't a power of two (`1, 2, 4, 8, ...`), so
+  positions can wrap with `index & (N - 1)` instead of a division.
+- The preconditions are checked with `assert` in the member functions: calling `pop()` on an empty
+  buffer is a **bug in the caller**, not an input error.
+- So `main`, which talks to the user, must validate every command **before** calling a member function.
+
+`main` creates a `RingBuffer<int, 4>` and reads commands, one per line (blank lines are ignored):
+
+| Command | Output |
+| --- | --- |
+| `push X` | nothing; `error: buffer full` if the buffer is full |
+| `pop` | the removed value; `error: buffer empty` if empty |
+| `front` | the oldest value; `error: buffer empty` if empty |
+| `size` | `size: K/4` |
+| anything else | `error: bad command: <the whole line>` |
+
+"Anything else" includes unknown words, `push` that isn't followed by **exactly one** integer
+(`push`, `push x`, `push 1 2`), and extra words after `pop`, `front` or `size`.
+
+```cpp starter
+#include <array>
+#include <cassert>
+#include <cstddef>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+template <typename T, std::size_t N>
+class RingBuffer {
+public:
+    // TODO: empty, full, size, push, pop, front
+
+private:
+    std::array<T, N> data_{};
+};
+
+int main() {
+    RingBuffer<int, 4> buf;
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        // TODO: parse the command and validate it before touching buf
+    }
+}
+```
+
+```cpp solution
+#include <array>
+#include <cassert>
+#include <cstddef>
+#include <iostream>
+#include <sstream>
+#include <string>
+
+template <typename T, std::size_t N>
+class RingBuffer {
+    static_assert(N > 0 && (N & (N - 1)) == 0, "RingBuffer capacity must be a power of two");
+
+public:
+    bool empty() const { return count_ == 0; }
+    bool full() const { return count_ == N; }
+    std::size_t size() const { return count_; }
+
+    void push(const T& value) {
+        assert(!full() && "push() on a full RingBuffer");
+        data_[(head_ + count_) & (N - 1)] = value;
+        ++count_;
+    }
+
+    T pop() {
+        assert(!empty() && "pop() on an empty RingBuffer");
+        T value = data_[head_];
+        head_ = (head_ + 1) & (N - 1);
+        --count_;
+        return value;
+    }
+
+    const T& front() const {
+        assert(!empty() && "front() on an empty RingBuffer");
+        return data_[head_];
+    }
+
+private:
+    std::array<T, N> data_{};
+    std::size_t head_ = 0;    // index of the oldest element
+    std::size_t count_ = 0;   // number of stored elements
+};
+
+int main() {
+    RingBuffer<int, 4> buf;
+    std::string line;
+    while (std::getline(std::cin, line)) {
+        std::istringstream in(line);
+        std::string cmd;
+        if (!(in >> cmd)) continue;   // blank line
+        std::string extra;
+        if (cmd == "push") {
+            int x;
+            if (!(in >> x) || (in >> extra)) {
+                std::cout << "error: bad command: " << line << '\n';
+            } else if (buf.full()) {
+                std::cout << "error: buffer full\n";
+            } else {
+                buf.push(x);
+            }
+        } else if ((cmd == "pop" || cmd == "front" || cmd == "size") && !(in >> extra)) {
+            if (cmd == "size") {
+                std::cout << "size: " << buf.size() << "/4\n";
+            } else if (buf.empty()) {
+                std::cout << "error: buffer empty\n";
+            } else if (cmd == "pop") {
+                std::cout << buf.pop() << '\n';
+            } else {
+                std::cout << buf.front() << '\n';
+            }
+        } else {
+            std::cout << "error: bad command: " << line << '\n';
+        }
+    }
+}
+```
+
+```hint
+Keep two counters: `head_` (where the oldest element is) and `count_` (how many there are). The next
+free slot is `(head_ + count_) & (N - 1)`; popping advances `head_` the same way.
+```
+
+```hint
+`N & (N - 1)` is `0` exactly when `N` is a power of two (one bit set), so the check is
+`static_assert(N > 0 && (N & (N - 1)) == 0, "...");`.
+```
+
+```hint
+To validate `push X`, read with a per-line `std::istringstream`: `in >> x` must succeed **and** a
+following `in >> extra` must fail.
+```
+
+```stdin
+push 1
+push 2
+push 3
+size
+pop
+push 4
+push 5
+push 6
+size
+pop
+pop
+pop
+pop
+pop
+```
+
+```expected
+size: 3/4
+1
+error: buffer full
+size: 4/4
+2
+3
+4
+5
+error: buffer empty
+```
+
+```stdin
+front
+pop
+push
+push x
+push 7 8
+jump
+push 7
+front
+size
+
+pop now
+pop
+```
+
+```expected
+error: buffer empty
+error: buffer empty
+error: bad command: push
+error: bad command: push x
+error: bad command: push 7 8
+error: bad command: jump
+7
+size: 1/4
+error: bad command: pop now
+7
+```
+
+```stdin
+push 1
+pop
+push 2
+pop
+push 3
+pop
+push 4
+pop
+push 5
+pop
+push 6
+push 7
+push 8
+push 9
+push 10
+front
+pop
+pop
+pop
+pop
+size
+```
+
+```expected hidden
+1
+2
+3
+4
+5
+error: buffer full
+6
+6
+7
+8
+9
+size: 0/4
+```
+
+```stdin
+push -2147483648
+push 2147483647
+push 12abc
+front
+size
+```
+
+```expected hidden
+error: bad command: push 12abc
+-2147483648
+size: 2/4
+```
+
+```checks
+must template\s*<[^>]*std::size_t\s+N :: Make RingBuffer a template with a std::size_t N parameter.
+must static_assert\s*\( :: Reject capacities that aren't powers of two with static_assert.
+must \bassert\s*\( :: State the preconditions with assert.
+must std::array :: Store the elements in a std::array.
+mustnot std::(deque|queue|vector|list) :: Implement the ring yourself on top of std::array.
 ```
 :::

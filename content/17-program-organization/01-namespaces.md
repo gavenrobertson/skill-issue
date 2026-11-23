@@ -414,7 +414,7 @@ What is `lib::f() + lib::v1::f()`?
 `lib::f` finds `v2::f` (2) through the inline namespace; `lib::v1::f` explicitly names version 1 (1).
 :::
 
-:::exercise Geometry namespace
+:::exercise Geometry namespace {easy}
 Create a namespace `geo` with two functions:
 
 - `double rectArea(double w, double h)`
@@ -494,6 +494,16 @@ rect perimeter: 5.00
 circle area: 314.16
 ```
 
+```stdin
+1.005 2 0.5
+```
+
+```expected hidden
+rect area: 2.01
+rect perimeter: 6.01
+circle area: 0.79
+```
+
 ```checks
 must namespace\s+geo\s*\{ :: Define a namespace named geo.
 must namespace\s+geo::circle :: Use the C++17 nested form namespace geo::circle.
@@ -502,7 +512,7 @@ mustnot using\s+namespace :: Don't use a using-directive here.
 ```
 :::
 
-:::exercise Versioned API
+:::exercise Versioned API {medium}
 A library formats prices. Version 1 printed whole dollars; version 2 prints cents too. Write:
 
 ```cpp
@@ -585,6 +595,36 @@ default: $0.07
 ```
 
 ```stdin
+0
+```
+
+```expected hidden
+v1: $0
+v2: $0.00
+default: $0.00
+```
+
+```stdin
+10
+```
+
+```expected hidden
+v1: $0
+v2: $0.10
+default: $0.10
+```
+
+```stdin
+100
+```
+
+```expected hidden
+v1: $1
+v2: $1.00
+default: $1.00
+```
+
+```stdin
 99990
 ```
 
@@ -601,7 +641,7 @@ must pricing::format\s*\( :: Call the default pricing::format.
 ```
 :::
 
-:::exercise Who's who
+:::exercise Who's who {easy}
 The starter declares a global `int limit` and a function whose parameter is **also** named `limit`.
 Complete `report` so that, for the parameter value `limit`, it prints:
 
@@ -673,6 +713,16 @@ within global: yes
 local limit: 6
 global limit: 5
 within global: no
+```
+
+```stdin
+-1 -2
+```
+
+```expected hidden
+local limit: -2
+global limit: -1
+within global: yes
 ```
 
 ```stdin

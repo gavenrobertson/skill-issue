@@ -284,7 +284,7 @@ A function `void print(int* arr, int n)` only reads the array. Why is `void prin
 It doesn't copy anything.
 :::
 
-:::exercise Name that pointer
+:::exercise Name that pointer {easy}
 Read one pointer declaration type (a whole line) and print its English name.
 
 **Input:** exactly one of these lines:
@@ -369,9 +369,17 @@ const int*
 ```expected hidden
 pointer to const int
 ```
+
+```stdin
+int*
+```
+
+```expected hidden
+pointer to int
+```
 :::
 
-:::exercise Const-correct average
+:::exercise Const-correct average {medium}
 Write a function `double average(const int* values, int count)` that returns the average of the
 values (or `0` if `count` is 0). The function must take a **pointer to const**, because the data in
 `main` is stored in a `const` array.
@@ -478,12 +486,30 @@ Divide as `double`: `static_cast<double>(total) / count`. Handle `count == 0` be
 0.5
 ```
 
+```stdin
+3
+1 2 2
+```
+
+```expected hidden
+1.66667
+```
+
+```stdin
+2
+2000000000 2000000000
+```
+
+```expected hidden
+2e+09
+```
+
 ```checks
 must average\s*\(\s*(const\s+int|int\s+const)\s*\*\s*\w+ :: The parameter must be a pointer to const (const int* values).
 ```
 :::
 
-:::exercise Count in range
+:::exercise Count in range {easy}
 Read `n` (0 to 100) integers into an array, then two bounds `lo` and `hi`. Count how many values `v`
 satisfy `lo <= v <= hi`, by walking a `const int*` from the start to a fixed end marker declared as a
 **const pointer to const int** (`const int* const end = ...`).
@@ -568,6 +594,26 @@ int main() {
 
 ```expected hidden
 2
+```
+
+```stdin
+3
+1 2 3
+3 1
+```
+
+```expected hidden
+0
+```
+
+```stdin
+5
+1 2 3 4 5
+5 9
+```
+
+```expected hidden
+1
 ```
 
 ```checks

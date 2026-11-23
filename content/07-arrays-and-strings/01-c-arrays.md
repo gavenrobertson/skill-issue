@@ -277,7 +277,7 @@ Which lines compile? (select all that apply)
 Too many initializers is an error, and arrays can't be copy-initialized from another array.
 :::
 
-:::exercise Reverse five
+:::exercise Reverse five {easy}
 Read exactly 5 integers into an array, then print them in reverse order on one line, separated by
 single spaces.
 
@@ -328,13 +328,21 @@ Read with `for (int i = 0; i < 5; ++i) std::cin >> values[i];`, then loop from i
 -1 7 0 0 -1
 ```
 
+```stdin
+2147483647 -2147483648 0 1 -1
+```
+
+```expected hidden
+-1 1 0 -2147483648 2147483647
+```
+
 ```checks
 must int\s+\w+\s*\[\s*5\s*\] :: Store the numbers in an int array of size 5.
 mustnot vector|std::array :: Use a C-style array for this one.
 ```
 :::
 
-:::exercise Digit histogram
+:::exercise Digit histogram {easy}
 Read a sequence of digits (integers from 0 to 9) until the end of input and count how often each
 digit occurs, using a **zero-initialized** array `int counts[10]{}`. Then print one line per digit
 that occurred at least once, in increasing order: `D: COUNT`.
@@ -398,12 +406,21 @@ Use the digit itself as the index: `++counts[d];`
 7: 4
 ```
 
+```stdin
+9 0 9 0 9
+```
+
+```expected hidden
+0: 2
+9: 3
+```
+
 ```checks
 must int\s+counts\s*\[\s*10\s*\]\s*(\{\s*\}|=\s*\{\s*0?\s*\}) :: Declare a zero-initialized array: int counts[10]{};
 ```
 :::
 
-:::exercise Largest and where
+:::exercise Largest and where {medium}
 Read a count `n` (1 to 100), then `n` integers into an array `int values[100]`. Write a function
 `int indexOfMax(const int values[], int count)` that returns the index of the **first** largest
 element. Print the largest value and its index.
@@ -484,15 +501,26 @@ max -42 at index 0
 max -2 at index 1
 ```
 
+```stdin
+3
+1 2 10
+```
+
+```expected hidden
+max 10 at index 2
+```
+
 ```checks
 must int\s+indexOfMax\s*\(\s*const\s+int\s+\w+\s*\[\s*\]\s*,\s*int :: Write int indexOfMax(const int values[], int count).
 ```
 :::
 
-:::exercise Rotate left
-Read `n` (1 to 50), then `n` integers, then `k` (0 or more). Rotate the array **left** by `k`
-positions in place (element at index `k % n` becomes the first) and print it. For example, rotating
-`1 2 3 4 5` left by 2 gives `3 4 5 1 2`.
+:::exercise Rotate left {hard}
+Read `n` (1 to 50), then `n` integers, then `k`. Rotate the array **left** by `k` positions in place
+(the element at index `k mod n` becomes the first) and print it. `k` can be huge (up to 10^9 in absolute
+value), and a **negative** `k` rotates **right** by `|k|` positions.
+
+For example, rotating `1 2 3 4 5` left by `2` gives `3 4 5 1 2`, and by `-1` gives `5 1 2 3 4`.
 
 **Input:** `n`, `n` integers, then `k`.
 **Output:** the rotated array, separated by single spaces, then a newline.
@@ -504,14 +532,7 @@ int main() {
     int n;
     std::cin >> n;
     int a[50];
-    for (int i = 0; i < n; ++i) {
-        std::cin >> a[i];
-    }
-    int k;
-    std::cin >> k;
-    for (int i = 0; i < n; ++i) {
-        std::cout << a[i] << (i + 1 < n ? " " : "\n");
-    }
+    // read the values and k, rotate a, then print it
 }
 ```
 
@@ -527,7 +548,10 @@ int main() {
     }
     int k;
     std::cin >> k;
-    k %= n;
+    k %= n;              // now -n < k < n
+    if (k < 0) {
+        k += n;          // rotating right by r is rotating left by n - r
+    }
 
     int rotated[50];
     for (int i = 0; i < n; ++i) {
@@ -544,7 +568,12 @@ int main() {
 ```
 
 ```hint
-Element `i` of the result is element `(i + k) % n` of the original.
+Element `i` of the result is element `(i + k) % n` of the original, once `k` is between `0` and `n - 1`.
+```
+
+```hint
+In C++, `%` keeps the sign of the left operand: `-7 % 5` is `-2`, not `3`. After `k %= n;`, add `n`
+if `k` is negative.
 ```
 
 ```hint
@@ -562,6 +591,16 @@ Build the result in a second array, then copy it back with a loop (`a = rotated;
 ```
 
 ```stdin
+5
+1 2 3 4 5
+-1
+```
+
+```expected
+5 1 2 3 4
+```
+
+```stdin
 3
 7 8 9
 0
@@ -575,6 +614,36 @@ Build the result in a second array, then copy it back with a loop (`a = rotated;
 4
 1 2 3 4
 6
+```
+
+```expected hidden
+3 4 1 2
+```
+
+```stdin
+5
+1 2 3 4 5
+-7
+```
+
+```expected hidden
+4 5 1 2 3
+```
+
+```stdin
+1
+42
+1000000000
+```
+
+```expected hidden
+42
+```
+
+```stdin
+4
+1 2 3 4
+-1000000002
 ```
 
 ```expected hidden

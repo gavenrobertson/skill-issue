@@ -375,7 +375,7 @@ Which loops run forever? (select all that apply)
 An empty condition is always true; an unsigned value is always `>= 0`; and the last loop never updates `i`.
 :::
 
-:::exercise Comma-separated multiples
+:::exercise Comma-separated multiples {easy}
 Read `n` and `k` and print the first `k` multiples of `n`, separated by `, ` (a comma and a space),
 with no separator after the last one.
 
@@ -439,12 +439,28 @@ Print the separator *before* each item except the first one.
 -2, -4, -6
 ```
 
+```stdin
+0 3
+```
+
+```expected hidden
+0, 0, 0
+```
+
+```stdin
+-1 5
+```
+
+```expected hidden
+-1, -2, -3, -4, -5
+```
+
 ```checks
 must \bfor\s*\( :: Use a for loop.
 ```
 :::
 
-:::exercise Sum of a range
+:::exercise Sum of a range {easy}
 Read two integers `a` and `b` and print the sum of all integers from `a` to `b`, **inclusive**. If `a` is
 greater than `b`, the range is empty and the sum is 0.
 
@@ -515,12 +531,36 @@ Sum from 10 to 1: 0
 Sum from -3 to 2: -3
 ```
 
+```stdin
+-10000 10000
+```
+
+```expected hidden
+Sum from -10000 to 10000: 0
+```
+
+```stdin
+-5 -5
+```
+
+```expected hidden
+Sum from -5 to -5: -5
+```
+
+```stdin
+-3 -4
+```
+
+```expected hidden
+Sum from -3 to -4: 0
+```
+
 ```checks
 must \bfor\s*\( :: Use a for loop.
 ```
 :::
 
-:::exercise Staircase
+:::exercise Staircase {medium}
 Read `n` and print a right-aligned staircase of `#` characters with `n` rows. Row `i` (counting from 1)
 has `n - i` spaces followed by `i` `#` characters.
 
@@ -604,12 +644,21 @@ Row `row` has `n - row` spaces and `row` hashes.
 ######
 ```
 
+```stdin
+2
+```
+
+```expected hidden
+ #
+##
+```
+
 ```checks
 must for[\s\S]*\{[\s\S]*for\s*\( :: Use nested for loops.
 ```
 :::
 
-:::exercise Multiplication table
+:::exercise Multiplication table {medium}
 Read `n` and print the `n` × `n` multiplication table. Every number is printed right-aligned in a field
 of width 4, and each row ends with a newline.
 
@@ -697,8 +746,135 @@ Print `'\n'` after the inner loop finishes, not inside it.
   12  24  36  48  60  72  84  96 108 120 132 144
 ```
 
+```stdin
+2
+```
+
+```expected hidden
+   1   2
+   2   4
+```
+
 ```checks
 must for[\s\S]*\{[\s\S]*for\s*\( :: Use nested for loops.
 must setw :: Align the numbers with std::setw.
+```
+:::
+
+:::exercise Number pyramid {hard}
+Print a centered pyramid of digits with `n` rows. Row `r` (counting from 1) counts up from 1 to `r` and
+back down to 1, using only the **last digit** of each number (so 10 is printed as `0`, 11 as `1`, ...).
+Each row is indented so the pyramid is centered: row `r` starts with `n - r` spaces.
+
+**Input:** one integer `n` (`0 <= n <= 30`).
+**Output:** `n` lines (nothing at all for `n = 0`). For `n = 4`:
+
+```
+   1
+  121
+ 12321
+1234321
+```
+
+For `n = 11`, the last row is `123456789010987654321`.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int n = 0;
+    std::cin >> n;
+    for (int r = 1; r <= n; ++r) {
+        std::cout << r << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    int n = 0;
+    std::cin >> n;
+    for (int r = 1; r <= n; ++r) {
+        for (int s = 0; s < n - r; ++s) {
+            std::cout << ' ';
+        }
+        for (int k = 1; k <= r; ++k) {
+            std::cout << k % 10;
+        }
+        for (int k = r - 1; k >= 1; --k) {
+            std::cout << k % 10;
+        }
+        std::cout << '\n';
+    }
+}
+```
+
+```hint
+Each row needs three inner loops in a row: the spaces, the digits going up, and the digits coming back
+down.
+```
+
+```hint
+The way down starts at `r - 1`, not `r`, or the middle digit appears twice. The last digit of `k` is
+`k % 10`.
+```
+
+```stdin
+4
+```
+
+```expected
+   1
+  121
+ 12321
+1234321
+```
+
+```stdin
+1
+```
+
+```expected
+1
+```
+
+```stdin
+0
+```
+
+```expected hidden
+```
+
+```stdin
+11
+```
+
+```expected hidden
+          1
+         121
+        12321
+       1234321
+      123454321
+     12345654321
+    1234567654321
+   123456787654321
+  12345678987654321
+ 1234567890987654321
+123456789010987654321
+```
+
+```stdin
+2
+```
+
+```expected hidden
+ 1
+121
+```
+
+```checks
+must for[\s\S]*\{[\s\S]*for\s*\( :: Use nested for loops.
 ```
 :::

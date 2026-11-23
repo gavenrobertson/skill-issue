@@ -359,7 +359,7 @@ ThreadSanitizer detects data races at runtime. AddressSanitizer covers memory er
 are compile-time only.
 :::
 
-:::exercise Overflow-safe addition
+:::exercise Overflow-safe addition {medium}
 Read pairs of `int`s `a b` until the end of input. For each pair print `a + b` if the result fits in an
 `int`, or `overflow` if it doesn't. You must **not** perform an overflowing `int` addition: check
 **before** adding using `std::numeric_limits<int>`.
@@ -429,12 +429,28 @@ overflow
 overflow
 ```
 
+```stdin
+0 -2147483648
+-1 -2147483648
+2147483647 0
+-2147483647 -1
+1073741824 1073741824
+```
+
+```expected hidden
+-2147483648
+overflow
+2147483647
+-2147483648
+overflow
+```
+
 ```checks
 must numeric_limits\s*<\s*int\s*> :: Use std::numeric_limits<int> to check the bounds.
 ```
 :::
 
-:::exercise Checked indexing
+:::exercise Checked indexing {easy}
 Read `n`, then `n` integers into a `std::vector<int>`. Then read index queries (they may be negative
 or too large) until the end of input. For each index `i`, print `v[<i>] = <value>`, or
 `<i> is out of range` if it's not a valid index.
@@ -509,13 +525,27 @@ v[2] = 30
 5 is out of range
 ```
 
+```stdin
+2
+-5 5
+1 -9223372036854775807 0 2 1
+```
+
+```expected hidden
+v[1] = 5
+-9223372036854775807 is out of range
+v[0] = -5
+2 is out of range
+v[1] = 5
+```
+
 ```checks
 must \.at\s*\( :: Access elements with .at().
 must catch\s*\(\s*(const\s+)?std::out_of_range :: Catch std::out_of_range.
 ```
 :::
 
-:::exercise Parse without overflow
+:::exercise Parse without overflow {hard}
 Write your own integer parser. Read whitespace-separated tokens until the end of input. Each token
 should be an optional `-` followed by one or more digits. For each token print:
 
@@ -631,6 +661,20 @@ invalid
 invalid
 invalid
 invalid
+```
+
+```stdin
++5 --1 -0000000000002147483648 00000000000000000000000001 -00000000002147483649 1-2 0
+```
+
+```expected hidden
+invalid
+invalid
+-2147483648
+1
+overflow
+invalid
+0
 ```
 
 ```checks

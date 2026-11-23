@@ -360,7 +360,7 @@ What does `std::stoi("3.99")` return?
 `stoi` reads as many characters as form an integer (`3`) and stops at the `.`. It only throws when nothing at all could be converted, or the number doesn't fit.
 :::
 
-:::exercise Safe index
+:::exercise Safe index {easy}
 Read `n` integers into a `std::vector<int>`, then `q` queries, each an index (possibly negative or too
 large). For each query, print the element using **`.at()`**, or `out of range` when `.at()` throws.
 
@@ -452,6 +452,25 @@ out of range
 out of range
 ```
 
+```stdin
+2
+7 8
+5
+1
+-2
+2
+99999999999
+0
+```
+
+```expected hidden
+8
+out of range
+out of range
+out of range
+7
+```
+
 ```checks
 must \.at\s*\( :: Access elements with .at().
 must catch\s*\(\s*const\s+std::(out_of_range|logic_error|exception)\s*& :: Catch std::out_of_range by const reference.
@@ -459,7 +478,7 @@ mustnot \bif\s*\([^)]*size\s*\( :: Let .at() do the bounds check instead of comp
 ```
 :::
 
-:::exercise Strict integer parsing
+:::exercise Strict integer parsing {medium}
 Read tokens until the end of input and convert each with `std::stoi`. A token counts as an integer
 only if **all** of it was converted (use `stoi`'s second argument to find out how many characters it
 used).
@@ -541,6 +560,21 @@ ok -2147483648
 too big: 2147483648
 ```
 
+```stdin
+- + 0x1A 007 -0 1e5 -99999999999 12-
+```
+
+```expected hidden
+not a number: -
+not a number: +
+not a number: 0x1A
+ok 7
+ok 0
+not a number: 1e5
+too big: -99999999999
+not a number: 12-
+```
+
 ```checks
 must stoi :: Convert with std::stoi.
 must catch\s*\(\s*const\s+std::invalid_argument\s*& :: Catch std::invalid_argument.
@@ -548,7 +582,7 @@ must catch\s*\(\s*const\s+std::out_of_range\s*& :: Catch std::out_of_range.
 ```
 :::
 
-:::exercise Phone book
+:::exercise Phone book {easy}
 Read `n` entries `name number` into a `std::map<std::string, std::string>`. Then read names until the
 end of input and look each one up with **`.at()`** (which throws `std::out_of_range` for a missing key),
 printing `name: number` or `unknown: name`.
@@ -640,6 +674,22 @@ nobody
 unknown: nobody
 ```
 
+```stdin
+3
+ada 111
+bob 222
+ada 333
+ada
+Ada
+bob
+```
+
+```expected hidden
+ada: 333
+unknown: Ada
+bob: 222
+```
+
 ```checks
 must \.at\s*\( :: Look names up with .at().
 must \bcatch\s*\( :: Catch the exception that .at() throws.
@@ -647,7 +697,7 @@ mustnot \.find\s*\(|\.count\s*\(|\.contains\s*\( :: Practice exceptions here: do
 ```
 :::
 
-:::exercise Classify the failure
+:::exercise Classify the failure {medium}
 A tiny command interpreter. Each command may fail by throwing a standard exception, and `main`
 classifies failures with **two handlers**: one for `std::logic_error` and one for `std::runtime_error`.
 
@@ -786,6 +836,26 @@ div -9 3
 logic error in parse
 logic error in index
 -3
+```
+
+```stdin
+parse 12abc
+root 0
+div 5 -0
+index 2
+frobnicate x
+parse -
+root 99
+```
+
+```expected hidden
+12
+0
+runtime error in div
+30
+logic error in frobnicate
+logic error in parse
+9
 ```
 
 ```checks

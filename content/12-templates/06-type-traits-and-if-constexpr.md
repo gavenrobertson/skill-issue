@@ -337,7 +337,7 @@ A normal `if` chooses at run time, so the compiler must generate code for both b
 discards the untaken branch during instantiation.
 :::
 
-:::exercise Classify the type
+:::exercise Classify the type {easy}
 Write a function template `kind(const T& value)` that returns `"integer"` if `T` is an integral type,
 `"floating"` if it's a floating-point type, and `"other"` otherwise. Use `if constexpr` with type traits.
 
@@ -416,6 +416,16 @@ hello is other
 7 is other
 ```
 
+```stdin
+0 -2.5 x
+```
+
+```expected hidden
+0 is integer
+-2.5 is floating
+x is other
+```
+
 ```checks
 must if\s+constexpr :: Use if constexpr.
 must is_integral :: Use std::is_integral_v.
@@ -423,7 +433,7 @@ must is_floating_point :: Use std::is_floating_point_v.
 ```
 :::
 
-:::exercise Twice as much
+:::exercise Twice as much {medium}
 Write a function template `twice(const T& value)` that:
 
 - for arithmetic types returns `value * 2`,
@@ -532,6 +542,18 @@ xx
 
 ```
 
+```stdin
+100000 -0.5 aB
+1 -7
+```
+
+```expected hidden
+200000
+-1
+aBaB
+-14
+```
+
 ```checks
 must if\s+constexpr :: Use if constexpr.
 must is_same_v\s*<\s*T\s*,\s*std::string\s*> :: Detect std::string with std::is_same_v<T, std::string>.
@@ -539,7 +561,7 @@ must is_arithmetic_v :: Detect numbers with std::is_arithmetic_v.
 ```
 :::
 
-:::exercise Checked average
+:::exercise Checked average {medium}
 Write a function template `average(const std::vector<T>& v)` that returns the average as a `double`.
 Inside it, use `static_assert` with `std::is_arithmetic_v<T>` so that calling it with a non-numeric
 element type fails to compile with a clear message. Use it for a `std::vector<int>` and a
@@ -633,9 +655,247 @@ empty
 -7.50
 ```
 
+```stdin
+2 1 2
+0
+```
+
+```expected hidden
+1.50
+empty
+```
+
+```stdin
+1 -3
+3 0.1 0.2 0.3
+```
+
+```expected hidden
+-3.00
+0.20
+```
+
 ```checks
 must static_assert\s*\( :: Use static_assert.
 must is_arithmetic_v :: Check std::is_arithmetic_v<T>.
 must template\s*< :: Make average a template.
+```
+:::
+
+:::exercise Checked parsing {hard}
+Write **one** function template that parses a text token into any of several types, rejecting
+anything that isn't a valid value of that type:
+
+```cpp
+template <typename T>
+bool parseInto(const std::string& token, T& out);   // true on success
+```
+
+The rules depend on `T`, so branch with `if constexpr` and type traits:
+
+- `bool`: the token must be exactly `true` or `false`.
+- integer types (`short`, `int`, `unsigned`, `long long`): an optional `-` (allowed **only** if `T`
+  is signed) followed by one or more digits, and nothing else (no `+`, no spaces, no decimal point).
+  The value must fit in `T`: `40000` is not a valid `short`.
+- `double`: a decimal number such as `2.5`, `-0.125` or `1e3`, and the whole token must be used.
+
+Careful: `bool` **is** an integral type, so test for it first.
+
+**Input:** lines `TYPE TOKEN`, where `TYPE` is one of `bool`, `short`, `int`, `unsigned`, `llong`
+(meaning `long long`) and `double`.
+**Output:** for each line, `ok VALUE` (printed with `<<`, and `true`/`false` for a bool) or `invalid`.
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <type_traits>
+
+template <typename T>
+bool parseInto(const std::string& token, T& out) {
+    (void)token;
+    (void)out;
+    return false;
+}
+
+template <typename T>
+void report(const std::string& token) {
+    T value{};
+    if (parseInto(token, value)) std::cout << "ok " << value << '\n';
+    else std::cout << "invalid\n";
+}
+
+int main() {
+    std::string type, token;
+    while (std::cin >> type >> token) {
+        if (type == "bool") report<bool>(token);
+        else if (type == "short") report<short>(token);
+        else if (type == "int") report<int>(token);
+        else if (type == "unsigned") report<unsigned>(token);
+        else if (type == "llong") report<long long>(token);
+        else report<double>(token);
+    }
+}
+```
+
+```cpp solution
+#include <charconv>
+#include <iostream>
+#include <string>
+#include <system_error>
+#include <type_traits>
+
+template <typename T>
+bool parseInto(const std::string& token, T& out) {
+    const char* first = token.data();
+    const char* last = token.data() + token.size();
+    if constexpr (std::is_same_v<T, bool>) {           // must come before is_integral_v
+        if (token == "true") out = true;
+        else if (token == "false") out = false;
+        else return false;
+        return true;
+    } else if constexpr (std::is_integral_v<T>) {
+        // from_chars accepts '-' only for signed types, never '+', and reports overflow
+        auto [ptr, ec] = std::from_chars(first, last, out);
+        return ec == std::errc{} && ptr == last;
+    } else if constexpr (std::is_floating_point_v<T>) {
+        auto [ptr, ec] = std::from_chars(first, last, out);
+        return ec == std::errc{} && ptr == last;
+    } else {
+        static_assert(sizeof(T) == 0, "parseInto: unsupported type");
+        return false;
+    }
+}
+
+template <typename T>
+void report(const std::string& token) {
+    T value{};
+    if (parseInto(token, value)) {
+        std::cout << "ok ";
+        if constexpr (std::is_same_v<T, bool>) std::cout << (value ? "true" : "false");
+        else std::cout << value;
+        std::cout << '\n';
+    } else {
+        std::cout << "invalid\n";
+    }
+}
+
+int main() {
+    std::string type, token;
+    while (std::cin >> type >> token) {
+        if (type == "bool") report<bool>(token);
+        else if (type == "short") report<short>(token);
+        else if (type == "int") report<int>(token);
+        else if (type == "unsigned") report<unsigned>(token);
+        else if (type == "llong") report<long long>(token);
+        else report<double>(token);
+    }
+}
+```
+
+```hint
+Structure: `if constexpr (std::is_same_v<T, bool>) { ... } else if constexpr (std::is_integral_v<T>) { ... } else { ... }`.
+Each branch only has to compile for the types that reach it.
+```
+
+```hint
+For integers you can do it by hand: check the characters, then accumulate the value in a wider type
+and compare against `std::numeric_limits<T>::min()` / `max()` (from `<limits>`), using
+`std::is_signed_v<T>` to decide whether `-` is allowed. Watch out for tokens so long that even the
+wider type overflows.
+```
+
+```hint
+Or let the library do the hard part: `std::from_chars(first, last, value)` from `<charconv>` parses
+integers and doubles without exceptions. It returns `{ptr, ec}`: success means `ec == std::errc{}`
+and `ptr == last` (the whole token was used). It rejects `+`, rejects `-` for unsigned types, and
+reports out-of-range values. It has no overload for `bool`, which is why that branch must be separate.
+```
+
+```stdin
+int 42
+int -17
+short 40000
+unsigned -5
+bool true
+bool 1
+double 2.5
+double 3.5x
+```
+
+```expected
+ok 42
+ok -17
+invalid
+invalid
+ok true
+invalid
+ok 2.5
+invalid
+```
+
+```stdin
+short -32768
+short 32767
+short -32769
+int +5
+int 12a
+int -
+llong 9223372036854775807
+llong 9223372036854775808
+llong 99999999999999999999999
+unsigned 4294967295
+unsigned 4294967296
+unsigned 007
+unsigned -0
+int -0
+bool True
+bool false
+double -1e2
+double abc
+double -0.125
+```
+
+```expected hidden
+ok -32768
+ok 32767
+invalid
+invalid
+invalid
+invalid
+ok 9223372036854775807
+invalid
+invalid
+ok 4294967295
+invalid
+ok 7
+invalid
+ok 0
+invalid
+ok false
+ok -100
+invalid
+ok -0.125
+```
+
+```stdin
+llong -9223372036854775808
+unsigned 0
+double 1e3
+int 2147483648
+short 0x10
+```
+
+```expected hidden
+ok -9223372036854775808
+ok 0
+ok 1000
+invalid
+invalid
+```
+
+```checks
+must if\s+constexpr :: Branch on the type with if constexpr.
+must is_same_v\s*<\s*T\s*,\s*bool\s*> :: Detect bool with std::is_same_v<T, bool>.
+must is_integral_v|is_signed_v|numeric_limits|from_chars :: Use type traits (or from_chars) for the integer rules.
 ```
 :::

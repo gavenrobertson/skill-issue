@@ -290,7 +290,7 @@ Given `void f(int& r);`, which calls compile? (select all that apply)
 A non-const reference must bind to a variable. `5` and `a + 1` are temporaries.
 :::
 
-:::exercise Make it stick
+:::exercise Make it stick {easy}
 The function `doubleIt` is supposed to double the caller's variable, but it doesn't work. Fix it by
 changing **only the function's parameter**, so it takes its argument by reference.
 
@@ -361,7 +361,7 @@ must doubleIt\s*\(\s*n\s*\)\s*; :: Keep the call doubleIt(n); in main.
 ```
 :::
 
-:::exercise Sort three
+:::exercise Sort three {medium}
 Write `void sortThree(int& a, int& b, int& c)` that rearranges the three variables so that
 `a <= b <= c`. Then read three integers, call it, and print them.
 
@@ -433,13 +433,45 @@ Three compare-and-swap steps are enough: (a,b), then (b,c), then (a,b) again.
 3 4 5
 ```
 
+```stdin
+2 3 1
+```
+
+```expected hidden
+1 2 3
+```
+
+```stdin
+1 2 3
+```
+
+```expected hidden
+1 2 3
+```
+
+```stdin
+2 1 2
+```
+
+```expected hidden
+1 2 2
+```
+
+```stdin
+-5 -5 -6
+```
+
+```expected hidden
+-6 -5 -5
+```
+
 ```checks
 must void\s+sortThree\s*\(\s*int\s*&\s*\w+\s*,\s*int\s*&\s*\w+\s*,\s*int\s*&\s*\w+\s*\) :: Define void sortThree(int& a, int& b, int& c).
 must sortThree\s*\(\s*\w+\s*,\s*\w+\s*,\s*\w+\s*\)\s*; :: Call sortThree from main.
 ```
 :::
 
-:::exercise Count vowels
+:::exercise Count vowels {easy}
 Write `int countVowels(const std::string& text)` that returns how many characters of `text` are
 lowercase vowels (`a`, `e`, `i`, `o`, `u`). Read one line of text and print the count.
 
@@ -506,7 +538,207 @@ a quick brown fox jumps over the lazy dog
 11
 ```
 
+```stdin
+```
+
+```expected hidden
+0
+```
+
+```stdin
+AEIOU are upper case
+```
+
+```expected hidden
+6
+```
+
 ```checks
 must int\s+countVowels\s*\(\s*const\s+std::string\s*&\s*\w+\s*\) :: Take the string by const reference: const std::string&.
+```
+:::
+
+:::exercise Fraction sum {hard}
+Add up a list of fractions exactly, keeping the running total as a reduced fraction.
+
+Write `void reduce(long long& num, long long& den)` that brings a fraction to its **lowest terms** with a
+**positive** denominator, changing the caller's variables: `6/-8` becomes `-3/4`, `0/5` becomes `0/1`.
+Use it after every addition. (`a/b + c/d = (a*d + c*b) / (b*d)`.)
+
+**Input:** zero or more fractions written `p/q` (integers with `|p|, |q| <= 100`, at most 6 of them),
+separated by whitespace.
+**Output:**
+
+- For a fraction with denominator `0`, print `Skipping p/0` and ignore it.
+- At the end, print `Sum: p/q` in lowest terms with a positive denominator, or just `Sum: p` when the
+  denominator is 1. The sum of no fractions is `0`.
+
+| Input | Output |
+| --- | --- |
+| `1/2 1/3` | `Sum: 5/6` |
+| `1/2 1/2` | `Sum: 1` |
+| `3/-4 1/4` | `Sum: -1/2` |
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    long long p = 0, q = 0;
+    char slash = ' ';
+    long long sumNum = 0, sumDen = 1;
+    while (std::cin >> p >> slash >> q) {
+        sumNum += p;
+        sumDen += q;
+    }
+    std::cout << "Sum: " << sumNum << '/' << sumDen << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+long long gcd(long long a, long long b) {
+    if (a < 0) a = -a;
+    if (b < 0) b = -b;
+    while (b != 0) {
+        long long t = a % b;
+        a = b;
+        b = t;
+    }
+    return a;
+}
+
+void reduce(long long& num, long long& den) {
+    if (den < 0) {
+        num = -num;
+        den = -den;
+    }
+    long long g = gcd(num, den);
+    if (g > 1) {
+        num /= g;
+        den /= g;
+    }
+    if (num == 0) {
+        den = 1;
+    }
+}
+
+int main() {
+    long long p = 0, q = 0;
+    char slash = ' ';
+    long long sumNum = 0, sumDen = 1;
+    while (std::cin >> p >> slash >> q) {
+        if (q == 0) {
+            std::cout << "Skipping " << p << "/0\n";
+            continue;
+        }
+        sumNum = sumNum * q + p * sumDen;
+        sumDen = sumDen * q;
+        reduce(sumNum, sumDen);
+    }
+    std::cout << "Sum: " << sumNum;
+    if (sumDen != 1) {
+        std::cout << '/' << sumDen;
+    }
+    std::cout << '\n';
+}
+```
+
+```hint
+Read a fraction with `std::cin >> p >> slash >> q`, where `slash` is a `char` that swallows the `/`.
+```
+
+```hint
+The greatest common divisor (Euclid): while `b != 0`, replace `(a, b)` with `(b, a % b)`; then `a` is
+the gcd. Work with absolute values so negative numerators don't confuse it.
+```
+
+```hint
+In `reduce`, fix the sign first (if the denominator is negative, negate both), then divide both by
+their gcd.
+```
+
+```stdin
+1/2 1/3
+```
+
+```expected
+Sum: 5/6
+```
+
+```stdin
+1/2 1/2
+```
+
+```expected
+Sum: 1
+```
+
+```stdin
+3/-4 1/4
+```
+
+```expected
+Sum: -1/2
+```
+
+```stdin
+```
+
+```expected hidden
+Sum: 0
+```
+
+```stdin
+5/0 2/4
+```
+
+```expected hidden
+Skipping 5/0
+Sum: 1/2
+```
+
+```stdin
+-6/-8 0/5
+```
+
+```expected hidden
+Sum: 3/4
+```
+
+```stdin
+1/100 1/99 1/98 1/97 1/96 1/95
+```
+
+```expected hidden
+Sum: 440277539/7152314400
+```
+
+```stdin
+0/7
+```
+
+```expected hidden
+Sum: 0
+```
+
+```stdin
+-1/3 1/3
+```
+
+```expected hidden
+Sum: 0
+```
+
+```stdin
+7/1 -100/-1
+```
+
+```expected hidden
+Sum: 107
+```
+
+```checks
+must void\s+reduce\s*\(\s*long\s+long\s*&\s*\w+\s*,\s*long\s+long\s*& :: Write void reduce(long long& num, long long& den).
 ```
 :::

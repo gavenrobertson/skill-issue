@@ -200,7 +200,7 @@ Only `int main()` and `int main(int argc, char* argv[])` (or the equivalent `cha
 Names are case-sensitive, so `Main` is a different function.
 :::
 
-:::exercise Hello, You
+:::exercise Hello, You {easy}
 Print exactly these two lines:
 
 ```
@@ -239,7 +239,7 @@ must std::cout|cout :: Print using std::cout.
 ```
 :::
 
-:::exercise Escape artist
+:::exercise Escape artist {medium}
 Print exactly this (it contains a tab between `Path:` and the path, double quotes, and backslashes):
 
 ```
@@ -280,7 +280,7 @@ mustnot R" :: Use escape sequences instead of a raw string literal.
 ```
 :::
 
-:::exercise ASCII box
+:::exercise ASCII box {medium}
 Use **a single statement** (one `std::cout` with chained `<<`, ending in one semicolon) to print this box:
 
 ```

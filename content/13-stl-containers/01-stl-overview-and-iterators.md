@@ -359,7 +359,7 @@ A doubly linked list can step forward and backward, but can't jump `n` places in
 `std::sort` doesn't accept list iterators.
 :::
 
-:::exercise Reverse with iterators
+:::exercise Reverse with iterators {easy}
 Read `n` integers into a `std::vector<int>` and print them in reverse order using **reverse
 iterators** (`rbegin()` / `rend()`).
 
@@ -436,7 +436,7 @@ must rend\s*\( :: Use rend().
 ```
 :::
 
-:::exercise Find the position
+:::exercise Find the position {easy}
 Read `n` integers and a target. Use `std::find` to locate the **first** occurrence of the target and
 `std::distance` to turn the resulting iterator into an index.
 
@@ -516,13 +516,33 @@ not found
 not found
 ```
 
+```stdin
+4
+7 7 7 7
+7
+```
+
+```expected hidden
+found at 0
+```
+
+```stdin
+3
+1 2 9
+9
+```
+
+```expected hidden
+found at 2
+```
+
 ```checks
 must std::find\s*\( :: Use std::find.
 must std::distance\s*\( :: Use std::distance to compute the index.
 ```
 :::
 
-:::exercise Neighbor differences
+:::exercise Neighbor differences {medium}
 Read `n` integers into a `std::list<int>` and print the difference between each element and the one
 before it (`second - first`, `third - second`, ...). Walk the list with two iterators, using
 `std::next` to get the neighbor. (A list has no `[]`, so you can't use indices.)
@@ -612,8 +632,207 @@ Check the size **first**. With an empty list, `std::next(values.begin())` would 
 none
 ```
 
+```stdin
+2
+-5 5
+```
+
+```expected hidden
+10
+```
+
+```stdin
+0
+```
+
+```expected hidden
+none
+```
+
 ```checks
 must std::list :: Store the numbers in a std::list.
 must std::next\s*\( :: Use std::next to reach the neighbor.
+```
+:::
+
+:::exercise Sorted union and intersection {hard}
+Two sorted lists of numbers arrive as `std::list<int>`s. Compute their **union** (every value that
+appears in either list) and their **intersection** (every value that appears in both), each value
+**once**, in increasing order.
+
+Do it in a single simultaneous walk with **two iterators**, one per list, the way a merge works: compare
+the two current values and advance the iterator with the smaller one (or both, when they're equal).
+The lists may contain duplicates, and either one may be empty. Don't use `std::set`,
+`std::set_union`, `std::set_intersection`, `std::merge` or the list's `merge`: the point is to
+write the walk yourself. The whole thing should be O(n + m).
+
+**Input:** `n` and `n` integers in non-decreasing order; then `m` and `m` integers in non-decreasing
+order.
+**Output:** two lines: `union:` and `intersection:`, each followed by its values, every value preceded
+by a single space (so an empty result is just the label).
+
+Example: `1 2 2 5` and `2 3 5 5 8` give `union: 1 2 3 5 8` and `intersection: 2 5`.
+
+```cpp starter
+#include <iostream>
+#include <iterator>
+#include <list>
+#include <vector>
+
+std::list<int> readList() {
+    int n;
+    std::cin >> n;
+    std::list<int> l;
+    for (int i = 0; i < n; ++i) {
+        int x;
+        std::cin >> x;
+        l.push_back(x);
+    }
+    return l;
+}
+
+int main() {
+    std::list<int> a = readList();
+    std::list<int> b = readList();
+    std::cout << "union:\nintersection:\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <iterator>
+#include <list>
+#include <vector>
+
+std::list<int> readList() {
+    int n;
+    std::cin >> n;
+    std::list<int> l;
+    for (int i = 0; i < n; ++i) {
+        int x;
+        std::cin >> x;
+        l.push_back(x);
+    }
+    return l;
+}
+
+// Append x unless it equals the last value added (the inputs are sorted, so duplicates are adjacent).
+void addOnce(std::vector<int>& out, int x) {
+    if (out.empty() || out.back() != x) out.push_back(x);
+}
+
+void print(const char* label, const std::vector<int>& v) {
+    std::cout << label << ':';
+    for (int x : v) std::cout << ' ' << x;
+    std::cout << '\n';
+}
+
+int main() {
+    std::list<int> a = readList();
+    std::list<int> b = readList();
+
+    std::vector<int> uni, inter;
+    auto ia = a.begin();
+    auto ib = b.begin();
+    while (ia != a.end() && ib != b.end()) {
+        if (*ia < *ib) {
+            addOnce(uni, *ia);
+            ++ia;
+        } else if (*ib < *ia) {
+            addOnce(uni, *ib);
+            ++ib;
+        } else {
+            addOnce(uni, *ia);
+            addOnce(inter, *ia);
+            ++ia;
+            ++ib;
+        }
+    }
+    for (; ia != a.end(); ++ia) addOnce(uni, *ia);   // one list ran out: the rest of the other
+    for (; ib != b.end(); ++ib) addOnce(uni, *ib);
+
+    print("union", uni);
+    print("intersection", inter);
+}
+```
+
+```hint
+Loop while **both** iterators are not at their `end()`. Afterwards, one list may still have elements
+left: they all belong to the union (but not the intersection).
+```
+
+```hint
+Duplicates: because the lists are sorted, equal values are next to each other. Before appending a value
+to a result, compare it with the last value you appended.
+```
+
+```hint
+When `*ia == *ib`, the value is in both lists: add it to both results and advance **both** iterators.
+```
+
+```stdin
+4 1 2 2 5
+5 2 3 5 5 8
+```
+
+```expected
+union: 1 2 3 5 8
+intersection: 2 5
+```
+
+```stdin
+3 1 2 3
+0
+```
+
+```expected
+union: 1 2 3
+intersection:
+```
+
+```stdin
+0
+0
+```
+
+```expected hidden
+union:
+intersection:
+```
+
+```stdin
+5 -3 -3 -3 0 7
+3 -3 -3 7
+```
+
+```expected hidden
+union: -3 0 7
+intersection: -3 7
+```
+
+```stdin
+3 4 5 6
+3 1 2 3
+```
+
+```expected hidden
+union: 1 2 3 4 5 6
+intersection:
+```
+
+```stdin
+4 2 2 2 2
+2 2 2
+```
+
+```expected hidden
+union: 2
+intersection: 2
+```
+
+```checks
+must std::list :: Keep the numbers in std::lists.
+mustnot set_union|set_intersection|std::merge|\.merge\s*\(|std::(unordered_)?set\b :: Write the two-iterator walk yourself.
+must \+\+\s*\w+|\w+\s*\+\+|std::next|std::advance :: Advance the iterators yourself.
 ```
 :::

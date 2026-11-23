@@ -291,7 +291,7 @@ std::cout << (x & 4 == 4);
 of `x` is set. Write `(x & 4) == 4`. GCC warns about the missing parentheses.
 :::
 
-:::exercise Show the bits
+:::exercise Show the bits {easy}
 Read a number between 0 and 255 and print its 8-bit binary representation using `std::bitset<8>`.
 
 **Input:** one integer `n` (0 ≤ n ≤ 255).
@@ -347,12 +347,28 @@ int main() {
 11111111
 ```
 
+```stdin
+128
+```
+
+```expected hidden
+10000000
+```
+
+```stdin
+170
+```
+
+```expected hidden
+10101010
+```
+
 ```checks
 must bitset\s*<\s*8\s*> :: Use std::bitset<8>.
 ```
 :::
 
-:::exercise Bit toolkit
+:::exercise Bit toolkit {medium}
 Read an unsigned integer `x` and a bit index `n` (0-31). Print four lines, each computed from the
 **original** `x`:
 
@@ -440,6 +456,28 @@ set: `x | mask`, clear: `x & ~mask`, toggle: `x ^ mask`, test: `(x >> n) & 1u`. 
 1
 ```
 
+```stdin
+0 0
+```
+
+```expected hidden
+1
+0
+1
+0
+```
+
+```stdin
+5 2
+```
+
+```expected hidden
+5
+1
+1
+1
+```
+
 ```checks
 must << :: Build the mask with a shift.
 must \| :: Use | to set the bit.
@@ -449,89 +487,7 @@ must & :: Use & to clear and test.
 ```
 :::
 
-:::exercise Lowest set bit
-Read a non-negative integer `x` and print the value of its **lowest set bit** (the smallest power of
-two in its binary representation), or `0` if `x` is 0. Use bitwise operators only (no loops): for an
-unsigned `x`, the expression `x & (~x + 1)` does exactly this.
-
-**Input:** one integer `x` (0 ≤ x ≤ 4,000,000,000).
-**Output:** the lowest set bit's value, newline. For `12` (`1100`) print `4`.
-
-```cpp starter
-#include <iostream>
-
-int main() {
-    unsigned int x{};
-    std::cin >> x;
-    std::cout << x << '\n';
-}
-```
-
-```cpp solution
-#include <iostream>
-
-int main() {
-    unsigned int x{};
-    std::cin >> x;
-    std::cout << (x & (~x + 1)) << '\n';
-}
-```
-
-```hint
-`~x + 1` is the two's complement negation of `x`: all bits above the lowest set bit are flipped, and that bit itself stays 1.
-```
-
-```hint
-ANDing `x` with `~x + 1` keeps only the bit they have in common: the lowest set bit.
-```
-
-```stdin
-12
-```
-
-```expected
-4
-```
-
-```stdin
-7
-```
-
-```expected
-1
-```
-
-```stdin
-0
-```
-
-```expected hidden
-0
-```
-
-```stdin
-1024
-```
-
-```expected hidden
-1024
-```
-
-```stdin
-4000000000
-```
-
-```expected hidden
-2048
-```
-
-```checks
-must & :: Use the & operator.
-must ~ :: Use the ~ operator.
-```
-:::
-
-:::exercise Pack a color
+:::exercise Pack a color {medium}
 Colors are often stored as one integer `0xRRGGBB`: red in bits 16-23, green in bits 8-15, blue in bits
 0-7. Read `r`, `g` and `b` (0-255 each) and pack them with shifts and `|`. Print the packed value in
 decimal, then in hexadecimal.
@@ -602,10 +558,154 @@ Combine with `|`, then print `std::hex << color` after the `0x`.
 16777215 0xffffff
 ```
 
+```stdin
+0 0 255
+```
+
+```expected hidden
+255 0xff
+```
+
+```stdin
+1 0 0
+```
+
+```expected hidden
+65536 0x10000
+```
+
 ```checks
 must <<\s*16 :: Shift red left by 16.
 must <<\s*8 :: Shift green left by 8.
 must \| :: Combine the parts with |.
 must std::hex :: Print the hex value with std::hex.
+```
+:::
+
+:::exercise Lowest set bit {hard}
+Read a 64-bit unsigned integer `x` and report three facts about its bits, using bitwise operators only
+(no loops, and none of the `<bit>` functions):
+
+1. the value of its **lowest set bit** (the smallest power of two in its binary representation), or `0`
+   if `x` is 0;
+2. `x` with that lowest set bit **cleared**;
+3. whether `x` is a **power of two** (`true`/`false`). Zero is not a power of two.
+
+**Input:** one integer `x` (0 ≤ x ≤ 18,446,744,073,709,551,615), so use `unsigned long long`.
+**Output:** three lines. For `12` (binary `1100`):
+
+```
+4
+8
+false
+```
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    unsigned long long x{};
+    std::cin >> x;
+    std::cout << x << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    unsigned long long x{};
+    std::cin >> x;
+    unsigned long long lowest = x & (~x + 1);    // two's complement negation keeps only the lowest 1
+    unsigned long long cleared = x & (x - 1);    // x - 1 flips the lowest 1 and the zeros below it
+    bool powerOfTwo = x != 0 && cleared == 0;
+    std::cout << lowest << '\n' << cleared << '\n' << std::boolalpha << powerOfTwo << '\n';
+}
+```
+
+```hint
+`~x + 1` is the two's complement negation of `x`: every bit **above** the lowest set bit is flipped, and
+that bit itself stays 1. So `x & (~x + 1)` keeps only the lowest set bit.
+```
+
+```hint
+`x - 1` turns the lowest set bit into 0 and the zeros below it into 1s, so `x & (x - 1)` clears just
+that bit. A power of two has exactly one set bit, so clearing it leaves 0. But check what happens for `x = 0`!
+```
+
+```stdin
+12
+```
+
+```expected
+4
+8
+false
+```
+
+```stdin
+64
+```
+
+```expected
+64
+0
+true
+```
+
+```stdin
+0
+```
+
+```expected hidden
+0
+0
+false
+```
+
+```stdin
+1
+```
+
+```expected hidden
+1
+0
+true
+```
+
+```stdin
+4000000000
+```
+
+```expected hidden
+2048
+3999997952
+false
+```
+
+```stdin
+9223372036854775808
+```
+
+```expected hidden
+9223372036854775808
+0
+true
+```
+
+```stdin
+18446744073709551615
+```
+
+```expected hidden
+1
+18446744073709551614
+false
+```
+
+```checks
+must & :: Use the & operator.
+must ~ :: Use the ~ operator.
+mustnot popcount|has_single_bit|countr_zero|bit_floor|bit_width :: Use bitwise operators, not the <bit> functions.
 ```
 :::

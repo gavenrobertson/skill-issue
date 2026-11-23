@@ -297,7 +297,7 @@ Returning a local by value is safe (and cheap). Returning a reference to a local
 reference to something the caller owns is fine.
 :::
 
-:::exercise Grade letter
+:::exercise Grade letter {easy}
 Write `char grade(int score)` using early returns: `90` or more is `A`, `80` or more is `B`, `70` or
 more is `C`, `60` or more is `D`, anything else is `F`. Read scores until the end of input and
 print each score's letter on its own line.
@@ -368,12 +368,27 @@ A
 F
 ```
 
+```stdin
+```
+
+```expected hidden
+```
+
+```stdin
+-5 101
+```
+
+```expected hidden
+F
+A
+```
+
 ```checks
 must char\s+grade\s*\(\s*int :: Keep the function char grade(int score).
 ```
 :::
 
-:::exercise Quotient and remainder
+:::exercise Quotient and remainder {easy}
 Write `std::pair<int, int> divmod(int a, int b)` that returns the quotient `a / b` and remainder
 `a % b`. In `main`, read `a` and `b`, call it, unpack the result with a **structured binding**, and
 print it.
@@ -439,13 +454,37 @@ Unpack it with `auto [q, r] = divmod(a, b);`
 0 4
 ```
 
+```stdin
+7 -2
+```
+
+```expected hidden
+-3 1
+```
+
+```stdin
+-8 -3
+```
+
+```expected hidden
+2 -2
+```
+
+```stdin
+0 5
+```
+
+```expected hidden
+0 0
+```
+
 ```checks
 must std::pair\s*<\s*int\s*,\s*int\s*>\s*divmod :: Define std::pair<int, int> divmod(int a, int b).
 must auto\s*&?\s*\[ :: Unpack the result with a structured binding: auto [q, r] = ...
 ```
 :::
 
-:::exercise Statistics
+:::exercise Statistics {medium}
 Write a struct `Stats` with members `int min`, `int max` and `double average`, and a function
 `Stats computeStats(int a, int b, int c, int d)`. Read four integers and print the results.
 
@@ -516,8 +555,249 @@ max: 12
 average: 3
 ```
 
+```stdin
+-1 -2 -2 -2
+```
+
+```expected hidden
+min: -2
+max: -1
+average: -1.75
+```
+
+```stdin
+0 0 0 1
+```
+
+```expected hidden
+min: 0
+max: 1
+average: 0.25
+```
+
+```stdin
+7 7 7 7
+```
+
+```expected hidden
+min: 7
+max: 7
+average: 7
+```
+
 ```checks
 must struct\s+Stats :: Define a struct named Stats.
 must Stats\s+computeStats\s*\( :: Define Stats computeStats(...) that returns the struct.
+```
+:::
+
+:::exercise Quadratic solver {hard}
+Solve `a*x*x + b*x + c = 0` for real `x`, covering **every** case, including the ones where it isn't
+really a quadratic equation at all.
+
+Define a struct that can describe any outcome (for example the number of solutions plus up to two
+values) and a function `solve(double a, double b, double c)` that **returns** it. `main` only reads the
+input, calls `solve`, and prints.
+
+**Input:** three numbers `a b c`.
+**Output:** one line:
+
+| Case | Output |
+| --- | --- |
+| `a = b = c = 0` | `infinitely many solutions` |
+| `a = b = 0`, `c != 0` | `no solution` |
+| `a = 0`, `b != 0` (linear) | `x = R` |
+| negative discriminant | `no real roots` |
+| zero discriminant | `x = R` |
+| positive discriminant | `x1 = R1, x2 = R2` with `R1 < R2` |
+
+Print every root with exactly 3 decimals. A root that is zero must print as `0.000`, **never** as
+`-0.000`.
+
+| Input | Output |
+| --- | --- |
+| `1 -3 2` | `x1 = 1.000, x2 = 2.000` |
+| `1 2 1` | `x = -1.000` |
+| `0 2 -3` | `x = 1.500` |
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    double a = 0, b = 0, c = 0;
+    std::cin >> a >> b >> c;
+    std::cout << "no real roots\n";
+}
+```
+
+```cpp solution
+#include <cmath>
+#include <format>
+#include <iostream>
+
+struct Roots {
+    int count;      // 0, 1, 2, or -1 for "infinitely many"
+    double x1;
+    double x2;
+};
+
+Roots solve(double a, double b, double c) {
+    if (a == 0) {
+        if (b == 0) {
+            return {c == 0 ? -1 : 0, 0.0, 0.0};
+        }
+        return {1, -c / b, 0.0};
+    }
+    double d = b * b - 4 * a * c;
+    if (d < 0) {
+        return {0, 0.0, 0.0};
+    }
+    if (d == 0) {
+        return {1, -b / (2 * a), 0.0};
+    }
+    double r1 = (-b - std::sqrt(d)) / (2 * a);
+    double r2 = (-b + std::sqrt(d)) / (2 * a);
+    if (r1 > r2) {
+        double t = r1;
+        r1 = r2;
+        r2 = t;
+    }
+    return {2, r1, r2};
+}
+
+double clean(double x) {
+    return x + 0.0;     // turns -0.0 into +0.0
+}
+
+int main() {
+    double a = 0, b = 0, c = 0;
+    std::cin >> a >> b >> c;
+    Roots r = solve(a, b, c);
+    if (r.count == -1) {
+        std::cout << "infinitely many solutions\n";
+    } else if (r.count == 0) {
+        std::cout << (a == 0 ? "no solution\n" : "no real roots\n");
+    } else if (r.count == 1) {
+        std::cout << std::format("x = {:.3f}\n", clean(r.x1));
+    } else {
+        std::cout << std::format("x1 = {:.3f}, x2 = {:.3f}\n", clean(r.x1), clean(r.x2));
+    }
+}
+```
+
+```hint
+Handle the degenerate cases first, with early returns: `a == 0` means it's not quadratic. Then compute
+the discriminant `b*b - 4*a*c` and branch on its sign.
+```
+
+```hint
+When `a` is negative, `(-b - sqrt(d)) / (2a)` is the **larger** root. Compare the two roots and swap if
+needed.
+```
+
+```hint
+Floating-point has a negative zero: `-0.0 / 2` is `-0.0`, and it prints as `-0.000`. Adding `0.0` turns
+it into a plain `0.0` (or set any value with `std::abs(x) < 0.0005` to `0.0`).
+```
+
+```stdin
+1 -3 2
+```
+
+```expected
+x1 = 1.000, x2 = 2.000
+```
+
+```stdin
+1 2 1
+```
+
+```expected
+x = -1.000
+```
+
+```stdin
+0 2 -3
+```
+
+```expected
+x = 1.500
+```
+
+```stdin
+1 0 1
+```
+
+```expected hidden
+no real roots
+```
+
+```stdin
+0 0 5
+```
+
+```expected hidden
+no solution
+```
+
+```stdin
+0 0 0
+```
+
+```expected hidden
+infinitely many solutions
+```
+
+```stdin
+1 0 0
+```
+
+```expected hidden
+x = 0.000
+```
+
+```stdin
+-1 0 4
+```
+
+```expected hidden
+x1 = -2.000, x2 = 2.000
+```
+
+```stdin
+0 3 0
+```
+
+```expected hidden
+x = 0.000
+```
+
+```stdin
+2 -4 -6
+```
+
+```expected hidden
+x1 = -1.000, x2 = 3.000
+```
+
+```stdin
+1 0 -2
+```
+
+```expected hidden
+x1 = -1.414, x2 = 1.414
+```
+
+```stdin
+-2 0 0
+```
+
+```expected hidden
+x = 0.000
+```
+
+```checks
+must struct\s+\w+ :: Define a struct for the result.
+must \w+\s+solve\s*\(\s*double :: Write a solve(double a, double b, double c) function that returns the struct.
 ```
 :::

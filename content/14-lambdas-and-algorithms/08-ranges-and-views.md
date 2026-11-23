@@ -386,7 +386,7 @@ for (int x : v | std::views::drop(1) | std::views::filter([](int x) { return x %
 The projection is the **third** argument; the second is the comparator (`{}` means the default `std::ranges::less`). Passing `&Person::age` as the comparator doesn't compile.
 :::
 
-:::exercise Sort by age
+:::exercise Sort by age {easy}
 Read `n` people (a name and an age each) and print them sorted by age, youngest first. People with
 the same age stay in their **input order**. Use `std::ranges::stable_sort` with a **projection**.
 
@@ -472,13 +472,28 @@ y 5
 z 5
 ```
 
+```stdin
+4
+d 2
+c 1
+b 2
+a 1
+```
+
+```expected hidden
+c 1
+a 1
+d 2
+b 2
+```
+
 ```checks
 must std::ranges::stable_sort :: Use std::ranges::stable_sort.
 must &\s*Person\s*::\s*age|\[[^\]]*\]\s*\(\s*const\s+Person\s*&\s*\w+\s*\)\s*\{\s*return\s+\w+\.age :: Pass a projection such as &Person::age.
 ```
 :::
 
-:::exercise Even squares
+:::exercise Even squares {easy}
 Read `n` integers and print the squares of the **even** ones, in order, using a view pipeline:
 `std::views::filter` piped into `std::views::transform`. If there are no even numbers, print `none`.
 
@@ -562,6 +577,15 @@ none
 0
 ```
 
+```stdin
+3
+-2 -4 -3
+```
+
+```expected hidden
+4 16
+```
+
 ```checks
 must views::filter :: Use std::views::filter.
 must views::transform :: Use std::views::transform.
@@ -569,7 +593,7 @@ must \| :: Compose the views with the pipe operator |.
 ```
 :::
 
-:::exercise Window, reversed
+:::exercise Window, reversed {medium}
 Read `n` integers, then two numbers `a` and `b`. Skip the first `a` numbers, take the next `b`,
 and print them in **reverse** order. Build it as one pipeline with `std::views::drop`,
 `std::views::take` and `std::views::reverse`. If the result is empty, print `empty`.
@@ -666,6 +690,25 @@ range. A view over a vector like this one has `.empty()`.
 empty
 ```
 
+```stdin
+0
+0 0
+```
+
+```expected hidden
+empty
+```
+
+```stdin
+4
+1 2 3 4
+0 4
+```
+
+```expected hidden
+4 3 2 1
+```
+
 ```checks
 must views::drop :: Use std::views::drop.
 must views::take :: Use std::views::take.
@@ -673,7 +716,7 @@ must views::reverse :: Use std::views::reverse.
 ```
 :::
 
-:::exercise Repeated words
+:::exercise Repeated words {medium}
 Read words until the end of input and count how often each appears in a `std::map<std::string, int>`.
 Then print, in alphabetical order, the words that appear **more than once**, using
 `std::views::filter` on the map followed by `std::views::keys`. If no word repeats, print `none`.
@@ -753,6 +796,21 @@ b a b a c
 
 ```expected hidden
 a b
+```
+
+```stdin
+```
+
+```expected hidden
+none
+```
+
+```stdin
+A a A
+```
+
+```expected hidden
+A
 ```
 
 ```checks

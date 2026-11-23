@@ -397,7 +397,7 @@ When is a virtual function call resolved dynamically (by the object's real type)
 Dynamic dispatch needs a pointer or reference, and an explicit `Base::` qualification turns it off.
 :::
 
-:::exercise Make it virtual
+:::exercise Make it virtual {easy}
 `report` takes a `const Shape&`, but always prints an area of `0.00` because `area` isn't virtual. Fix
 the classes: make `area` and `name` **virtual** in `Shape`, and mark the derived versions **`override`**.
 
@@ -534,7 +534,7 @@ must name\s*\(\s*\)\s*const\s+override :: Mark the derived name functions overri
 ```
 :::
 
-:::exercise Payroll
+:::exercise Payroll {medium}
 `Employee::pay()` returns the base salary. Write two derived classes that **override** it:
 
 - `Manager(name, salary, bonus)`: pays the base salary **plus** the bonus. Reuse the base version by
@@ -679,7 +679,7 @@ must \boverride\b :: Mark the overrides with override.
 ```
 :::
 
-:::exercise Final notifiers
+:::exercise Final notifiers {easy}
 `Notifier::send` is a non-virtual function that prints whatever the **virtual** `format` returns. Write
 two classes, each declared **`final`**, that override `format`:
 

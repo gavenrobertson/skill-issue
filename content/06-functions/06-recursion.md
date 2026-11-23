@@ -316,7 +316,7 @@ Which of these is a **tail call**?
 In the other two, the function still has work to do (a multiplication, an addition) after the call returns.
 :::
 
-:::exercise Recursive sum of digits
+:::exercise Recursive sum of digits {easy}
 Write a **recursive** function `int digitSum(int n)` that returns the sum of the decimal digits of a
 non-negative integer. No loops allowed.
 
@@ -386,13 +386,37 @@ Recursive case: the last digit is `n % 10`, and the rest of the number is `n / 1
 81
 ```
 
+```stdin
+7
+```
+
+```expected hidden
+7
+```
+
+```stdin
+1000000000
+```
+
+```expected hidden
+1
+```
+
+```stdin
+2147483647
+```
+
+```expected hidden
+46
+```
+
 ```checks
 must digitSum\s*\([^)]*\)\s*\{[\s\S]*digitSum\s*\( :: digitSum must call itself.
 mustnot \bfor\s*\(|\bwhile\s*\( :: Solve it with recursion, no loops.
 ```
 :::
 
-:::exercise Fast power
+:::exercise Fast power {medium}
 Write a recursive `long long power(long long x, int n)` using **exponentiation by squaring**:
 
 - `power(x, 0)` is `1`
@@ -477,13 +501,53 @@ Store `power(x, n / 2)` in a variable and multiply it by itself. Calling it twic
 4052555153018976267
 ```
 
+```stdin
+1 1000000000
+```
+
+```expected hidden
+1
+```
+
+```stdin
+-1 999999999
+```
+
+```expected hidden
+-1
+```
+
+```stdin
+2 62
+```
+
+```expected hidden
+4611686018427387904
+```
+
+```stdin
+0 0
+```
+
+```expected hidden
+1
+```
+
+```stdin
+10 18
+```
+
+```expected hidden
+1000000000000000000
+```
+
 ```checks
 must power\s*\([^)]*\)\s*\{[\s\S]*power\s*\( :: power must call itself.
 mustnot \bfor\s*\(|\bwhile\s*\( :: Solve it with recursion, no loops.
 ```
 :::
 
-:::exercise Reverse the words
+:::exercise Reverse the words {medium}
 Read words until the end of input and print them in **reverse order**, one per line, using a
 recursive function `void reverseWords()` that reads one word, recurses, and then prints the word.
 No arrays, vectors or loops: the call stack does the remembering.
@@ -557,9 +621,190 @@ solo
 ```expected hidden
 ```
 
+```stdin
+a
+b
+
+c
+```
+
+```expected hidden
+c
+b
+a
+```
+
+```stdin
+same same
+```
+
+```expected hidden
+same
+same
+```
+
 ```checks
 must reverseWords\s*\(\s*\)\s*\{[\s\S]*reverseWords\s*\(\s*\)\s*; :: reverseWords must call itself.
 mustnot \bfor\s*\(|\bwhile\s*\( :: No loops: use recursion.
 mustnot vector|\[\s*\d*\s*\] :: Don't store the words in an array or vector.
+```
+:::
+
+:::exercise No adjacent ones {hard}
+List every binary string of length `n` that **never has two `1`s next to each other**, in increasing
+(alphabetical) order, then print how many there are.
+
+**Input:** one integer `n` (`0 <= n <= 15`).
+**Output:** one string per line, then `Count: K`. For `n = 3`:
+
+```
+000
+001
+010
+100
+101
+Count: 5
+```
+
+For `n = 0` there is exactly one such string, the empty one, so the output is an empty line followed by
+`Count: 1`.
+
+Solve it with a **recursive** function that builds the string one character at a time (no loops needed
+to generate the strings).
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    int n = 0;
+    std::cin >> n;
+    std::cout << "Count: 0\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+// Extends 'prefix' to length n in every valid way, printing each result.
+// Returns how many strings it printed.
+int generate(const std::string& prefix, int n) {
+    if (static_cast<int>(prefix.size()) == n) {
+        std::cout << prefix << '\n';
+        return 1;
+    }
+    int count = generate(prefix + '0', n);
+    if (prefix.empty() || prefix.back() != '1') {
+        count += generate(prefix + '1', n);
+    }
+    return count;
+}
+
+int main() {
+    int n = 0;
+    std::cin >> n;
+    int count = generate("", n);
+    std::cout << "Count: " << count << '\n';
+}
+```
+
+```hint
+Think of a function `generate(prefix, n)`: if the prefix is already `n` long, print it. Otherwise try
+appending `'0'`, and then `'1'`, recursing each time. Trying `'0'` first gives the alphabetical order.
+```
+
+```hint
+Appending `'1'` is only allowed when the prefix is empty or doesn't end in `'1'`. `s.back()` is the
+last character and `s.empty()` checks for the empty string.
+```
+
+```hint
+Let the function **return** how many strings it printed, and add up the results of the recursive calls.
+```
+
+```stdin
+3
+```
+
+```expected
+000
+001
+010
+100
+101
+Count: 5
+```
+
+```stdin
+1
+```
+
+```expected
+0
+1
+Count: 2
+```
+
+```stdin
+0
+```
+
+```expected hidden
+
+Count: 1
+```
+
+```stdin
+2
+```
+
+```expected hidden
+00
+01
+10
+Count: 3
+```
+
+```stdin
+5
+```
+
+```expected hidden
+00000
+00001
+00010
+00100
+00101
+01000
+01001
+01010
+10000
+10001
+10010
+10100
+10101
+Count: 13
+```
+
+```stdin
+4
+```
+
+```expected hidden
+0000
+0001
+0010
+0100
+0101
+1000
+1001
+1010
+Count: 8
+```
+
+```checks
+must \b(?:void|int|long|bool)\s+(\w+)\s*\([^)]*\)\s*\{[\s\S]*\b\1\s*\( :: Use a recursive function.
+mustnot \bfor\s*\(|\bwhile\s*\( :: Generate the strings with recursion, not loops.
 ```
 :::

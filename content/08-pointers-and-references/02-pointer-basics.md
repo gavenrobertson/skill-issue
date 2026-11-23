@@ -335,7 +335,7 @@ A dangling pointer points to an object that has been destroyed. A null pointer i
 clearly points to nothing, and you can test for it.
 :::
 
-:::exercise Change through a pointer
+:::exercise Change through a pointer {easy}
 Read an integer `x`. Create a pointer `p` to `x`, and **using only the pointer** (not the name `x`),
 multiply the value by 3 and then add 1. Finally print `x`.
 
@@ -404,7 +404,7 @@ must ^\s*\*\s*\w+\s*(\*|\+)?= :: Modify x through the pointer with *p = ... or *
 ```
 :::
 
-:::exercise Point at the bigger one
+:::exercise Point at the bigger one {easy}
 Read two integers `a` and `b`. Make a pointer point to whichever is **larger** (if they're equal,
 point to `a`). Through the pointer, add 100 to that variable. Then print `a` and `b`.
 
@@ -486,7 +486,7 @@ must ^\s*\*\s*\w+\s*\+= :: Add 100 through the pointer with *ptr += 100.
 ```
 :::
 
-:::exercise First negative
+:::exercise First negative {medium}
 Read `n` followed by `n` integers into a `std::vector<int>`. Use an `int*` that starts as `nullptr`
 and, while scanning the vector, point it at the **first** negative element.
 
@@ -600,6 +600,26 @@ none
 ```expected hidden
 -8
 0
+```
+
+```stdin
+4
+-1 -2 -3 -4
+```
+
+```expected hidden
+-1
+0 -2 -3 -4
+```
+
+```stdin
+3
+0 5 -2147483648
+```
+
+```expected hidden
+-2147483648
+0 5 0
 ```
 
 ```checks

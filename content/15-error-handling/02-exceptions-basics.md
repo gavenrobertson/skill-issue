@@ -438,7 +438,7 @@ Which statement about `throw;` (with no operand) is true?
 `throw;` rethrows the very same object. `throw e;` would throw a copy with `e`'s static type, possibly slicing it.
 :::
 
-:::exercise Catch the division
+:::exercise Catch the division {easy}
 Write `long long divide(long long a, long long b)` that throws
 `std::runtime_error("division by zero")` when `b` is `0`, and otherwise returns `a / b`. In `main`,
 read pairs until the end of input, call `divide` inside a `try`, and handle the error with a `catch`.
@@ -513,6 +513,18 @@ error: division by zero
 error: division by zero
 ```
 
+```stdin
+-9 -3
+9223372036854775807 0
+1 1
+```
+
+```expected hidden
+3
+error: division by zero
+1
+```
+
 ```checks
 must \bthrow\b :: divide must throw an exception.
 must \bcatch\s*\( :: Handle the exception with catch.
@@ -520,7 +532,7 @@ must \btry\b :: Use a try block.
 ```
 :::
 
-:::exercise Sort the throws
+:::exercise Sort the throws {medium}
 Write `void raise(const std::string& kind, const std::string& arg)` that throws a value of a different
 **type** depending on `kind`:
 
@@ -534,6 +546,9 @@ Write `void raise(const std::string& kind, const std::string& arg)` that throws 
 In `main`, read lines `kind arg` until the end of input, call `raise`, and catch the exception with
 separate handlers: print `int: V`, `double: V`, `text: V`, and for anything else (use `catch (...)`)
 print `unknown`.
+
+Careful: if `arg` isn't a number, `std::stoi`/`std::stod` throw their **own** exception before your
+`throw` happens. Think about which of your handlers catches that one.
 
 **Input:** any number of lines `kind arg`.
 **Output:** one line per input line, as described.
@@ -622,6 +637,22 @@ int: -7
 unknown
 ```
 
+```stdin
+int abc
+int 3.9
+double 1e3
+text 42
+x y
+```
+
+```expected hidden
+unknown
+int: 3
+double: 1000
+text: 42
+unknown
+```
+
 ```checks
 must catch\s*\(\s*\.\.\.\s*\) :: Use catch (...) for everything else.
 must catch\s*\(\s*double :: Catch the double separately.
@@ -629,7 +660,7 @@ must catch\s*\(\s*const\s+std::string\s*& :: Catch the std::string by const refe
 ```
 :::
 
-:::exercise Log and rethrow
+:::exercise Log and rethrow {medium}
 Write `int checked_sqrt(int x)` that throws `std::domain_error("negative input")` for negative `x` and
 otherwise returns the integer square root (the largest `r` with `r * r <= x`).
 
@@ -736,13 +767,28 @@ log: -1 failed
 handled: negative input
 ```
 
+```stdin
+1
+-2147483648
+99
+2
+```
+
+```expected hidden
+sqrt: 1
+log: -2147483648 failed
+handled: negative input
+sqrt: 9
+sqrt: 1
+```
+
 ```checks
 must throw\s*; :: Rethrow with a bare throw;
 mustnot throw\s+e\s*; :: Use throw; not throw e; (that copies and may slice the exception).
 ```
 :::
 
-:::exercise Unwinding trace
+:::exercise Unwinding trace {medium}
 Watch stack unwinding happen. A `Guard` struct prints `enter N` when created and `leave N` when
 destroyed. `descend(level, fail_at)` creates a `Guard` for `level`, then:
 
@@ -866,6 +912,30 @@ leave 3
 leave 2
 leave 1
 caught: failed at 3
+```
+
+```stdin
+1
+```
+
+```expected hidden
+enter 1
+leave 1
+caught: failed at 1
+```
+
+```stdin
+7
+```
+
+```expected hidden
+enter 1
+enter 2
+enter 3
+leave 3
+leave 2
+leave 1
+done
 ```
 
 ```checks

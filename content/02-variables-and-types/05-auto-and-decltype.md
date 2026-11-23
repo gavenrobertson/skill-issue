@@ -266,7 +266,7 @@ Which declarations deduce the type `double`? (select all that apply)
 `3 * 1.5` is `int * double`, which gives a `double`.
 :::
 
-:::exercise Auto average
+:::exercise Auto average {easy}
 Read two integers and print their average **as a decimal number**. Store the average in a variable
 declared with `auto`, and make sure the deduced type is `double` (hint: the literal you divide by decides it).
 
@@ -327,12 +327,28 @@ Divide by `2.0` instead: an `int` divided by a `double` is a `double`.
 3
 ```
 
+```stdin
+-3 -4
+```
+
+```expected hidden
+-3.5
+```
+
+```stdin
+1 2
+```
+
+```expected hidden
+1.5
+```
+
 ```checks
 must \bauto\s+\w+\s*= :: Store the average in an auto variable.
 ```
 :::
 
-:::exercise Copy or alias
+:::exercise Copy or alias {easy}
 Read an integer `n`. The program makes `copy`, a copy of `n`, and `alias`, which is supposed to be
 **another name for `n` itself**, then adds 10 through `alias`. Right now `alias` is a copy too, so `n`
 doesn't change. Fix the declaration of `alias` with `auto&`.
@@ -386,13 +402,21 @@ int main() {
 0 -10 0
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+10 0 10
+```
+
 ```checks
 must \bauto\s*&\s*alias :: Declare alias as auto&.
 mustnot n\s*=\s*n\s*\+ :: Change n through alias, not directly.
 ```
 :::
 
-:::exercise Same type as
+:::exercise Same type as {easy}
 Read a (possibly very large) number into the `long long` variable `distance`. Declare a variable
 `tripled` **using `decltype(distance)`** as its type, set it to three times `distance`, and print it.
 
@@ -448,7 +472,125 @@ int main() {
 0
 ```
 
+```stdin
+3000000000000
+```
+
+```expected hidden
+9000000000000
+```
+
+```stdin
+-3000000000000
+```
+
+```expected hidden
+-9000000000000
+```
+
 ```checks
 must decltype\s*\(\s*distance\s*\)\s+tripled :: Declare tripled with decltype(distance).
+```
+:::
+
+:::exercise Auto pitfall {medium}
+This program reads three prices and prints their total and their average. Run it with `1.5 2.5 3`: it
+prints `6 2` instead of `7 2.33333`. The bug is in what `auto` deduced. Fix it, and **keep `auto`** for
+both `total` and `average`.
+
+**Input:** three numbers (each may have a decimal point).
+**Output:** the total and the average separated by a space, with plain `std::cout <<`, newline.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    double a{}, b{}, c{};
+    std::cin >> a >> b >> c;
+    auto total = 0;
+    total = total + a;
+    total = total + b;
+    total = total + c;
+    auto average = total / 3;
+    std::cout << total << ' ' << average << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    double a{}, b{}, c{};
+    std::cin >> a >> b >> c;
+    auto total = 0.0;
+    total = total + a;
+    total = total + b;
+    total = total + c;
+    auto average = total / 3;
+    std::cout << total << ' ' << average << '\n';
+}
+```
+
+```hint
+`auto total = 0;` deduces `int` from the literal `0`. Every `total = total + a;` computes a `double`
+and then truncates it back into the `int`.
+```
+
+```hint
+Change the literal, not the keyword: `0.0` is a `double`. Once `total` is a `double`, `total / 3` is a
+`double` too.
+```
+
+```stdin
+1.5 2.5 3
+```
+
+```expected
+7 2.33333
+```
+
+```stdin
+0.5 0.25 0.25
+```
+
+```expected
+1 0.333333
+```
+
+```stdin
+0 0 0
+```
+
+```expected hidden
+0 0
+```
+
+```stdin
+-1.5 0.5 1
+```
+
+```expected hidden
+0 0
+```
+
+```stdin
+2.25 2.25 2.25
+```
+
+```expected hidden
+6.75 2.25
+```
+
+```stdin
+0.1 0.2 0.3
+```
+
+```expected hidden
+0.6 0.2
+```
+
+```checks
+must \bauto\s+total\s*= :: Keep total as an auto variable.
+must \bauto\s+average\s*= :: Keep average as an auto variable.
 ```
 :::

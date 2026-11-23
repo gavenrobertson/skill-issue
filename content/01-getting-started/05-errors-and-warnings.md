@@ -114,7 +114,7 @@ Your program compiles and runs but prints `7` where you expected `8`. What kind 
 It built and ran, but did the wrong thing: a logic error. (It *could* be caused by UB, but the symptom is a wrong result.)
 :::
 
-:::exercise Fix the build
+:::exercise Fix the build {medium}
 This program has **three** compile errors. Fix them all so it prints:
 
 ```
@@ -156,7 +156,7 @@ Debugging is twice as hard as writing the code.
 ```
 :::
 
-:::exercise Missing include
+:::exercise Missing include {easy}
 The program below forgot something at the very top, so the compiler doesn't know what `std::cout`
 is. Fix it so it prints `Found it!`.
 

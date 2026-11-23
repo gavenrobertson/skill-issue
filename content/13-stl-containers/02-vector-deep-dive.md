@@ -400,7 +400,7 @@ std::remove(v.begin(), v.end(), 1);
 Without `erase`, the size stays 4.
 :::
 
-:::exercise Remove the negatives
+:::exercise Remove the negatives {easy}
 Read `n` integers into a vector and remove every negative number using `std::erase_if` (or the
 erase-remove idiom).
 
@@ -476,12 +476,20 @@ removed 0
 0 7
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+removed 0
+```
+
 ```checks
 must erase_if|remove_if :: Use std::erase_if (or erase with std::remove_if).
 ```
 :::
 
-:::exercise Insert and erase by position
+:::exercise Insert and erase by position {medium}
 Read a vector of integers, insert a value at a given index, then erase the element at another index (in
 the updated vector). Use the vector's `insert` and `erase` member functions with iterators.
 
@@ -564,13 +572,35 @@ ends up at index `p`.
 
 ```
 
+```stdin
+3
+1 2 3
+3 4
+3
+```
+
+```expected hidden
+1 2 3
+```
+
+```stdin
+3
+1 2 3
+0 9
+3
+```
+
+```expected hidden
+9 1 2
+```
+
 ```checks
 must \.insert\s*\( :: Use v.insert.
 must \.erase\s*\( :: Use v.erase.
 ```
 :::
 
-:::exercise Sort and deduplicate
+:::exercise Sort and deduplicate {easy}
 Read `n` integers, sort them, and remove duplicates using `std::unique` followed by `erase`. (`std::unique`
 works like `std::remove`: it only removes **adjacent** duplicates and returns the new logical end, which is
 why you sort first.)
@@ -639,13 +669,32 @@ distinct: 4
 distinct: 1
 ```
 
+```stdin
+6
+-1 5 -1 0 5 -10
+```
+
+```expected hidden
+-10 -1 0 5
+distinct: 4
+```
+
+```stdin
+0
+```
+
+```expected hidden
+
+distinct: 0
+```
+
 ```checks
 must std::unique\s*\( :: Use std::unique.
 must \.erase\s*\( :: Erase the leftover tail.
 ```
 :::
 
-:::exercise Emplace the people
+:::exercise Emplace the people {easy}
 A `Person` has a `name` and an `age` and a constructor `Person(std::string name, int age)`. Read `n`
 people into a `std::vector<Person>`. Call `reserve(n)` first, then add each one with `emplace_back`
 (passing the name and age directly, without creating a `Person` yourself). Finally print the adults.
@@ -734,9 +783,228 @@ Teen 17
 no adults
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+no adults
+```
+
 ```checks
 must \.reserve\s*\( :: Call reserve before adding the people.
 must \.emplace_back\s*\( :: Add people with emplace_back.
 mustnot emplace_back\s*\(\s*Person :: Pass the constructor arguments directly instead of building a Person first.
+```
+:::
+
+:::exercise Word buffer editor {hard}
+Implement a tiny editor whose document is a `std::vector<std::string>` of words. Process commands
+until the input ends:
+
+| Command | Effect |
+| --- | --- |
+| `append W` | add word `W` at the end |
+| `insert I W` | insert `W` so that it ends up at index `I` (valid when `0 <= I <= size`) |
+| `erase I` | erase the word at index `I` (valid when `0 <= I < size`) |
+| `cut I J` | erase the words at indices `I` up to but **not including** `J` (valid when `0 <= I <= J <= size`) |
+| `remove W` | erase **every** occurrence of `W`, then print `removed K` |
+| `dedup` | collapse runs of equal **adjacent** words into one, then print `removed K` |
+| `print` | print the words separated by single spaces, or `(empty)` |
+
+Indices can be anything, including negative numbers and numbers far beyond the size (read them as
+`long long`). A command with an invalid index changes nothing and prints `bad index`. Never index or
+build an iterator outside the vector: that's undefined behavior, not an error you can catch.
+
+Use the vector's `insert` and `erase` with iterators, plus `std::erase` / `std::unique` (or the
+erase-remove idiom).
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <vector>
+
+int main() {
+    std::vector<std::string> doc;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "append") {
+            std::string w;
+            std::cin >> w;
+            doc.push_back(w);
+        } else if (cmd == "print") {
+            for (const auto& w : doc) std::cout << w << ' ';
+            std::cout << '\n';
+        }
+        // the other commands
+    }
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+
+int main() {
+    std::vector<std::string> doc;
+    std::string cmd;
+    // true if 0 <= i <= limit; compares in long long, so negative and huge values are safe
+    auto within = [](long long i, std::size_t limit) {
+        return i >= 0 && i <= static_cast<long long>(limit);
+    };
+    while (std::cin >> cmd) {
+        if (cmd == "append") {
+            std::string w;
+            std::cin >> w;
+            doc.push_back(w);
+        } else if (cmd == "insert") {
+            long long i;
+            std::string w;
+            std::cin >> i >> w;
+            if (!within(i, doc.size())) std::cout << "bad index\n";
+            else doc.insert(doc.begin() + i, w);
+        } else if (cmd == "erase") {
+            long long i;
+            std::cin >> i;
+            if (doc.empty() || !within(i, doc.size() - 1)) std::cout << "bad index\n";
+            else doc.erase(doc.begin() + i);
+        } else if (cmd == "cut") {
+            long long i, j;
+            std::cin >> i >> j;
+            if (!within(i, doc.size()) || !within(j, doc.size()) || i > j) std::cout << "bad index\n";
+            else doc.erase(doc.begin() + i, doc.begin() + j);
+        } else if (cmd == "remove") {
+            std::string w;
+            std::cin >> w;
+            std::cout << "removed " << std::erase(doc, w) << '\n';
+        } else if (cmd == "dedup") {
+            auto before = doc.size();
+            doc.erase(std::unique(doc.begin(), doc.end()), doc.end());
+            std::cout << "removed " << before - doc.size() << '\n';
+        } else if (cmd == "print") {
+            if (doc.empty()) std::cout << "(empty)";
+            for (std::size_t k = 0; k < doc.size(); ++k) {
+                if (k > 0) std::cout << ' ';
+                std::cout << doc[k];
+            }
+            std::cout << '\n';
+        }
+    }
+}
+```
+
+```hint
+Validate before you touch the vector. Compare indices as signed numbers: `i < 0` must be rejected
+**before** you compare with `doc.size()` (an unsigned `std::size_t`; mixing the two turns `-1` into a
+gigantic positive number).
+```
+
+```hint
+`erase` on an empty document is always a bad index (there is no valid `I`), and `cut I I` is valid and
+removes nothing.
+```
+
+```hint
+`std::erase(doc, w)` returns how many words it removed. For `dedup`, compare the size before and after
+`doc.erase(std::unique(doc.begin(), doc.end()), doc.end())`.
+```
+
+```stdin
+append b
+append c
+insert 0 a
+insert 3 d
+print
+erase 1
+print
+cut 0 2
+print
+```
+
+```expected
+a b c d
+a c d
+d
+```
+
+```stdin
+append x
+insert 2 y
+insert -1 y
+erase 1
+erase -1
+cut 1 0
+cut 0 5
+print
+```
+
+```expected
+bad index
+bad index
+bad index
+bad index
+bad index
+bad index
+x
+```
+
+```stdin
+append a
+append a
+append b
+append a
+append a
+append a
+dedup
+print
+remove a
+print
+remove zzz
+erase 0
+print
+erase 0
+```
+
+```expected hidden
+removed 3
+a b a
+removed 2
+b
+removed 0
+(empty)
+bad index
+```
+
+```stdin
+print
+dedup
+remove q
+cut 0 0
+insert 0 only
+cut 0 0
+print
+cut 0 1
+print
+insert 9223372036854775807 big
+insert 1 x
+```
+
+```expected hidden
+(empty)
+removed 0
+removed 0
+only
+(empty)
+bad index
+bad index
+```
+
+```checks
+must std::vector\s*<\s*std::string\s*> :: Store the document in a std::vector<std::string>.
+must \.insert\s*\( :: Use the vector's insert.
+must \.erase\s*\( :: Use the vector's erase.
+must unique :: Use std::unique for dedup.
 ```
 :::

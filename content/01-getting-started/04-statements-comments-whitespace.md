@@ -134,7 +134,7 @@ std::cout << "A";
 `B` is on a commented-out line, `C` is inside a block comment, and `D` comes after the block comment ends, so it runs.
 :::
 
-:::exercise Comment it out
+:::exercise Comment it out {easy}
 This program prints four lines, but lines 2 and 4 are wrong. **Without deleting them**, comment out
 the two wrong lines so the program prints:
 
@@ -176,7 +176,7 @@ cherry
 
 :::
 
-:::exercise Tidy up
+:::exercise Tidy up {easy}
 This program works but is unreadable. It's all on one line. The output must stay the same; just make
 it pass. Then reformat it with one statement per line and proper indentation (the formatting itself
 isn't graded, but practice it!).
@@ -212,5 +212,64 @@ Look carefully between `"y\n"` and the next `std::cout`. Something that ends a s
 x
 y
 z
+```
+:::
+
+:::exercise Comment surgery {medium}
+The starter prints
+
+```
+ABD
+EF
+G
+HJ
+```
+
+Make it print exactly this instead:
+
+```
+AD
+EG
+J
+```
+
+The rule: you may only **add** comment markers (`//`, `/*` and `*/`). Don't delete, move or retype any
+of the existing code. (The checker only sees the output, so this is on your honor. Solve the puzzle!)
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    std::cout << "A" << "B" /* << "C" */ << "D\n";
+    std::cout << "E" << "F\n"; std::cout << "G\n";
+    std::cout << "H" << /* "I" << */ "J\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    std::cout << "A" /* << "B" */ /* << "C" */ << "D\n";
+    std::cout << "E" /* << "F\n"; std::cout */ << "G\n";
+    std::cout << /* "H" << */ /* "I" << */ "J\n";
+}
+```
+
+```hint
+A block comment can start in the middle of one statement and end in the middle of the next one. The
+compiler doesn't care about statements or lines inside a comment.
+```
+
+```hint
+Two block comments can sit right next to each other: `/* one */ /* two */`. Don't try to wrap a new
+`/* ... */` around an existing one: comments don't nest, so your comment would end at the old `*/`
+(and GCC warns `"/*" within comment`).
+```
+
+```expected
+AD
+EG
+J
 ```
 :::

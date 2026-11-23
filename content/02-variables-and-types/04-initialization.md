@@ -148,8 +148,10 @@ A conversion counts as **narrowing** when it goes:
 
 - from floating point to integer (`double` → `int`),
 - from a wider floating type to a narrower one (`double` → `float`),
-- from an integer to a type that can't represent all its values (`long long` → `int`, `int` → `unsigned`,
-  `int` → `char`, `int` → `double`).
+- from an integer to an integer type that can't represent all its values (`long long` → `int`,
+  `int` → `unsigned`, `int` → `char`),
+- from an integer to a floating-point type (`int` → `double`, `long long` → `float`). This counts as
+  narrowing even when every value would fit, as with `int` → `double`.
 
 A **constant** whose value actually fits is not narrowing, so `char c{65};` and `float f{0.5};` are fine.
 
@@ -317,7 +319,7 @@ Inside `main`, what is the value of `n` after `int n;`?
 Local variables of fundamental types are not initialized automatically. Only globals and statics are zeroed.
 :::
 
-:::exercise Start from zero
+:::exercise Start from zero {easy}
 Read three integers and print their sum. Your running total must be declared with
 **value-initialization** (empty braces, e.g. `int total{};`), then add each number to it.
 
@@ -382,7 +384,7 @@ must \btotal\s*\{\s*\} :: Declare total with empty braces: int total{};
 ```
 :::
 
-:::exercise Fix the vexing parse
+:::exercise Fix the vexing parse {easy}
 This program should read an integer and print double its value, but it doesn't compile. The variable
 declaration was accidentally written as a function declaration. Fix it.
 
@@ -429,13 +431,29 @@ int main() {
 -16
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+0
+```
+
+```stdin
+1000000000
+```
+
+```expected hidden
+2000000000
+```
+
 ```checks
 mustnot \bint\s+number\s*\(\s*\) :: int number(); declares a function. Use braces instead.
 must \bnumber\s*\{\s*\} :: Value-initialize number with empty braces.
 ```
 :::
 
-:::exercise Every flavor
+:::exercise Every flavor {easy}
 Read an integer `n`. Declare five variables, each with a **different** initialization form:
 
 - `a` with copy-initialization from `n` (`int a = n;`)
@@ -500,5 +518,125 @@ must \bint\s+b\s*\(\s*n\s*\) :: Direct-initialize b: int b(n);
 must \bint\s+c\s*\{\s*n\s*\} :: Brace-initialize c: int c{n};
 must \bint\s+d\s*=\s*\{\s*n\s*\} :: Copy-list-initialize d: int d = {n};
 must \bint\s+e\s*\{\s*\} :: Value-initialize e: int e{};
+```
+:::
+
+:::exercise Brace the conversion {medium}
+Read a decimal number `x` and split it into its whole part (toward zero) and the fractional part that is
+left over. Declare both results with **brace initialization**:
+
+- `int whole{...}`: brace init refuses to *silently* narrow a `double` into an `int`, so you have to
+  ask for the conversion explicitly with `static_cast<int>(...)`.
+- `double fraction{...}`: `x` minus the whole part.
+
+**Input:** one number `x` (−1,000,000 < x < 1,000,000, at most two decimal places).
+**Output:** two lines, `whole: <whole>` and `fraction: <fraction>`, printed with plain `std::cout <<`.
+For `3.75`:
+
+```
+whole: 3
+fraction: 0.75
+```
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    double x{};
+    std::cin >> x;
+    int whole = x;
+    std::cout << "whole: " << whole << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    double x{};
+    std::cin >> x;
+    int whole{static_cast<int>(x)};
+    double fraction{x - whole};
+    std::cout << "whole: " << whole << '\n';
+    std::cout << "fraction: " << fraction << '\n';
+}
+```
+
+```hint
+`int whole{x};` is a narrowing conversion: GCC warns, other compilers reject it. Say what you mean:
+`int whole{static_cast<int>(x)};`
+```
+
+```hint
+The conversion truncates **toward zero**, so for `-3.75` the whole part is `-3` and the fraction is `-0.75`.
+```
+
+```stdin
+3.75
+```
+
+```expected
+whole: 3
+fraction: 0.75
+```
+
+```stdin
+-3.75
+```
+
+```expected
+whole: -3
+fraction: -0.75
+```
+
+```stdin
+5
+```
+
+```expected hidden
+whole: 5
+fraction: 0
+```
+
+```stdin
+0.5
+```
+
+```expected hidden
+whole: 0
+fraction: 0.5
+```
+
+```stdin
+-0.25
+```
+
+```expected hidden
+whole: 0
+fraction: -0.25
+```
+
+```stdin
+999999.99
+```
+
+```expected hidden
+whole: 999999
+fraction: 0.99
+```
+
+```stdin
+0
+```
+
+```expected hidden
+whole: 0
+fraction: 0
+```
+
+```checks
+must \bint\s+whole\s*\{ :: Declare whole with braces: int whole{...};
+must \bdouble\s+fraction\s*\{ :: Declare fraction with braces: double fraction{...};
+must static_cast\s*<\s*int\s*> :: Convert explicitly with static_cast<int>.
 ```
 :::

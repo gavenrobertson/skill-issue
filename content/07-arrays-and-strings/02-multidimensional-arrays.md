@@ -259,7 +259,7 @@ Which function parameter can receive `int grid[5][8]`?
 All dimensions except the first must be given. A plain `int[]` parameter expects a 1D array.
 :::
 
-:::exercise Row and column sums
+:::exercise Row and column sums {easy}
 Read `R` and `C` (1 to 10), then an `R` × `C` grid of integers into `int grid[10][10]`. Print the sum
 of each row on one line, then the sum of each column on a second line, separated by spaces.
 
@@ -348,7 +348,7 @@ must \w+\s*\[\s*\w+\s*\]\s*\[\s*\w+\s*\] :: Use a 2D array and two indexes.
 ```
 :::
 
-:::exercise Transpose
+:::exercise Transpose {easy}
 Read `R` and `C` (1 to 10) and an `R` × `C` grid. Print its **transpose**: a `C` × `R` grid where
 row `i` is column `i` of the original. Separate numbers with single spaces.
 
@@ -433,9 +433,20 @@ Swap which index the outer loop controls: loop over columns first, then rows.
 1 2
 2 1
 ```
+
+```stdin
+3 1
+5
+-6
+7
+```
+
+```expected hidden
+5 -6 7
+```
 :::
 
-:::exercise Tic-tac-toe referee
+:::exercise Tic-tac-toe referee {medium}
 Read a 3×3 tic-tac-toe board as three lines of three characters (`X`, `O` or `.`) into a
 `char board[3][3]`. Write `char winner(const char board[][3])` that returns `'X'` or `'O'` if that
 player has three in a row (any row, column or diagonal), or `'.'` if nobody does. You may assume at
@@ -541,7 +552,222 @@ O.X
 X wins
 ```
 
+```stdin
+...
+OO.
+XXX
+```
+
+```expected hidden
+X wins
+```
+
 ```checks
 must char\s+winner\s*\(\s*const\s+char\s+\w+\s*\[\s*\]\s*\[\s*3\s*\]\s*\) :: Write char winner(const char board[][3]).
+```
+:::
+
+:::exercise Game of Life {hard}
+Conway's Game of Life is played on a grid of cells that are either alive (`#`) or dead (`.`). Each
+generation, every cell looks at its up to 8 **neighbours** (horizontally, vertically and diagonally
+adjacent cells) and changes **at the same time** as all the others:
+
+- a live cell with 2 or 3 live neighbours stays alive;
+- a dead cell with exactly 3 live neighbours becomes alive;
+- every other cell is dead in the next generation.
+
+Cells outside the grid count as dead (the grid does **not** wrap around). Read the grid into a
+`char` 2D array, simulate `G` generations, and print the final grid.
+
+**Input:** `R C` (1 to 20 each), then `R` lines of `C` characters (`#` or `.`), then `G` (0 to 50).
+**Output:** the grid after `G` generations, `R` lines of `C` characters.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int rows, cols;
+    std::cin >> rows >> cols;
+    char grid[20][20];
+}
+```
+
+```cpp solution
+#include <iostream>
+
+constexpr int kMax = 20;
+
+int liveNeighbours(const char grid[][kMax], int rows, int cols, int r, int c) {
+    int count = 0;
+    for (int dr = -1; dr <= 1; ++dr) {
+        for (int dc = -1; dc <= 1; ++dc) {
+            if (dr == 0 && dc == 0) {
+                continue;                        // a cell is not its own neighbour
+            }
+            int nr = r + dr;
+            int nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && grid[nr][nc] == '#') {
+                ++count;
+            }
+        }
+    }
+    return count;
+}
+
+int main() {
+    int rows, cols;
+    std::cin >> rows >> cols;
+    char grid[kMax][kMax];
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < cols; ++c) {
+            std::cin >> grid[r][c];
+        }
+    }
+    int generations;
+    std::cin >> generations;
+
+    char next[kMax][kMax];
+    for (int g = 0; g < generations; ++g) {
+        for (int r = 0; r < rows; ++r) {
+            for (int c = 0; c < cols; ++c) {
+                int n = liveNeighbours(grid, rows, cols, r, c);
+                bool alive = grid[r][c] == '#';
+                next[r][c] = (n == 3 || (alive && n == 2)) ? '#' : '.';
+            }
+        }
+        for (int r = 0; r < rows; ++r) {          // all cells change at once: copy afterwards
+            for (int c = 0; c < cols; ++c) {
+                grid[r][c] = next[r][c];
+            }
+        }
+    }
+
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < cols; ++c) {
+            std::cout << grid[r][c];
+        }
+        std::cout << '\n';
+    }
+}
+```
+
+```hint
+`std::cin >> grid[r][c]` reads one non-whitespace character, so a nested loop reads the whole grid.
+```
+
+```hint
+Don't update the grid while you're still counting neighbours in it: compute the next generation into
+a **second** array, then copy it back.
+```
+
+```hint
+Count neighbours with two loops over `dr` and `dc` from -1 to 1, skipping `(0, 0)` and any position
+outside `0..rows-1` / `0..cols-1`.
+```
+
+```stdin
+5 5
+.....
+..#..
+..#..
+..#..
+.....
+1
+```
+
+```expected
+.....
+.....
+.###.
+.....
+.....
+```
+
+```stdin
+5 5
+.....
+..#..
+..#..
+..#..
+.....
+2
+```
+
+```expected hidden
+.....
+..#..
+..#..
+..#..
+.....
+```
+
+```stdin
+6 6
+.#....
+..#...
+###...
+......
+......
+......
+4
+```
+
+```expected hidden
+......
+..#...
+...#..
+.###..
+......
+......
+```
+
+```stdin
+3 3
+###
+###
+###
+1
+```
+
+```expected hidden
+#.#
+...
+#.#
+```
+
+```stdin
+2 2
+##
+##
+5
+```
+
+```expected hidden
+##
+##
+```
+
+```stdin
+1 1
+#
+0
+```
+
+```expected hidden
+#
+```
+
+```stdin
+1 3
+###
+1
+```
+
+```expected hidden
+.#.
+```
+
+```checks
+must char\s+\w+\s*\[\s*\w+\s*\]\s*\[\s*\w+\s*\] :: Store the grid in a 2D char array.
 ```
 :::

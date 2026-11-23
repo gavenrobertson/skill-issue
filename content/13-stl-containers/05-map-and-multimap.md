@@ -334,7 +334,7 @@ that value to `"b"`? (select all that apply)
 `insert`, `emplace` and `try_emplace` never overwrite an existing key.
 :::
 
-:::exercise Word frequencies
+:::exercise Word frequencies {easy}
 Count how often each word occurs and print the counts in alphabetical order of the words.
 
 **Input:** words separated by whitespace, until the input ends.
@@ -407,7 +407,7 @@ must std::map :: Use a std::map.
 ```
 :::
 
-:::exercise Phone book lookup
+:::exercise Phone book lookup {easy}
 Store names and phone numbers in a `std::map`, then answer lookups **without inserting** missing names.
 Use `find` (or `contains` and `at`), not `[]`, for the lookups.
 
@@ -500,13 +500,26 @@ x: unknown
 entries: 0
 ```
 
+```stdin
+2
+ann 1
+ann 2
+1
+ann
+```
+
+```expected hidden
+ann: 2
+entries: 1
+```
+
 ```checks
 must std::map :: Use a std::map.
 must \.find\s*\(|\.contains\s*\( :: Look names up with find (or contains).
 ```
 :::
 
-:::exercise Group by first letter
+:::exercise Group by first letter {easy}
 Group words by their first letter using a `std::map<char, std::vector<std::string>>`. Within a group,
 keep the words in input order.
 
@@ -568,12 +581,23 @@ zed
 z: zed
 ```
 
+```stdin
+Bob apple Ant bee
+```
+
+```expected hidden
+A: Ant
+B: Bob
+a: apple
+b: bee
+```
+
 ```checks
 must std::map\s*<\s*char\s*,\s*std::vector :: Use std::map<char, std::vector<std::string>>.
 ```
 :::
 
-:::exercise Course enrollments
+:::exercise Course enrollments {medium}
 Store `student course` enrollments in a `std::multimap<std::string, std::string>` (a student can have many
 courses). Then, for each queried student, list their courses in the order they were enrolled, using
 `equal_range`.
@@ -674,8 +698,198 @@ x
 x (2): a a
 ```
 
+```stdin
+3
+ada x
+ad y
+adam z
+2
+ad
+ada
+```
+
+```expected hidden
+ad (1): y
+ada (1): x
+```
+
 ```checks
 must std::multimap :: Use a std::multimap.
 must \.equal_range\s*\( :: Use equal_range.
+```
+:::
+
+:::exercise Versioned settings {hard}
+Build a configuration store that remembers the **history** of every setting, so you can ask what a
+setting was at any moment in time. (This is the "time-based key-value store" interview question.)
+
+| Command | Effect / output |
+| --- | --- |
+| `set KEY T VALUE` | from time `T` on, `KEY` is `VALUE` (setting the same key at the same time again overwrites it); prints nothing |
+| `get KEY T` | the value set at the **latest time `<= T`**: prints `KEY@T = VALUE`, or `KEY@T unset` if there is none |
+| `history KEY` | `KEY:` followed by ` T=VALUE` for each change in time order, or `KEY: no history` |
+| `keys` | `keys:` followed by ` KEY` for every key that was ever `set`, alphabetically (just `keys:` if none) |
+
+Times are integers (possibly negative) and commands don't arrive in time order. Looking a key up must
+**never create it**: a `get` or `history` for an unknown key must not make it appear in `keys`.
+
+Use a `std::map<std::string, std::map<int, std::string>>`, and answer `get` in O(log n) with
+`upper_bound` on the inner map.
+
+**Input:** one command per line until the input ends. Keys and values are single words.
+**Output:** one line per `get`, `history` and `keys` command.
+
+```cpp starter
+#include <iostream>
+#include <map>
+#include <string>
+
+int main() {
+    std::map<std::string, std::map<int, std::string>> store;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        // set, get, history, keys
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <iterator>
+#include <map>
+#include <string>
+
+int main() {
+    std::map<std::string, std::map<int, std::string>> store;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "set") {
+            std::string key, value;
+            int t;
+            std::cin >> key >> t >> value;
+            store[key][t] = value;                        // creating the key is wanted here
+        } else if (cmd == "get") {
+            std::string key;
+            int t;
+            std::cin >> key >> t;
+            std::cout << key << '@' << t;
+            auto k = store.find(key);                     // find: never inserts
+            if (k == store.end()) {
+                std::cout << " unset\n";
+                continue;
+            }
+            auto it = k->second.upper_bound(t);           // first change strictly after t
+            if (it == k->second.begin()) std::cout << " unset\n";
+            else std::cout << " = " << std::prev(it)->second << '\n';
+        } else if (cmd == "history") {
+            std::string key;
+            std::cin >> key;
+            auto k = store.find(key);
+            if (k == store.end()) {
+                std::cout << key << ": no history\n";
+                continue;
+            }
+            std::cout << key << ':';
+            for (const auto& [t, value] : k->second) std::cout << ' ' << t << '=' << value;
+            std::cout << '\n';
+        } else if (cmd == "keys") {
+            std::cout << "keys:";
+            for (const auto& [key, changes] : store) std::cout << ' ' << key;
+            std::cout << '\n';
+        }
+    }
+}
+```
+
+```hint
+`store[key][t] = value;` is fine for `set`. For `get` and `history`, use `store.find(key)`: `[]` would
+insert an empty history for an unknown key.
+```
+
+```hint
+In the inner map, `upper_bound(t)` is the first change **after** `t`. The answer is the element just
+before it, `std::prev(it)`, unless `it == changes.begin()` (nothing was set at or before `t`).
+```
+
+```stdin
+set theme 10 dark
+set theme 20 light
+get theme 5
+get theme 10
+get theme 15
+get theme 99
+history theme
+keys
+```
+
+```expected
+theme@5 unset
+theme@10 = dark
+theme@15 = dark
+theme@99 = light
+theme: 10=dark 20=light
+keys: theme
+```
+
+```stdin
+get ghost 1
+history ghost
+keys
+```
+
+```expected
+ghost@1 unset
+ghost: no history
+keys:
+```
+
+```stdin
+set lang 5 en
+set lang -3 fr
+set lang 5 de
+set font 0 mono
+get lang -4
+get lang -3
+get lang 4
+get lang 5
+history lang
+get font -1
+get Font 0
+keys
+```
+
+```expected hidden
+lang@-4 unset
+lang@-3 = fr
+lang@4 = fr
+lang@5 = de
+lang: -3=fr 5=de
+font@-1 unset
+Font@0 unset
+keys: font lang
+```
+
+```stdin
+set a 1 x
+get b 1
+history c
+set b 2 y
+keys
+get b 2
+get a 2
+```
+
+```expected hidden
+b@1 unset
+c: no history
+keys: a b
+b@2 = y
+a@2 = x
+```
+
+```checks
+must std::map\s*<\s*std::string\s*,\s*std::map\s*<\s*int :: Use a std::map<std::string, std::map<int, std::string>>.
+must upper_bound|lower_bound :: Answer get with upper_bound (or lower_bound) on the inner map.
+must \.find\s*\(|\.contains\s*\( :: Look keys up without inserting them.
 ```
 :::

@@ -291,7 +291,7 @@ Unordered containers have no ordering, so there's no `lower_bound` and no sorted
 insertions and erasures by key work on both.
 :::
 
-:::exercise Pair with sum
+:::exercise Pair with sum {medium}
 Read `n` integers and a `target`. Print `yes` if two numbers at **different positions** add up to `target`,
 otherwise `no`. Do it in one pass with a `std::unordered_set`: for each number `x`, check whether
 `target - x` has already been seen, then remember `x`.
@@ -374,12 +374,32 @@ no
 yes
 ```
 
+```stdin
+4
+-3 7 -10 2
+-8
+```
+
+```expected hidden
+yes
+```
+
+```stdin
+1
+5
+10
+```
+
+```expected hidden
+no
+```
+
 ```checks
 must std::unordered_set :: Use a std::unordered_set.
 ```
 :::
 
-:::exercise First repeated word
+:::exercise First repeated word {easy}
 Read words in order and print the first word that appears for the **second time** (the earliest moment a
 repeat happens). Use a `std::unordered_set<std::string>`.
 
@@ -437,12 +457,20 @@ every word here is distinct
 none
 ```
 
+```stdin
+a b b a
+```
+
+```expected hidden
+b
+```
+
 ```checks
 must std::unordered_set :: Use a std::unordered_set.
 ```
 :::
 
-:::exercise Top words
+:::exercise Top words {medium}
 Count words with a `std::unordered_map<std::string, int>`, then print the `k` most frequent. Since the
 hash map has no order, copy the counts into a vector and sort it: higher count first, and for equal counts
 alphabetical order.
@@ -527,13 +555,31 @@ b 2
 c 1
 ```
 
+```stdin
+3
+b B a B b
+```
+
+```expected hidden
+B 2
+b 2
+a 1
+```
+
+```stdin
+4
+```
+
+```expected hidden
+```
+
 ```checks
 must std::unordered_map :: Count with a std::unordered_map.
 must sort\s*\( :: Sort the results before printing.
 ```
 :::
 
-:::exercise Distinct points
+:::exercise Distinct points {medium}
 Store 2D points in a `std::unordered_set<Point, PointHash>`, where you write `Point` (with `x`, `y` and
 `operator==`) and the hash functor `PointHash` yourself. Then answer membership queries.
 
@@ -640,9 +686,182 @@ distinct: 0
 no
 ```
 
+```stdin
+3
+-1 -1
+1 1
+-1 -1
+2
+1 1
+-1 1
+```
+
+```expected hidden
+distinct: 2
+yes
+no
+```
+
 ```checks
 must unordered_set\s*<\s*Point\s*,\s*PointHash\s*> :: Use std::unordered_set<Point, PointHash>.
 must operator\s*\(\s*\)\s*\(\s*const\s+Point :: Write PointHash's operator()(const Point&).
 must operator\s*== :: Give Point an operator==.
+```
+:::
+
+:::exercise Subarrays with target sum {hard}
+Given `n` integers (possibly negative) and a target `k`, find:
+
+1. how many **contiguous** subarrays (runs `a[i..j]`, at least one element) have a sum of exactly `k`,
+2. the length of the **shortest** such subarray.
+
+Checking every `(i, j)` pair is O(n²): too slow for `n = 200000`. Use **prefix sums** and hash maps
+for an O(n) solution: with `P(j)` = the sum of the first `j` elements, the run `a[i..j-1]` sums to `k`
+exactly when `P(i) == P(j) - k`. So while you walk the array, keep:
+
+- a `std::unordered_map<long long, long long>` counting how many times each prefix sum has occurred,
+- a `std::unordered_map<long long, int>` remembering the **latest** position where each prefix sum
+  occurred (the latest start gives the shortest run ending here).
+
+**Input:** `n`, then `n` integers (`|a[i]| <= 10^9`), then `k`.
+**Output:** `count: C` on the first line, then `shortest: L` or `shortest: none`.
+
+Example: for `1 2 3 -2 2` and `k = 3` the runs are `[1, 2]`, `[3]`, `[2, 3, -2]` and
+`[3, -2, 2]`, so the output is `count: 4` and `shortest: 1`.
+
+```cpp starter
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<long long> a(n);
+    for (auto& x : a) std::cin >> x;
+    long long k;
+    std::cin >> k;
+    std::cout << "count: 0\nshortest: none\n";
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <unordered_map>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::vector<long long> a(n);
+    for (auto& x : a) std::cin >> x;
+    long long k;
+    std::cin >> k;
+
+    std::unordered_map<long long, long long> seen{{0, 1}};   // the empty prefix has sum 0
+    std::unordered_map<long long, int> lastPos{{0, 0}};      // ...at position 0
+    long long prefix = 0, count = 0;
+    int shortest = -1;
+    for (int j = 1; j <= n; ++j) {
+        prefix += a[j - 1];
+        auto it = seen.find(prefix - k);
+        if (it != seen.end()) {
+            count += it->second;
+            int len = j - lastPos[prefix - k];
+            if (shortest == -1 || len < shortest) shortest = len;
+        }
+        ++seen[prefix];
+        lastPos[prefix] = j;            // record AFTER using it, so a run has at least one element
+    }
+    std::cout << "count: " << count << '\n';
+    if (shortest == -1) std::cout << "shortest: none\n";
+    else std::cout << "shortest: " << shortest << '\n';
+}
+```
+
+```hint
+Start both maps with the **empty prefix**: sum `0`, seen once, at position `0`. Otherwise runs that
+start at the very first element are missed.
+```
+
+```hint
+At step `j`, first look up `prefix - k` (that's every run ending here), and only **then** record the
+current prefix. Recording first would let `k = 0` match an empty run.
+```
+
+```hint
+Sums reach `2 * 10^14` and the count can reach about `2 * 10^10` (think of 200 000 zeros with
+`k = 0`), so use `long long` for both.
+```
+
+```stdin
+5
+1 2 3 -2 2
+3
+```
+
+```expected
+count: 4
+shortest: 1
+```
+
+```stdin
+3
+1 1 1
+5
+```
+
+```expected
+count: 0
+shortest: none
+```
+
+```stdin
+4
+0 0 0 0
+0
+```
+
+```expected hidden
+count: 10
+shortest: 1
+```
+
+```stdin
+6
+3 4 -7 3 1 3
+7
+```
+
+```expected hidden
+count: 3
+shortest: 2
+```
+
+```stdin
+3
+1000000000 1000000000 1000000000
+2000000000
+```
+
+```expected hidden
+count: 2
+shortest: 2
+```
+
+```stdin
+1
+-5
+-5
+```
+
+```expected hidden
+count: 1
+shortest: 1
+```
+
+```checks
+must std::unordered_map :: Use a std::unordered_map for the prefix sums.
+mustnot for\s*\([^;]*;[^;]*;[^)]*\)\s*\{?\s*for\s*\( :: Avoid the O(n²) double loop: one pass with prefix sums.
 ```
 :::

@@ -272,7 +272,7 @@ Why is `std::format` generally preferred over `printf` in modern C++? (select al
 `printf` still exists and can format decimals, but it isn't type-safe and only understands built-in C types.
 :::
 
-:::exercise printf receipt
+:::exercise printf receipt {easy}
 Read a quantity and a unit price, and print a receipt line **using `std::printf`** (not `std::cout`).
 
 **Input:** an integer `qty` and a number `price`.
@@ -331,13 +331,21 @@ int main() {
 0 items at $5.00 each = $0.00
 ```
 
+```stdin
+7 0.1
+```
+
+```expected hidden
+7 items at $0.10 each = $0.70
+```
+
 ```checks
 must printf\s*\( :: Print with std::printf.
 mustnot cout :: Don't use std::cout in this exercise.
 ```
 :::
 
-:::exercise Percent score
+:::exercise Percent score {easy}
 Read the number of correct answers and the total number of questions, and print the score as a
 percentage with one decimal place, using `std::printf`.
 
@@ -400,13 +408,29 @@ Score: 1/3 (33.3%)
 Score: 0/7 (0.0%)
 ```
 
+```stdin
+7 7
+```
+
+```expected hidden
+Score: 7/7 (100.0%)
+```
+
+```stdin
+2 3
+```
+
+```expected hidden
+Score: 2/3 (66.7%)
+```
+
 ```checks
 must printf\s*\( :: Print with std::printf.
 mustnot cout :: Don't use std::cout in this exercise.
 ```
 :::
 
-:::exercise Checked scanf
+:::exercise Checked scanf {medium}
 Read two integers **with `std::scanf`** and check that it worked.
 
 **Input:** a line that should contain two integers.
@@ -469,13 +493,36 @@ error: expected two integers
 sum = 0
 ```
 
+```stdin
+```
+
+```expected hidden
+error: expected two integers
+```
+
+```stdin
+3
+```
+
+```expected hidden
+error: expected two integers
+```
+
+```stdin
++5 -5
+```
+
+```expected hidden
+sum = 0
+```
+
 ```checks
 must scanf\s*\( :: Read with std::scanf.
 mustnot \bcin\b :: Don't use std::cin in this exercise.
 ```
 :::
 
-:::exercise printf columns
+:::exercise printf columns {medium}
 Read names and scores until the end of input (use `std::cin` for reading) and print them in two columns
 **with `std::printf`**.
 
@@ -547,9 +594,173 @@ Bartholomew|    7
 Al        |   -3
 ```
 
+```stdin
+```
+
+```expected hidden
+```
+
+```stdin
+Zero 0
+Tenletters 10
+```
+
+```expected hidden
+Zero      |    0
+Tenletters|   10
+```
+
 ```checks
 must printf\s*\( :: Print with std::printf.
 must c_str\s*\( :: Pass the std::string to printf with .c_str().
 mustnot cout :: Don't use std::cout for the output.
+```
+:::
+
+:::exercise Path length {hard}
+A path is given as a list of points written like `(3,4)`. Read the points **with `std::scanf`**, add up
+the lengths of the straight segments between consecutive points, and report the result **with
+`std::printf`**.
+
+**Input:** zero or more points `(x,y)` with integer coordinates, separated by whitespace (spaces or
+newlines). Reading stops at the end of the input, or at the first thing that isn't a well-formed point.
+**Output:**
+
+- If reading stopped at a malformed point, first print `Error: bad point #K`, where `K` is its position
+  in the list (counting from 1).
+- Then `Points: N`, the number of valid points read before that.
+- Then `Length: L`, the total length with exactly 3 decimals. With fewer than two points it's `0.000`.
+
+The length of a segment from `(x1,y1)` to `(x2,y2)` is `std::sqrt(dx * dx + dy * dy)` (from `<cmath>`).
+
+For `(0,0) (3,4) (3,0)`:
+
+```
+Points: 3
+Length: 9.000
+```
+
+```cpp starter
+#include <cstdio>
+
+int main() {
+    int x = 0, y = 0;
+    if (std::scanf(" (%d,%d)", &x, &y) == 2) {
+        std::printf("Points: 1\n");
+    }
+}
+```
+
+```cpp solution
+#include <cmath>
+#include <cstdio>
+
+int main() {
+    int x = 0, y = 0;
+    int prevX = 0, prevY = 0;
+    int count = 0;
+    double length = 0.0;
+
+    int got = 0;
+    while ((got = std::scanf(" (%d,%d)", &x, &y)) == 2) {
+        if (count > 0) {
+            double dx = x - prevX;
+            double dy = y - prevY;
+            length += std::sqrt(dx * dx + dy * dy);
+        }
+        prevX = x;
+        prevY = y;
+        ++count;
+    }
+
+    if (got != EOF) {
+        std::printf("Error: bad point #%d\n", count + 1);
+    }
+    std::printf("Points: %d\n", count);
+    std::printf("Length: %.3f\n", length);
+}
+```
+
+```hint
+Literal characters in a `scanf` format must match the input exactly, and a **space** in the format
+skips any amount of whitespace. So `" (%d,%d)"` skips the whitespace before each point.
+```
+
+```hint
+`scanf` returns `2` when both numbers were stored, `EOF` when the input ended before anything matched,
+and `0` or `1` when it hit something malformed. Remember the last return value after the loop.
+```
+
+```stdin
+(0,0) (3,4) (3,0)
+```
+
+```expected
+Points: 3
+Length: 9.000
+```
+
+```stdin
+(1,1)
+```
+
+```expected
+Points: 1
+Length: 0.000
+```
+
+```stdin
+```
+
+```expected hidden
+Points: 0
+Length: 0.000
+```
+
+```stdin
+(0,0) (1,1) (1,x) (5,5)
+```
+
+```expected hidden
+Error: bad point #3
+Points: 2
+Length: 1.414
+```
+
+```stdin
+(-2,-3)
+(1,1)
+(1,-3)
+```
+
+```expected hidden
+Points: 3
+Length: 9.000
+```
+
+```stdin
+[0,0] (1,1)
+```
+
+```expected hidden
+Error: bad point #1
+Points: 0
+Length: 0.000
+```
+
+```stdin
+(0,0)   (1,2)
+  (2,4)
+```
+
+```expected hidden
+Points: 3
+Length: 4.472
+```
+
+```checks
+must scanf\s*\( :: Read the points with std::scanf.
+must printf\s*\( :: Print with std::printf.
+mustnot \bcin\b|\bcout\b :: Use C-style I/O only in this exercise.
 ```
 :::

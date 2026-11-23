@@ -259,7 +259,7 @@ On platforms where `char` is signed, bytes above 127 become negative. The functi
 that must be an `unsigned char` value or `EOF`.
 :::
 
-:::exercise Digit sum in text
+:::exercise Digit sum in text {easy}
 Read one line of text and print the sum of all the digit characters in it. Use `std::isdigit` to find
 them and `c - '0'` to get each digit's value.
 
@@ -324,13 +324,28 @@ R2-D2 and C-3PO, 1977
 31
 ```
 
+```stdin
+```
+
+```expected hidden
+0
+```
+
+```stdin
+9999999999
+```
+
+```expected hidden
+90
+```
+
 ```checks
 must isdigit :: Use std::isdigit to find the digits.
 must -\s*'0' :: Convert each digit character with c - '0'.
 ```
 :::
 
-:::exercise Title case
+:::exercise Title case {medium}
 Read one line and convert it to title case: the first letter of every word becomes uppercase and all
 other letters become lowercase. A word starts at the beginning of the line or right after a space.
 Everything else stays as it is.
@@ -404,19 +419,29 @@ x
 X
 ```
 
+```stdin
+  3RD place, ok?  yES
+```
+
+```expected hidden
+  3rd Place, Ok?  Yes
+```
+
 ```checks
 must toupper :: Use std::toupper.
 must tolower :: Use std::tolower.
 ```
 :::
 
-:::exercise Caesar cipher
-Read a shift `k` (0 or more, possibly larger than 26) and then a line of text (on the next line).
-Shift every letter `k` places forward in the alphabet, wrapping around from `z` to `a`, and keep its
-case. Non-letters stay unchanged. For example, with `k = 3`, `xyz` becomes `abc` and `Hi!` becomes `Kl!`.
+:::exercise Caesar cipher {hard}
+Read a shift `k` and then a line of text (on the next line). Shift every letter `k` places through the
+alphabet, wrapping around between `z` and `a`, and keep its case. Non-letters stay unchanged. A
+**negative** `k` shifts backwards (that's how you decrypt), and `|k|` can be as large as 10^9.
+
+For example, with `k = 3`, `xyz` becomes `abc` and `Hi!` becomes `Kl!`; with `k = -1`, `abc` becomes `zab`.
 
 **Input:** an integer `k`, then a line of text.
-**Output:** the encrypted line.
+**Output:** the shifted line.
 
 ```cpp starter
 #include <cctype>
@@ -426,9 +451,7 @@ case. Non-letters stay unchanged. For example, with `k = 3`, `xyz` becomes `abc`
 int main() {
     int k;
     std::cin >> k;
-    std::string line;
-    std::getline(std::cin >> std::ws, line);
-    std::cout << line << '\n';
+    // read the line of text, shift its letters, print it
 }
 ```
 
@@ -437,6 +460,7 @@ int main() {
 #include <iostream>
 #include <string>
 
+// k must already be in 0..25
 char shift(char c, int k) {
     unsigned char uc = static_cast<unsigned char>(c);
     if (std::islower(uc)) {
@@ -453,7 +477,10 @@ int main() {
     std::cin >> k;
     std::string line;
     std::getline(std::cin >> std::ws, line);
-    k %= 26;
+    k %= 26;             // now -25..25
+    if (k < 0) {
+        k += 26;         // shifting back by 1 is shifting forward by 25
+    }
     for (char& c : line) {
         c = shift(c, k);
     }
@@ -462,11 +489,17 @@ int main() {
 ```
 
 ```hint
+After `std::cin >> k;` the newline is still waiting. Read the text with
+`std::getline(std::cin >> std::ws, line);`.
+```
+
+```hint
 For a lowercase letter: its index is `c - 'a'`; add `k`, wrap with `% 26`, and add `'a'` back.
 ```
 
 ```hint
-Reduce `k` with `k %= 26` first so large shifts work too.
+Normalize `k` once before the loop: `k %= 26;` leaves a value from -25 to 25 (C++'s `%` keeps the sign),
+so add 26 if it's negative. Then every shift is forward by 0 to 25.
 ```
 
 ```stdin
@@ -476,6 +509,15 @@ Hello, World! xyz
 
 ```expected
 Khoor, Zruog! abc
+```
+
+```stdin
+-1
+abc XYZ
+```
+
+```expected
+zab WXY
 ```
 
 ```stdin
@@ -494,6 +536,33 @@ Zz
 
 ```expected hidden
 Aa
+```
+
+```stdin
+-27
+Hello
+```
+
+```expected hidden
+Gdkkn
+```
+
+```stdin
+1000000000
+Az
+```
+
+```expected hidden
+Ml
+```
+
+```stdin
+-1000000000
+Ml, 42!
+```
+
+```expected hidden
+Az, 42!
 ```
 
 ```checks

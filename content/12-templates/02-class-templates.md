@@ -282,7 +282,9 @@ km: 1.5
 
 `Counter<>` means "all defaults". The standard library uses this everywhere: `std::vector<T>` is really
 `std::vector<T, std::allocator<T>>`, and `std::map<K, V>` has a default comparator `std::less<K>`.
-(Since C++17 you can usually drop the `<>` too and let CTAD use the defaults, but `<>` is clearer.)
+(Since C++17 you can sometimes drop the `<>` and let CTAD fill in the arguments, but CTAD deduces from
+the initializers *before* it falls back to the defaults: `Counter clicks{"clicks"};` gives
+`Label = const char*`, not `std::string`. Writing `<>` says exactly what you mean.)
 
 ## Template aliases
 
@@ -382,7 +384,7 @@ A string literal is an array of `const char`, which decays to `const char*`. CTA
 not `std::string`.
 :::
 
-:::exercise Stack of anything
+:::exercise Stack of anything {easy}
 Write a class template `Stack<T>` with `push`, `pop`, `top`, `empty` and `size`, storing its elements in
 a `std::vector<T>`. Use one `Stack<int>` and one `Stack<std::string>`.
 
@@ -504,6 +506,16 @@ empty
 solo
 ```
 
+```stdin
+1 -9
+0
+```
+
+```expected hidden
+-9
+empty
+```
+
 ```checks
 must template\s*<\s*(typename|class)\s+\w+\s*>\s*(class|struct)\s+Stack :: Define Stack as a class template.
 must Stack\s*<\s*int\s*> :: Use a Stack<int>.
@@ -511,7 +523,7 @@ must Stack\s*<\s*std::string\s*> :: Use a Stack<std::string>.
 ```
 :::
 
-:::exercise Min-max tracker
+:::exercise Min-max tracker {medium}
 Write a class template `MinMax<T>` that remembers the smallest and largest value it has been given.
 Declare the member functions inside the class but **define them outside** it:
 
@@ -641,13 +653,33 @@ ints: -5 -5
 words: none
 ```
 
+```stdin
+3 5 7 6
+2 m z
+```
+
+```expected hidden
+ints: 5 7
+words: m z
+```
+
+```stdin
+3 -1 -1 -1
+2 b B
+```
+
+```expected hidden
+ints: -1 -1
+words: B b
+```
+
 ```checks
 must MinMax\s*<\s*T\s*>\s*::\s*add :: Define add outside the class as MinMax<T>::add.
 must MinMax\s*<\s*T\s*>\s*::\s*(min|max) :: Define min and max outside the class too.
 ```
 :::
 
-:::exercise Grid with an alias template
+:::exercise Grid with an alias template {easy}
 Define an alias template `Grid<T>` for `std::vector<std::vector<T>>` and use it to store a grid of
 integers. Then print the sum of each row.
 
@@ -733,8 +765,219 @@ int main() {
 no rows
 ```
 
+```stdin
+1 0
+```
+
+```expected hidden
+0
+```
+
 ```checks
 must template\s*<[^>]*>\s*using\s+Grid\s*= :: Define Grid as an alias template.
 must Grid\s*<\s*int\s*> :: Use Grid<int>.
+```
+:::
+
+:::exercise Min stack {hard}
+A classic interview question: build a stack that can also report its **smallest** element, where
+`push`, `pop`, `top` and `min` all run in **O(1)**. (Scanning the whole stack for `min` is O(n) and
+doesn't count.)
+
+Write a class template `MinStack<T>` with `push(const T&)`, `pop()`, `top()`, `min()`, `empty()` and
+`size()`. Then drive one `MinStack<int>` and one `MinStack<std::string>` with commands.
+
+**Input:** one command per line until the input ends. Each line starts with `i` (the int stack) or
+`s` (the string stack), followed by one of:
+
+- `push X`: push `X` (an integer for `i`, a word for `s`); prints nothing,
+- `pop`: remove the top; prints nothing,
+- `top`: print the top element,
+- `min`: print the smallest element (words compare alphabetically with `<`).
+
+`pop`, `top` and `min` on an empty stack print `error: empty` instead.
+
+**Output:** the printed lines, then a final line `sizes: I S` with the sizes of the int and string
+stacks.
+
+Example: `i push 5`, `i push 3`, `i min`, `i pop`, `i min` prints `3` and then `5`.
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    char which;
+    std::string cmd;
+    while (std::cin >> which >> cmd) {
+        // handle the command for the int stack (i) or the string stack (s)
+    }
+    std::cout << "sizes: 0 0\n";
+}
+```
+
+```cpp solution
+#include <cstddef>
+#include <iostream>
+#include <string>
+#include <vector>
+
+template <typename T>
+class MinStack {
+public:
+    void push(const T& value) {
+        items_.push_back(value);
+        // mins_.back() is always the minimum of everything currently on the stack
+        if (mins_.empty() || value < mins_.back()) mins_.push_back(value);
+        else mins_.push_back(mins_.back());
+    }
+    void pop() {
+        items_.pop_back();
+        mins_.pop_back();
+    }
+    const T& top() const { return items_.back(); }
+    const T& min() const { return mins_.back(); }
+    bool empty() const { return items_.empty(); }
+    std::size_t size() const { return items_.size(); }
+
+private:
+    std::vector<T> items_;
+    std::vector<T> mins_;   // mins_[k] = minimum of items_[0..k]
+};
+
+template <typename T>
+void handle(MinStack<T>& s, const std::string& cmd) {
+    if (cmd == "push") {
+        T value;
+        std::cin >> value;
+        s.push(value);
+        return;
+    }
+    if (s.empty()) {
+        std::cout << "error: empty\n";
+        return;
+    }
+    if (cmd == "pop") s.pop();
+    else if (cmd == "top") std::cout << s.top() << '\n';
+    else if (cmd == "min") std::cout << s.min() << '\n';
+}
+
+int main() {
+    MinStack<int> ints;
+    MinStack<std::string> words;
+    char which;
+    std::string cmd;
+    while (std::cin >> which >> cmd) {
+        if (which == 'i') handle(ints, cmd);
+        else handle(words, cmd);
+    }
+    std::cout << "sizes: " << ints.size() << ' ' << words.size() << '\n';
+}
+```
+
+```hint
+Keep a second vector next to the elements: entry `k` stores the minimum of the first `k + 1`
+elements. Pushing appends `min(value, previous minimum)`; popping pops both vectors.
+```
+
+```hint
+A common bug is to store a new minimum only when `value < currentMin`. Then pushing the same minimum
+twice and popping once loses it. The "parallel minimums" approach above has no such corner case.
+```
+
+```hint
+A function template `template <typename T> void handle(MinStack<T>& s, const std::string& cmd)` can
+process a command for either stack; for `push`, read a `T` from `std::cin`.
+```
+
+```stdin
+i push 5
+i push 3
+i min
+i pop
+i min
+i top
+s push pear
+s push apple
+s min
+s top
+```
+
+```expected
+3
+5
+5
+apple
+apple
+sizes: 1 2
+```
+
+```stdin
+i pop
+s min
+i push 7
+i top
+```
+
+```expected
+error: empty
+error: empty
+7
+sizes: 1 0
+```
+
+```stdin
+i push 2
+i push 2
+i push 4
+i pop
+i pop
+i min
+i push 1
+i min
+i pop
+i min
+i pop
+i min
+```
+
+```expected hidden
+2
+1
+2
+error: empty
+sizes: 0 0
+```
+
+```stdin
+s push kiwi
+s push Zebra
+s push apple
+s min
+s pop
+s min
+s pop
+s pop
+s top
+i push -3
+i push -10
+i push 0
+i min
+i top
+```
+
+```expected hidden
+Zebra
+Zebra
+error: empty
+-10
+0
+sizes: 3 0
+```
+
+```checks
+must template\s*<\s*(typename|class)\s+\w+\s*>\s*(class|struct)\s+MinStack :: Write MinStack as a class template.
+must MinStack\s*<\s*int\s*> :: Use a MinStack<int>.
+must MinStack\s*<\s*std::string\s*> :: Use a MinStack<std::string>.
 ```
 :::

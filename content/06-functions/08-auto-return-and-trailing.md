@@ -198,7 +198,7 @@ Which of these functions **fails** to compile?
 In `g`, the returns deduce `int` and `unsigned int`. All returns must deduce the same type.
 :::
 
-:::exercise Trailing returns
+:::exercise Trailing returns {medium}
 Rewrite both functions to use **trailing return type** syntax (`auto name(params) -> type`). Their
 behavior should stay the same.
 
@@ -269,13 +269,40 @@ The starter also has two bugs: `a / b` with two ints truncates, and `a * b` can 
 1
 ```
 
+```stdin
+-7 2
+```
+
+```expected hidden
+-14
+-3.5
+```
+
+```stdin
+46341 46341
+```
+
+```expected hidden
+2147488281
+1
+```
+
+```stdin
+1 3
+```
+
+```expected hidden
+3
+0.333333
+```
+
 ```checks
 must auto\s+product\s*\([^)]*\)\s*->\s*long\s+long :: Use a trailing return type for product.
 must auto\s+divide\s*\([^)]*\)\s*->\s*double :: Use a trailing return type for divide.
 ```
 :::
 
-:::exercise Deduce it
+:::exercise Deduce it {easy}
 Write three functions with a **deduced** `auto` return type (no trailing `->`):
 
 - `auto mid(int a, int b)` returns the average of `a` and `b` as a `double`.
@@ -360,10 +387,178 @@ zero
 true
 ```
 
+```stdin
+-4 -2
+```
+
+```expected hidden
+-3
+negative
+true
+```
+
+```stdin
+7 7
+```
+
+```expected hidden
+7
+positive
+true
+```
+
 ```checks
 must auto\s+mid\s*\([^)]*\)\s*\{ :: mid must use a deduced auto return type.
 must auto\s+label\s*\([^)]*\)\s*\{ :: label must use a deduced auto return type.
 must auto\s+isMultiple\s*\([^)]*\)\s*\{ :: isMultiple must use a deduced auto return type.
 must boolalpha :: Print the bool with std::boolalpha.
+```
+:::
+
+:::exercise Collatz records {hard}
+The **Collatz** sequence starting at `n` repeats one rule until it reaches 1: if `n` is even, halve it;
+otherwise replace it with `3n + 1`. Starting at 6: `6 3 10 5 16 8 4 2 1`, which takes **8 steps** and
+reaches a **peak** of 16.
+
+Write two **recursive** functions:
+
+- `auto steps(long long n)` with a **deduced** return type: how many steps the sequence from `n` takes
+  to reach 1 (`steps(1)` is 0).
+- `auto peak(long long n) -> long long` with a **trailing** return type: the largest value the sequence
+  from `n` reaches (including `n` itself; `peak(1)` is 1).
+
+**Input:** one integer `N` (`1 <= N <= 150000`).
+**Output:** two lines, considering every start from 1 to `N`:
+
+```
+Most steps: start=S steps=K
+Highest peak: start=S peak=P
+```
+
+If several starts tie, report the **smallest** one. For `N = 10`:
+
+```
+Most steps: start=9 steps=19
+Highest peak: start=7 peak=52
+```
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    long long n = 0;
+    std::cin >> n;
+    std::cout << "Most steps: start=" << n << " steps=0\n";
+    std::cout << "Highest peak: start=" << n << " peak=" << n << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+auto steps(long long n) {
+    if (n == 1) {
+        return 0;                       // deduces int: must come before the recursive return
+    }
+    return 1 + steps(n % 2 == 0 ? n / 2 : 3 * n + 1);
+}
+
+auto peak(long long n) -> long long {
+    if (n == 1) {
+        return 1;
+    }
+    long long rest = peak(n % 2 == 0 ? n / 2 : 3 * n + 1);
+    return rest > n ? rest : n;
+}
+
+int main() {
+    long long limit = 0;
+    std::cin >> limit;
+
+    long long bestStepsStart = 1;
+    int bestSteps = 0;
+    long long bestPeakStart = 1;
+    long long bestPeak = 1;
+    for (long long start = 1; start <= limit; ++start) {
+        int s = steps(start);
+        if (s > bestSteps) {
+            bestSteps = s;
+            bestStepsStart = start;
+        }
+        long long p = peak(start);
+        if (p > bestPeak) {
+            bestPeak = p;
+            bestPeakStart = start;
+        }
+    }
+    std::cout << "Most steps: start=" << bestStepsStart << " steps=" << bestSteps << '\n';
+    std::cout << "Highest peak: start=" << bestPeakStart << " peak=" << bestPeak << '\n';
+}
+```
+
+```hint
+In a recursive function with a deduced `auto` return type, the compiler must see a non-recursive
+`return` (the base case) **before** the recursive one.
+```
+
+```hint
+The values inside a sequence get much bigger than the start: from 113383 the sequence climbs past
+2 billion, which doesn't fit in an `int`. That's why the parameter is a `long long`.
+```
+
+```hint
+To report the smallest start on ties, only replace the record when the new value is **strictly**
+greater.
+```
+
+```stdin
+10
+```
+
+```expected
+Most steps: start=9 steps=19
+Highest peak: start=7 peak=52
+```
+
+```stdin
+1
+```
+
+```expected
+Most steps: start=1 steps=0
+Highest peak: start=1 peak=1
+```
+
+```stdin
+2
+```
+
+```expected hidden
+Most steps: start=2 steps=1
+Highest peak: start=2 peak=2
+```
+
+```stdin
+27
+```
+
+```expected hidden
+Most steps: start=27 steps=111
+Highest peak: start=27 peak=9232
+```
+
+```stdin
+120000
+```
+
+```expected hidden
+Most steps: start=106239 steps=353
+Highest peak: start=113383 peak=2482111348
+```
+
+```checks
+must auto\s+steps\s*\([^)]*\)\s*\{ :: steps must use a deduced auto return type.
+must auto\s+peak\s*\([^)]*\)\s*->\s*long\s+long :: peak must use a trailing return type.
+mustnot \bwhile\s*\( :: Compute each sequence with recursion, not a while loop.
 ```
 :::

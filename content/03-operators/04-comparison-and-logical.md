@@ -277,7 +277,7 @@ Short-circuiting only helps when the guard comes **first**. With `||`, a `true` 
 It's `(0 < x) < 10`, which is `true < 10`, which is `1 < 10`: `true`. Write `0 < x && x < 10`.
 :::
 
-:::exercise Compare two numbers
+:::exercise Compare two numbers {easy}
 Read two integers `a` and `b` and print the result of all six comparisons, using `std::boolalpha`.
 
 **Input:** two integers `a b`.
@@ -352,12 +352,38 @@ a <= b: true
 a >= b: true
 ```
 
+```stdin
+-5 3
+```
+
+```expected hidden
+a == b: false
+a != b: true
+a < b: true
+a > b: false
+a <= b: true
+a >= b: false
+```
+
+```stdin
+7 2
+```
+
+```expected hidden
+a == b: false
+a != b: true
+a < b: false
+a > b: true
+a <= b: false
+a >= b: true
+```
+
 ```checks
 must boolalpha :: Use std::boolalpha.
 ```
 :::
 
-:::exercise Leap year
+:::exercise Leap year {medium}
 A year is a leap year if it's divisible by 4, **except** years divisible by 100, which are leap years
 only if they're also divisible by 400. Read a year and print whether it's a leap year, as a single
 logical expression using `&&` and `||` (no `if`).
@@ -427,6 +453,38 @@ true
 false
 ```
 
+```stdin
+2100
+```
+
+```expected hidden
+false
+```
+
+```stdin
+1600
+```
+
+```expected hidden
+true
+```
+
+```stdin
+4
+```
+
+```expected hidden
+true
+```
+
+```stdin
+1
+```
+
+```expected hidden
+false
+```
+
 ```checks
 must &&|\band\b :: Use && (logical AND).
 must \|\||\bor\b :: Use || (logical OR).
@@ -434,7 +492,7 @@ mustnot \bif\b :: Use a single logical expression, not if.
 ```
 :::
 
-:::exercise In range
+:::exercise In range {easy}
 Read three integers `lo`, `hi` and `x`, and print whether `lo ≤ x ≤ hi` (both ends included). Careful:
 `lo <= x <= hi` compiles but is wrong.
 
@@ -497,21 +555,55 @@ true
 false
 ```
 
+```stdin
+5 5 5
+```
+
+```expected hidden
+true
+```
+
+```stdin
+-10 -1 0
+```
+
+```expected hidden
+false
+```
+
+```stdin
+-10 -1 -10
+```
+
+```expected hidden
+true
+```
+
 ```checks
 must &&|\band\b :: Combine the two comparisons with &&.
 mustnot <=\s*\w+\s*<= :: lo <= x <= hi doesn't mean what it looks like.
 ```
 :::
 
-:::exercise Close enough
-Read three decimal numbers `a`, `b` and `c`, and print whether `a + b` equals `c` **within a tolerance
-of 1e-9** (`std::abs(a + b - c) < 1e-9`, with `std::abs` from `<cmath>`). With `==`, `0.1 + 0.2` would not
-equal `0.3`.
+:::exercise Close enough {hard}
+Read three decimal numbers `a`, `b` and `c`, and print whether `a + b` equals `c` up to rounding
+errors. With `==`, `0.1 + 0.2` would not equal `0.3`.
 
-**Input:** three numbers `a b c`.
+A fixed tolerance like `1e-9` doesn't work for every size of number: for values around 10⁸, a single
+rounding step is already bigger than `1e-9`, and for values around 10⁻¹², `1e-9` accepts numbers that
+differ by a factor of three. So use a **relative** tolerance, exactly this test (note the `<=`):
+
+```
+|a + b - c| <= 1e-9 * max(|a + b|, |c|)
+```
+
+Use `std::abs` from `<cmath>` and `std::max` from `<algorithm>`.
+
+**Input:** three numbers `a b c` (absolute values below 10³⁰⁰).
 **Output:** `true` or `false`, newline. For `0.1 0.2 0.3` print `true`.
 
 ```cpp starter
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 
@@ -523,19 +615,28 @@ int main() {
 ```
 
 ```cpp solution
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 
 int main() {
     double a{}, b{}, c{};
     std::cin >> a >> b >> c;
-    constexpr double epsilon = 1e-9;
-    std::cout << std::boolalpha << (std::abs(a + b - c) < epsilon) << '\n';
+    constexpr double relativeTolerance = 1e-9;
+    double sum = a + b;
+    double difference = std::abs(sum - c);
+    double scale = std::max(std::abs(sum), std::abs(c));
+    std::cout << std::boolalpha << (difference <= relativeTolerance * scale) << '\n';
 }
 ```
 
 ```hint
-Compute the difference `a + b - c`, take its absolute value with `std::abs`, and compare it with `1e-9`.
+Compute the pieces in separate variables: `sum`, `difference = std::abs(sum - c)`, and
+`scale = std::max(std::abs(sum), std::abs(c))`. Then compare `difference <= 1e-9 * scale`.
+```
+
+```hint
+Why `<=` and not `<`? Try `0 0 0`: the difference is 0 and the scale is 0, and 0 equals 0.
 ```
 
 ```stdin
@@ -570,8 +671,40 @@ true
 false
 ```
 
+```stdin
+0 0 0
+```
+
+```expected hidden
+true
+```
+
+```stdin
+12345678.9 0.3 12345679.2
+```
+
+```expected hidden
+true
+```
+
+```stdin
+1e-12 1e-12 3e-12
+```
+
+```expected hidden
+false
+```
+
+```stdin
+1e20 1e20 2.0000001e20
+```
+
+```expected hidden
+false
+```
+
 ```checks
-must \babs\s*\(|\bfabs\s*\( :: Use std::abs to compare with a tolerance.
+must \babs\s*\(|\bfabs\s*\( :: Use std::abs to measure the difference.
 mustnot [^=!<>]==[^=] :: Don't compare floating-point numbers with ==.
 ```
 :::

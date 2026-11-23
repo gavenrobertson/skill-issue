@@ -405,7 +405,7 @@ The first parse reached the end and set the EOF/fail flags. `.str(...)` replaces
 the flags, so you must call `.clear()` too (or just create a new stream for each line).
 :::
 
-:::exercise Word stats
+:::exercise Word stats {easy}
 Read **one line** of text. Split it into words using a `std::istringstream` and `>>`, then print:
 
 ```
@@ -478,6 +478,16 @@ longest: bb
 ```
 
 ```stdin
+supercalifragilistic is longer than antidisestablishment
+second line is ignored entirely
+```
+
+```expected hidden
+words: 5
+longest: supercalifragilistic
+```
+
+```stdin
 
 ```
 
@@ -491,7 +501,7 @@ must istringstream|stringstream :: Use a string stream to split the line.
 ```
 :::
 
-:::exercise Key-value config
+:::exercise Key-value config {medium}
 Each input line is one of:
 
 - a setting `key=value` (the value is everything after the **first** `=`, and may contain spaces or more `=` signs),
@@ -583,6 +593,20 @@ empty ->
 settings: 2
 ```
 
+```stdin
+no equals sign
+#
+url=http://x.y/?a=1&b=2
+k=v=w=
+```
+
+```expected hidden
+bad line: no equals sign
+url -> http://x.y/?a=1&b=2
+k -> v=w=
+settings: 2
+```
+
 ```expected
 settings: 0
 ```
@@ -593,7 +617,7 @@ must istringstream|stringstream :: Parse each line with a string stream.
 ```
 :::
 
-:::exercise CSV totals
+:::exercise CSV totals {medium}
 The first input line is a header `name,qty,price` (skip it). Every following line is a CSV row with
 those three fields, for example `apple,3,0.50`.
 
@@ -677,6 +701,21 @@ total: 0.00
 
 ```stdin
 name,qty,price
+bolts,1000,0.015
+
+nuts,3,1.10
+washer,7,0
+```
+
+```expected hidden
+bolts: 15.00
+nuts: 3.30
+washer: 0.00
+total: 18.30
+```
+
+```stdin
+name,qty,price
 ```
 
 ```expected
@@ -688,7 +727,7 @@ must getline\s*\([^;]*',' :: Split fields with std::getline(row, field, ',').
 ```
 :::
 
-:::exercise List builder
+:::exercise List builder {easy}
 Read an integer `n`, then `n` integers. Build the text `[a, b, c]` (comma and space between items) in
 a `std::ostringstream`, then print the built string and its length:
 
@@ -765,6 +804,16 @@ length: 2
 ```expected hidden
 [-100, 0]
 length: 9
+```
+
+```stdin
+1
+-2147483648
+```
+
+```expected hidden
+[-2147483648]
+length: 13
 ```
 
 ```checks

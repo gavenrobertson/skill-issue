@@ -393,7 +393,7 @@ Which lines compile? (select all that apply)
 Two string literals can't be added with `+`; at least one side must be a `std::string`.
 :::
 
-:::exercise Palindrome
+:::exercise Palindrome {easy}
 Read one word and print `yes` if it reads the same forwards and backwards (case-sensitive), otherwise
 `no`.
 
@@ -464,9 +464,25 @@ Abba
 ```expected hidden
 no
 ```
+
+```stdin
+abcda
+```
+
+```expected hidden
+no
+```
+
+```stdin
+noon
+```
+
+```expected hidden
+yes
+```
 :::
 
-:::exercise Key and value
+:::exercise Key and value {medium}
 Each input line should look like `key=value`. For each line, split it at the **first** `=` using
 `find` and `substr`, and print `key -> value`. Lines without any `=` print `invalid`. The value may
 be empty and may itself contain `=`.
@@ -533,6 +549,18 @@ empty ->
 eq -> a=b
 ```
 
+```stdin
+=value
+==
+k=v=
+```
+
+```expected hidden
+ -> value
+ -> =
+k -> v=
+```
+
 ```checks
 must \.find\s*\( :: Locate the '=' with find.
 must \.substr\s*\( :: Extract the parts with substr.
@@ -540,7 +568,7 @@ must npos :: Compare the result of find with std::string::npos.
 ```
 :::
 
-:::exercise Sum a CSV line
+:::exercise Sum a CSV line {medium}
 Read one line of comma-separated integers, like `3,14,-2`, and print their sum. Split the line with
 `find` and `substr`, and convert each piece with `std::stoi`.
 
@@ -612,13 +640,21 @@ When `find` returns `npos`, the last piece is `line.substr(start)`.
 97
 ```
 
+```stdin
+0,-0,10,-10
+```
+
+```expected hidden
+0
+```
+
 ```checks
 must stoi :: Convert each piece with std::stoi.
 must \.find\s*\( :: Find the commas with find.
 ```
 :::
 
-:::exercise Replace all
+:::exercise Replace all {hard}
 Read three lines: a `text`, a non-empty `from` string, and a `to` string (may be empty). Replace
 **every** occurrence of `from` in `text` with `to`, scanning left to right, and print the result.
 Replacements must not be scanned again (so replacing `a` with `aa` doesn't loop forever).
@@ -700,6 +736,46 @@ a-b-c
 
 ```expected hidden
 abc
+```
+
+```stdin
+a--b--
+-
+
+```
+
+```expected hidden
+ab
+```
+
+```stdin
+aaaaa
+aa
+b
+```
+
+```expected hidden
+bba
+```
+
+```stdin
+abababa
+aba
+X
+```
+
+```expected hidden
+XbX
+```
+
+```stdin
+cat
+cat
+catcat
+```
+
+```expected hidden
+catcat
 ```
 
 ```checks

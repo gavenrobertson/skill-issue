@@ -386,7 +386,7 @@ An empty unary `+` fold has no value to produce, so `sumA()` fails. A binary fol
 value (`0`), and an empty `&&` fold is `true`. A unary fold with a single element is just that element.
 :::
 
-:::exercise Sum them all
+:::exercise Sum them all {easy}
 Write a variadic function template `sum` that adds any number of arguments using a **fold expression**,
 and returns `0` when called with no arguments.
 
@@ -461,13 +461,25 @@ To allow `sum()` with no arguments, use a **binary** fold with `0` as the initia
 0
 ```
 
+```stdin
+100 200 300
+-0.5 0.25
+```
+
+```expected hidden
+600
+-0.25
+99.5
+0
+```
+
 ```checks
 must typename\s*\.\.\. :: Declare a template parameter pack with typename...
 must \.\.\.\s*\+|\+\s*\.\.\. :: Use a fold expression over +.
 ```
 :::
 
-:::exercise Print with separators
+:::exercise Print with separators {easy}
 Write a variadic function template `print` that prints its arguments separated by `, ` and followed by a
 newline. It must work with arguments of different types. (You may assume at least one argument.)
 
@@ -543,12 +555,22 @@ Recursion with a base case works too.
 -1, x, 0
 ```
 
+```stdin
+0 a -1.5
+```
+
+```expected hidden
+0
+0, a
+0, a, -1.5
+```
+
 ```checks
 must typename\s*\.\.\. :: Make print a variadic template.
 ```
 :::
 
-:::exercise Recursive minimum
+:::exercise Recursive minimum {medium}
 Write a variadic function template `minOf(first, rest...)` that returns the smallest of its arguments
 using **recursion** (not a fold): the minimum of one value is that value, and the minimum of several is
 the smaller of the first and the minimum of the rest. All arguments have the same type.
@@ -623,13 +645,33 @@ In the recursive case: compute `minOf(rest...)`, then return whichever of `first
 -2
 ```
 
+```stdin
+9 8 7 6 5
+```
+
+```expected hidden
+9
+7
+5
+```
+
+```stdin
+-1 5 -3 2 -10
+```
+
+```expected hidden
+-1
+-3
+-10
+```
+
 ```checks
 must typename\s*\.\.\. :: Make minOf a variadic template.
 must minOf\s*\(\s*rest\s*\.\.\.\s*\) :: Recurse with minOf(rest...).
 ```
 :::
 
-:::exercise All and any
+:::exercise All and any {medium}
 Write two variadic templates using `&&` and `||` folds:
 
 - `allPositive(xs...)`: true if every argument is greater than 0 (true for no arguments),
@@ -713,9 +755,210 @@ empty all/any: yes no
 count: 4
 ```
 
+```stdin
+1 1 1 0
+```
+
+```expected hidden
+all positive: no
+any even: yes
+empty all/any: yes no
+count: 4
+```
+
+```stdin
+-3 -5 -7 1
+```
+
+```expected hidden
+all positive: no
+any even: no
+empty all/any: yes no
+count: 4
+```
+
 ```checks
 must &&\s*\.\.\. :: Use an && fold expression.
 must \|\|\s*\.\.\. :: Use an || fold expression.
 must sizeof\s*\.\.\. :: Use sizeof... to count the arguments.
+```
+:::
+
+:::exercise Mini formatter {hard}
+C++20's `std::format("{} has {} points", name, score)` fills `{}` placeholders with its arguments.
+Write your own small version as a variadic template:
+
+```cpp
+template <typename... Ts>
+std::string format(const std::string& fmt, const Ts&... args);
+```
+
+Rules, scanning `fmt` from left to right:
+
+- `{}` is replaced by the next argument, printed the way `operator<<` prints it.
+- `{{` produces a literal `{` and `}}` produces a literal `}`.
+- Any other `{` or `}` is copied unchanged.
+- If the number of `{}` placeholders differs from the number of arguments, the whole result is
+  `error: P placeholders, A arguments` instead.
+
+**Input:** the first line holds a word, an integer and a decimal number: the three values you can pass.
+Each following line is `k text`: call `format(text, ...)` with the **first `k`** of those values
+(`0 <= k <= 3`); `text` is the rest of the line after the single space and may contain spaces.
+**Output:** one line per call with the result.
+
+Example: with first line `Ada 42 2.5`, the line `2 {} scored {}!` prints `Ada scored 42!`.
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string word;
+    int number;
+    double real;
+    std::cin >> word >> number >> real;
+    std::string line;
+    std::getline(std::cin, line);   // finish the first line
+    while (std::getline(std::cin, line)) {
+        int k = line[0] - '0';
+        std::string text = line.substr(2);
+        // call format(text, ...) with the first k values
+        std::cout << text << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <cstddef>
+#include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
+template <typename T>
+std::string toText(const T& value) {
+    std::ostringstream out;
+    out << value;
+    return out.str();
+}
+
+template <typename... Ts>
+std::string format(const std::string& fmt, const Ts&... args) {
+    // Turn every argument into text, in order, with a comma fold.
+    std::vector<std::string> parts;
+    (parts.push_back(toText(args)), ...);
+
+    std::string result;
+    std::size_t next = 0, placeholders = 0;
+    for (std::size_t i = 0; i < fmt.size(); ++i) {
+        char c = fmt[i];
+        char after = i + 1 < fmt.size() ? fmt[i + 1] : '\0';
+        if (c == '{' && after == '{') {
+            result += '{';
+            ++i;
+        } else if (c == '}' && after == '}') {
+            result += '}';
+            ++i;
+        } else if (c == '{' && after == '}') {
+            ++placeholders;
+            if (next < parts.size()) result += parts[next++];
+            ++i;
+        } else {
+            result += c;
+        }
+    }
+    if (placeholders != sizeof...(args)) {
+        return "error: " + std::to_string(placeholders) + " placeholders, " +
+               std::to_string(sizeof...(args)) + " arguments";
+    }
+    return result;
+}
+
+int main() {
+    std::string word;
+    int number;
+    double real;
+    std::cin >> word >> number >> real;
+    std::string line;
+    std::getline(std::cin, line);
+    while (std::getline(std::cin, line)) {
+        if (line.size() < 2) continue;
+        int k = line[0] - '0';
+        std::string text = line.substr(2);
+        switch (k) {
+            case 0: std::cout << format(text) << '\n'; break;
+            case 1: std::cout << format(text, word) << '\n'; break;
+            case 2: std::cout << format(text, word, number) << '\n'; break;
+            default: std::cout << format(text, word, number, real) << '\n'; break;
+        }
+    }
+}
+```
+
+```hint
+The arguments have different types, so first turn each one into a `std::string`. A comma fold runs a
+statement once per argument, in order: `(parts.push_back(toText(args)), ...);` where `toText` writes
+its argument into a `std::ostringstream`.
+```
+
+```hint
+Scan the format string with an index. Look at the current character **and the next one** to decide
+between `{{`, `}}`, `{}` and an ordinary character, and skip both characters of a pair.
+```
+
+```hint
+`sizeof...(args)` is the number of arguments. Count the placeholders while scanning and compare at
+the end. The `main` only needs a `switch` on `k` with four calls.
+```
+
+```stdin
+Ada 42 2.5
+2 {} scored {}!
+3 {}: {} points, ratio {}
+0 no placeholders here
+```
+
+```expected
+Ada scored 42!
+Ada: 42 points, ratio 2.5
+no placeholders here
+```
+
+```stdin
+Bob 7 0.125
+1 {{literal}} and {}
+2 {} {}{}
+0 {}
+```
+
+```expected
+{literal} and Bob
+error: 3 placeholders, 2 arguments
+error: 1 placeholders, 0 arguments
+```
+
+```stdin
+x -3 1e3
+3 {}{}{}
+1 {x} } { {}
+0 {{}}
+1 {{{}}}
+3 {} {{ {} }} {}
+2 {}
+```
+
+```expected hidden
+x-31000
+{x} } { x
+{}
+{x}
+x { -3 } 1000
+error: 1 placeholders, 2 arguments
+```
+
+```checks
+must typename\s*\.\.\. :: Make format a variadic template.
+must sizeof\s*\.\.\. :: Use sizeof... to count the arguments.
+must \.\.\.\s*\) :: Expand the argument pack (a fold or a pack expansion).
 ```
 :::

@@ -300,7 +300,7 @@ A class is abstract if it declares or inherits a pure virtual function without a
 You can have pointers and references to an abstract type, but never an object of it.
 :::
 
-:::exercise Shape table
+:::exercise Shape table {easy}
 Make `Shape` abstract with **pure virtual** `area()` and `name()`, and write three concrete shapes:
 
 - `Circle(r)`: area `π·r²` (use `3.14159265358979`), name `circle`
@@ -445,7 +445,7 @@ must class\s+Triangle\s*:\s*public\s+Shape :: Write a Triangle class derived fro
 ```
 :::
 
-:::exercise Command machine
+:::exercise Command machine {medium}
 Build a tiny interpreter. `Command` is an abstract class with one pure virtual function
 `void apply(long long& acc) const`. Write three commands:
 
@@ -598,7 +598,7 @@ must make_unique\s*<\s*Neg\s*> :: Create commands with std::make_unique.
 ```
 :::
 
-:::exercise Payslips
+:::exercise Payslips {medium}
 Use the **template method** pattern: the abstract base `Worker` has a **non-virtual** `printPayslip()`
 that calls two **pure virtual** functions, `title()` and `monthlyPay()`. Write three concrete workers:
 

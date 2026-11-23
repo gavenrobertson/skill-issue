@@ -315,7 +315,7 @@ while (in >> c) std::cout << '[' << c << ']';
 Formatted input with `>>` skips whitespace, so the space is never read into `c`. Use `in.get(c)` to see it.
 :::
 
-:::exercise Count characters and lines
+:::exercise Count characters and lines {easy}
 Read **all** of standard input character by character using `std::cin.get(c)` and print how many
 characters there were in total (including spaces and newlines) and how many of them were newlines.
 
@@ -385,6 +385,15 @@ chars: 8
 lines: 3
 ```
 
+```stdin
+	 tab
+```
+
+```expected hidden
+chars: 5
+lines: 0
+```
+
 ```expected
 chars: 0
 lines: 0
@@ -395,7 +404,7 @@ must \.get\s*\( :: Read characters with std::cin.get(c).
 ```
 :::
 
-:::exercise One printer, any stream
+:::exercise One printer, any stream {easy}
 Write a function `void printSquares(std::ostream& out, int n)` that writes the lines `1^2 = 1`,
 `2^2 = 4`, ... up to `n^2 = ...` (one per line) to `out`.
 
@@ -483,13 +492,39 @@ captured 33 characters
 captured 0 characters
 ```
 
+```stdin
+-3
+```
+
+```expected hidden
+captured 0 characters
+```
+
+```stdin
+10
+```
+
+```expected hidden
+1^2 = 1
+2^2 = 4
+3^2 = 9
+4^2 = 16
+5^2 = 25
+6^2 = 36
+7^2 = 49
+8^2 = 64
+9^2 = 81
+10^2 = 100
+captured 89 characters
+```
+
 ```checks
 must std::ostream\s*& :: printSquares should take a std::ostream& parameter.
 must ostringstream :: Capture the output in a std::ostringstream.
 ```
 :::
 
-:::exercise Sum from any source
+:::exercise Sum from any source {medium}
 Write `long long sumStream(std::istream& in)` that reads integers from `in` until it can't read any
 more and returns their sum.
 
@@ -566,6 +601,17 @@ rest: 7
 ```
 
 ```stdin
+-1 -2 x 5
+3
+4 y 5
+```
+
+```expected hidden
+first line: -3
+rest: 7
+```
+
+```stdin
 4000000000 4000000000
 ```
 
@@ -579,3 +625,192 @@ must std::istream\s*& :: sumStream should take a std::istream& parameter.
 must istringstream :: Wrap the first line in a std::istringstream.
 ```
 :::
+
+:::exercise Comment stripper {hard}
+Write a tool that removes the comments from C++ source code, reading standard input **character by
+character** with `get` and looking ahead with `peek`.
+
+Rules:
+
+- `//` starts a **line comment**: drop everything up to, but not including, the next newline (the
+  newline itself is kept).
+- `/*` starts a **block comment** that ends at the next `*/`. Replace the whole comment with a single
+  space. (So `/*/ x */` is one complete comment, and `/**/` is an empty one.)
+- Inside a string literal `"..."` or a character literal `'...'`, nothing is a comment: copy the literal
+  unchanged up to its closing quote. A backslash inside a literal makes the **next** character part of
+  the literal too, so `"say \"hi\" // not a comment"` and `'\''` are each one literal.
+- Everything else is copied unchanged, including a `/` that doesn't start a comment (like `a / b`).
+- If the input ends inside a block comment, print what you have so far, then the line
+  `error: unterminated comment` (on a new line if the text so far doesn't end with a newline).
+
+For example:
+
+```
+int x = 5; // the answer
+/* a block
+   comment */int y = x / 2;
+std::string s = "not // a comment";
+```
+
+becomes
+
+```
+int x = 5; 
+ int y = x / 2;
+std::string s = "not // a comment";
+```
+
+(The checker ignores spaces at the end of a line, so the space left after `5;` doesn't matter.)
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    char c;
+    while (std::cin.get(c)) {
+        std::cout.put(c);   // TODO: drop the comments
+    }
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    constexpr auto eof = std::istream::traits_type::eof();
+    bool endsWithNewline = true;   // does the output so far end with '\n' (or is it empty)?
+    auto put = [&endsWithNewline](char ch) {
+        std::cout.put(ch);
+        endsWithNewline = ch == '\n';
+    };
+
+    char c;
+    while (std::cin.get(c)) {
+        if (c == '/' && std::cin.peek() == '/') {
+            while (std::cin.peek() != eof && std::cin.peek() != '\n') std::cin.get();   // keep the '\n'
+        } else if (c == '/' && std::cin.peek() == '*') {
+            std::cin.get();   // the '*' of "/*": it can't also be the '*' of "*/"
+            bool closed = false;
+            char d;
+            while (std::cin.get(d)) {
+                if (d == '*' && std::cin.peek() == '/') {
+                    std::cin.get();
+                    closed = true;
+                    break;
+                }
+            }
+            if (!closed) {
+                if (!endsWithNewline) std::cout << '\n';
+                std::cout << "error: unterminated comment\n";
+                return 0;
+            }
+            put(' ');
+        } else if (c == '"' || c == '\'') {
+            const char quote = c;
+            put(c);
+            char d;
+            while (std::cin.get(d)) {
+                put(d);
+                if (d == '\\') {
+                    if (std::cin.get(d)) put(d);   // escaped character: copy it, whatever it is
+                } else if (d == quote) {
+                    break;
+                }
+            }
+        } else {
+            put(c);
+        }
+    }
+}
+```
+
+```hint
+`std::cin.peek()` returns the next character **without** consuming it (as an `int`, or `EOF` at the
+end). After reading a `/`, peek: another `/` or a `*` means a comment starts; anything else means the
+`/` was just a division.
+```
+
+```hint
+Handle literals as their own little loop: once you've copied an opening quote, copy characters until the
+matching quote. When you meet a backslash, copy it **and** the character after it without looking at
+that character, so `\"` can't end the string.
+```
+
+```hint
+After `/*`, the `*` is already consumed, so `/*/` doesn't close the comment: you need a `*` that is
+followed by `/`.
+```
+
+```stdin
+int x = 5; // the answer
+/* a block
+   comment */int y = x / 2;
+std::string s = "not // a comment";
+```
+
+```expected
+int x = 5;
+ int y = x / 2;
+std::string s = "not // a comment";
+```
+
+```stdin
+a = 1; /* oops
+b = 2;
+```
+
+```expected
+a = 1;
+error: unterminated comment
+```
+
+```stdin
+char q = '\''; // quote
+puts("\"/*\" \\"); /**/x
+/*/ still a comment */y = a / b / c;
+z = a//b
+*/ stays
+c = '/'; d = '"'; // "
+e = "\\\\"; /* tail */
+f = 1 / 2 /
+```
+
+```expected hidden
+char q = '\'';
+puts("\"/*\" \\");  x
+ y = a / b / c;
+z = a
+*/ stays
+c = '/'; d = '"';
+e = "\\\\";
+f = 1 / 2 /
+```
+
+```stdin
+// only a comment
+/* multi
+line */
+"unterminated string /* not a comment
+```
+
+```expected hidden
+
+
+"unterminated string /* not a comment
+```
+
+```stdin
+x /*
+```
+
+```expected hidden
+x
+error: unterminated comment
+```
+
+```checks
+must \.get\s*\( :: Read character by character with get.
+must \.peek\s*\( :: Look ahead with peek.
+```
+:::
+

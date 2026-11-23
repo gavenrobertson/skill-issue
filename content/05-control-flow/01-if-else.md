@@ -412,7 +412,7 @@ Which conditions are true when `x` is `50`? (select all that apply)
 `0 <= x <= 10` is `(0 <= x) <= 10`, which is `1 <= 10`: always true, and almost certainly a bug.
 :::
 
-:::exercise Even or odd
+:::exercise Even or odd {easy}
 Read an integer and say whether it's even or odd.
 
 **Input:** one integer `n` (may be negative).
@@ -482,13 +482,21 @@ Careful with negatives: `-3 % 2` is `-1`, not `1`. Testing `== 0` works for both
 0 is even
 ```
 
+```stdin
+-2147483648
+```
+
+```expected hidden
+-2147483648 is even
+```
+
 ```checks
 must \bif\s*\( :: Use an if statement.
 must \belse\b :: Use else for the other case.
 ```
 :::
 
-:::exercise Letter grade
+:::exercise Letter grade {easy}
 Read a score from 0 to 100 and print its letter grade.
 
 **Input:** one integer `score` (0 to 100).
@@ -592,12 +600,36 @@ D
 C
 ```
 
+```stdin
+89
+```
+
+```expected hidden
+B
+```
+
+```stdin
+0
+```
+
+```expected hidden
+F
+```
+
+```stdin
+70
+```
+
+```expected hidden
+C
+```
+
 ```checks
 must else\s+if :: Use an else-if chain.
 ```
 :::
 
-:::exercise Leap year
+:::exercise Leap year {medium}
 Read a year and say whether it's a leap year. A year is a leap year if it's divisible by 4, **except**
 years divisible by 100, which are only leap years if they're also divisible by 400.
 (So 2024 and 2000 are leap years; 1900 and 2023 are not.)
@@ -673,13 +705,29 @@ Then "or divisible by 400": combine the two with `||`. Parentheses make the grou
 2023 is not a leap year
 ```
 
+```stdin
+2100
+```
+
+```expected hidden
+2100 is not a leap year
+```
+
+```stdin
+2400
+```
+
+```expected hidden
+2400 is a leap year
+```
+
 ```checks
 must && :: Combine conditions with &&.
 must \|\| :: Combine conditions with ||.
 ```
 :::
 
-:::exercise Triangle type
+:::exercise Triangle type {hard}
 Read three side lengths and classify the triangle.
 
 **Input:** three positive integers `a`, `b`, `c`.
@@ -777,6 +825,30 @@ isosceles
 
 ```expected hidden
 invalid
+```
+
+```stdin
+1 1 2
+```
+
+```expected hidden
+invalid
+```
+
+```stdin
+4 6 6
+```
+
+```expected hidden
+isosceles
+```
+
+```stdin
+2 3 4
+```
+
+```expected hidden
+scalene
 ```
 
 ```checks

@@ -467,7 +467,7 @@ just less efficient).
 type name explicitly is fine.
 :::
 
-:::exercise Point constructors
+:::exercise Point constructors {easy}
 Complete the `Point` class with:
 
 - a **default constructor** that makes the point `(0, 0)`,
@@ -563,7 +563,7 @@ must Point\s*\(\s*int\s+\w+\s*,\s*int\s+\w+\s*\) :: Write a Point(int, int) cons
 ```
 :::
 
-:::exercise Delegating clock
+:::exercise Delegating clock {easy}
 Write a `Clock` class with:
 
 - a main constructor `Clock(int h, int m, int s)` that stores the time,
@@ -680,7 +680,7 @@ must \)\s*:\s*Clock\s*[({] :: Delegate to another constructor with : Clock(...).
 ```
 :::
 
-:::exercise Reduced fraction
+:::exercise Reduced fraction {medium}
 Write a `Fraction` class whose constructor `Fraction(int num, int den)` stores the fraction in
 **lowest terms** with a **positive denominator**. Also give it an **`explicit`** single-argument
 constructor `Fraction(int whole)` that delegates to make `whole/1`. Add `void print() const` that
@@ -798,5 +798,171 @@ In the constructor body: if the denominator is negative, flip both signs. Then d
 ```checks
 must \bexplicit\s+Fraction\s*\( :: Mark the single-argument constructor explicit.
 must \)\s*:\s*Fraction\s*[({] :: Make Fraction(int) delegate to Fraction(int, int).
+```
+:::
+
+:::exercise Normalizing dates {hard}
+Write a `Date` class whose constructors **always produce a valid date**, however strange the
+arguments. Out-of-range parts roll over the way a calendar does:
+
+- months outside `1..12` move into the next or previous years (month `13` of 2023 is January 2024,
+  month `0` of 2023 is December 2022, month `-11` of 2023 is January 2022),
+- then days outside the month move into the following or preceding months (February 30 is March 1 or 2,
+  day `0` is the last day of the previous month, day `-30` of January is December 1 of the previous year).
+
+Use the Gregorian leap-year rule: a year is a leap year if it is divisible by 4, except years divisible by
+100, which are leap years only if they are also divisible by 400 (2000 yes, 1900 no).
+
+Provide `Date(int y, int m, int d)` (does the normalizing), `Date(int y, int m)` (day 1) and an
+**`explicit`** `Date(int y)` (January 1), the last two **delegating** to the first, and a
+`void print() const` that prints `YYYY-MM-DD`.
+
+**Input:** lines until end of input, each a count `k` (1, 2 or 3) followed by `k` integers. Use the
+constructor with that many arguments. Every result has a year between 1000 and 9999.
+**Output:** one normalized date per line.
+
+```cpp starter
+#include <iomanip>
+#include <iostream>
+
+class Date {
+    int y_ = 1970, m_ = 1, d_ = 1;
+public:
+    void print() const {
+        std::cout << std::setfill('0') << std::setw(4) << y_ << '-' << std::setw(2) << m_ << '-'
+                  << std::setw(2) << d_ << '\n';
+    }
+};
+
+int main() {
+    int k;
+    while (std::cin >> k) {
+        int a = 0, b = 0, c = 0;
+        if (k >= 1) std::cin >> a;
+        if (k >= 2) std::cin >> b;
+        if (k >= 3) std::cin >> c;
+        Date().print();   // build the Date with the matching constructor
+    }
+}
+```
+
+```cpp solution
+#include <iomanip>
+#include <iostream>
+
+class Date {
+    int y_ = 1970, m_ = 1, d_ = 1;
+
+    static bool isLeap(int y) { return (y % 4 == 0 && y % 100 != 0) || y % 400 == 0; }
+    static int daysIn(int y, int m) {
+        static const int days[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+        return m == 2 && isLeap(y) ? 29 : days[m - 1];
+    }
+
+public:
+    Date(int y, int m, int d) {
+        // months: count from a zero-based month index, flooring for negatives
+        long long total = static_cast<long long>(y) * 12 + (m - 1);
+        long long yy = total >= 0 ? total / 12 : (total - 11) / 12;
+        y_ = static_cast<int>(yy);
+        m_ = static_cast<int>(total - yy * 12) + 1;
+        // days: walk month by month
+        while (d > daysIn(y_, m_)) {
+            d -= daysIn(y_, m_);
+            if (++m_ == 13) { m_ = 1; ++y_; }
+        }
+        while (d < 1) {
+            if (--m_ == 0) { m_ = 12; --y_; }
+            d += daysIn(y_, m_);
+        }
+        d_ = d;
+    }
+    Date(int y, int m) : Date(y, m, 1) {}
+    explicit Date(int y) : Date(y, 1, 1) {}
+
+    void print() const {
+        std::cout << std::setfill('0') << std::setw(4) << y_ << '-' << std::setw(2) << m_ << '-'
+                  << std::setw(2) << d_ << '\n';
+    }
+};
+
+int main() {
+    int k;
+    while (std::cin >> k) {
+        int a = 0, b = 0, c = 0;
+        if (k >= 1) std::cin >> a;
+        if (k >= 2) std::cin >> b;
+        if (k >= 3) std::cin >> c;
+        if (k == 3) Date(a, b, c).print();
+        else if (k == 2) Date(a, b).print();
+        else Date(a).print();
+    }
+}
+```
+
+```hint
+Normalize the month first, then the day. For the month, think of `y * 12 + (m - 1)` as "months since
+year 0" and split it back into a year and a month. Careful: in C++, `-1 / 12` is `0` and `-1 % 12` is
+`-1` (division truncates toward zero), so negative month counts need extra care.
+```
+
+```hint
+For the day, loop: while the day is larger than the current month's length, subtract that length and
+move to the next month; while it's less than 1, move to the previous month and add its length.
+```
+
+```stdin
+3 2024 2 30
+3 2023 2 29
+3 2024 3 0
+2 2023 14
+1 1999
+```
+
+```expected
+2024-03-01
+2023-03-01
+2024-02-29
+2024-02-01
+1999-01-01
+```
+
+```stdin
+3 1900 2 29
+3 2000 2 29
+3 2023 0 15
+3 2023 -11 1
+3 2024 1 -30
+3 2023 12 32
+```
+
+```expected hidden
+1900-03-01
+2000-02-29
+2022-12-15
+2022-01-01
+2023-12-01
+2024-01-01
+```
+
+```stdin
+3 2024 1 366
+3 2023 1 400
+3 2023 25 1
+3 2024 3 -365
+2 2024 -24
+```
+
+```expected hidden
+2024-12-31
+2024-02-04
+2025-01-01
+2023-03-01
+2021-12-01
+```
+
+```checks
+must explicit\s+Date\s*\(\s*int\s+\w+\s*\) :: Mark the one-argument constructor explicit.
+must \)\s*:\s*Date\s*\( :: Make the shorter constructors delegate to Date(int, int, int).
 ```
 :::

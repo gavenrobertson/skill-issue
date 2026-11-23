@@ -390,7 +390,7 @@ When is a file opened by `std::ofstream out("a.txt");` inside a function closed 
 File streams follow RAII: the destructor flushes and closes the file at the end of the object's scope.
 :::
 
-:::exercise Numbered copy
+:::exercise Numbered copy {easy}
 Read every line of standard input and write it to a file named `ex_numbered.txt`, prefixing each line
 with its line number, a colon, and a space (`1: first line`). Close the file, then open it again
 with `std::ifstream`, print its contents line by line, and finally print `lines: <n>`.
@@ -471,6 +471,16 @@ after a blank
 lines: 3
 ```
 
+```stdin
+
+
+```
+
+```expected hidden
+1:
+lines: 1
+```
+
 ```expected
 lines: 0
 ```
@@ -481,7 +491,7 @@ must ifstream :: Read it back with std::ifstream.
 ```
 :::
 
-:::exercise Append-only log
+:::exercise Append-only log {medium}
 Each input line is a command:
 
 - `log <message>`: append `<message>` as a new line to the file `ex_events.log` (open it with `std::ios::app` **each time**),
@@ -593,13 +603,31 @@ show
 (1 entries)
 ```
 
+```stdin
+log first
+logout
+log  two spaces
+show
+log
+show
+```
+
+```expected hidden
+- first
+-  two spaces
+(2 entries)
+- first
+-  two spaces
+(2 entries)
+```
+
 ```checks
 must ios::app :: Open the log with std::ios::app.
 must ios::trunc :: Create the empty log with std::ios::trunc.
 ```
 :::
 
-:::exercise Word frequency from a file
+:::exercise Word frequency from a file {easy}
 Copy all of standard input into a file `ex_words.txt`. Then read the file back **word by word** (with
 `>>`), counting how often each word occurs, and print each distinct word with its count, in
 alphabetical order, as `<word> <count>`. Finish with `distinct: <n>`. Delete the file at the end.
@@ -682,6 +710,18 @@ go 1
 distinct: 3
 ```
 
+```stdin
+b a
+
+	a	b b
+```
+
+```expected hidden
+a 2
+b 3
+distinct: 2
+```
+
 ```expected
 distinct: 0
 ```
@@ -692,7 +732,7 @@ must ifstream :: Read the words back with std::ifstream.
 ```
 :::
 
-:::exercise Binary round trip
+:::exercise Binary round trip {medium}
 Read `n` and then `n` integers. Write them to the binary file `ex_ints.bin` using `std::ios::binary`
 and `.write` (first the count as an `int`, then the values). Close it, then read the file back with
 `.read` into a new `std::vector<int>`.
@@ -784,6 +824,17 @@ sum: 100005
 bytes: 4
 
 sum: 0
+```
+
+```stdin
+1
+-2147483648
+```
+
+```expected hidden
+bytes: 8
+-2147483648
+sum: -2147483648
 ```
 
 ```stdin

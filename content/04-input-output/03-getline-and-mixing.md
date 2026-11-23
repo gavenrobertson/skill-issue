@@ -286,7 +286,7 @@ The input is `  a b` (two spaces, `a`, space, `b`). What does `c` contain after 
 spaces and read `'a'`.
 :::
 
-:::exercise Echo the line
+:::exercise Echo the line {easy}
 Read one whole line and print it back inside double quotes, exactly as typed (including all spaces).
 
 **Input:** one line of text.
@@ -336,12 +336,29 @@ You said: "Hello,   world!"
 You said: "  two leading spaces"
 ```
 
+```stdin
+tabs	and  spaces  
+```
+
+```expected hidden
+You said: "tabs	and  spaces  "
+```
+
+```stdin
+first line
+second line
+```
+
+```expected hidden
+You said: "first line"
+```
+
 ```checks
 must getline :: Read the line with std::getline.
 ```
 :::
 
-:::exercise Age then name
+:::exercise Age then name {easy}
 The starter has the classic `>>`-then-`getline` bug. Fix it.
 
 **Input:** an age on the first line, and a full name (may contain spaces) on the second line.
@@ -422,7 +439,7 @@ must getline :: Keep using std::getline for the name.
 ```
 :::
 
-:::exercise Three characters
+:::exercise Three characters {easy}
 Read the first three characters of the input **exactly as they are**, including spaces, and print
 each one inside square brackets.
 
@@ -479,12 +496,20 @@ a b c
 [a][ ][b]
 ```
 
+```stdin
+	ab
+```
+
+```expected hidden
+[	][a][b]
+```
+
 ```checks
 must \.get\s*\( :: Read the characters with std::cin.get().
 ```
 :::
 
-:::exercise Name card
+:::exercise Name card {medium}
 Read a full name, an age, and a city, each on its own line, and print a small card. Both the name
 and the city may contain spaces.
 
@@ -579,7 +604,139 @@ Age: 0
 City: Helsinki
 ```
 
+```stdin
+  Ada  King
+36
+   London  Town
+```
+
+```expected hidden
+Name:   Ada  King
+Age: 36
+City: London  Town
+```
+
+```stdin
+X
+7
+Y
+```
+
+```expected hidden
+Name: X
+Age: 7
+City: Y
+```
+
 ```checks
 must getline :: Use std::getline for the lines that may contain spaces.
+```
+:::
+
+:::exercise CSV record {hard}
+Parse one line of comma-separated data: `last,first,age,city`.
+
+**Input:** one line with four fields separated by commas:
+
+- After each comma there may be **any number of spaces** (including none). They are not part of the
+  next field.
+- `last`, `first` and `city` may contain spaces inside them (`van Rossum`, `New York City`).
+- `age` is an integer.
+- `city` is everything after the third comma, up to the end of the line. It may even contain more
+  commas (`Belmont, California`).
+
+**Output:** `<first> <last>, age <age>, lives in <city>`
+
+| Input | Output |
+| --- | --- |
+| `Lovelace,Ada,36,London` | `Ada Lovelace, age 36, lives in London` |
+| `van Rossum,  Guido, 68,   Belmont, California` | `Guido van Rossum, age 68, lives in Belmont, California` |
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string last, first, city;
+    int age = 0;
+
+    std::cout << first << ' ' << last << ", age " << age << ", lives in " << city << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string last, first, city;
+    int age = 0;
+    char comma = ' ';
+
+    std::getline(std::cin, last, ',');
+    std::getline(std::cin >> std::ws, first, ',');
+    std::cin >> age >> comma;                 // >> skips the spaces before the age; then eat the ','
+    std::getline(std::cin >> std::ws, city);  // the rest of the line, commas included
+
+    std::cout << first << ' ' << last << ", age " << age << ", lives in " << city << '\n';
+}
+```
+
+```hint
+`std::getline(stream, s, ',')` reads up to the next comma and throws the comma away. Put `std::ws` in
+front of it to skip the spaces that may follow the previous comma.
+```
+
+```hint
+The age is a number, so read it with `>>`. That leaves the comma after it in the input: read it into a
+`char` (or `ignore()` one character).
+```
+
+```hint
+The city may contain commas, so don't stop at `','` for the last field. Read the rest of the line.
+```
+
+```stdin
+Lovelace,Ada,36,London
+```
+
+```expected
+Ada Lovelace, age 36, lives in London
+```
+
+```stdin
+van Rossum,  Guido, 68,   Belmont, California
+```
+
+```expected
+Guido van Rossum, age 68, lives in Belmont, California
+```
+
+```stdin
+Hopper,Grace Brewster,  85,New York City
+```
+
+```expected hidden
+Grace Brewster Hopper, age 85, lives in New York City
+```
+
+```stdin
+X,Y,0,Z
+```
+
+```expected hidden
+Y X, age 0, lives in Z
+```
+
+```stdin
+Stroustrup,   Bjarne,   73,   College Station, Texas, USA
+```
+
+```expected hidden
+Bjarne Stroustrup, age 73, lives in College Station, Texas, USA
+```
+
+```checks
+must getline\s*\([^)]*',' :: Use std::getline with ',' as the delimiter.
 ```
 :::

@@ -253,7 +253,7 @@ What does `total =+ 3;` do?
 It's parsed as `total = +3;`, an ordinary assignment of positive three. The compound operator is `+=`.
 :::
 
-:::exercise Running total
+:::exercise Running total {easy}
 Read four integers and add them up into a variable `total` (starting at 0) using the **`+=`** operator
 once per number. Print the total.
 
@@ -318,13 +318,21 @@ You can reuse the same variable `n`: read into it, add it to `total`, read the n
 106
 ```
 
+```stdin
+0 0 0 0
+```
+
+```expected hidden
+0
+```
+
 ```checks
 must \+= :: Accumulate with +=.
 mustnot total\s*=\s*total :: Use += instead of total = total + ...
 ```
 :::
 
-:::exercise Compound chain
+:::exercise Compound chain {easy}
 Read an integer `x` and apply these five updates in order, printing `x` after each one:
 
 1. `x += 5`
@@ -395,6 +403,22 @@ Integer division truncates toward zero, and `%` keeps the sign of the left opera
 105 315 313 78 1
 ```
 
+```stdin
+0
+```
+
+```expected hidden
+5 15 13 3 3
+```
+
+```stdin
+-5
+```
+
+```expected hidden
+0 0 -2 0 0
+```
+
 ```checks
 must \+= :: Use +=
 must \*= :: Use *=
@@ -404,7 +428,7 @@ must %= :: Use %=
 ```
 :::
 
-:::exercise Swap without a temporary
+:::exercise Swap without a temporary {medium}
 Read two integers `a` and `b` and swap them **without a third variable**, using only `+=` and `-=`:
 `a += b; b = a - b; a -= b;`. Work out on paper why this works!
 
@@ -463,11 +487,171 @@ After `a += b`, `a` holds `a + b`. Subtracting the old `b` from that sum gives t
 0 0
 ```
 
+```stdin
+-1000000 1000000
+```
+
+```expected hidden
+1000000 -1000000
+```
+
+```stdin
+1000000 1000000
+```
+
+```expected hidden
+1000000 1000000
+```
+
 ```checks
 must \+= :: Use +=
 must -= :: Use -=
 mustnot std::swap|\bswap\s*\( :: Don't use std::swap.
 mustnot >>\s*b\s*>>\s*a :: Don't just read the numbers in the other order.
 mustnot int\s+(temp|tmp|t)\b :: No temporary variable!
+```
+:::
+
+:::exercise Compound interest {hard}
+A savings account holds a balance in **cents** and earns interest once a year. The rate is given in
+**basis points** (1 basis point = 0.01%, so 500 means 5%). Each year:
+
+1. `interest = balance × rate / 10000`, rounded to the **nearest cent**, with exact halves rounded **up**;
+2. the interest is added to the balance.
+
+Print the balance after each of the first three years. Use compound assignment (`+=` and friends)
+to update the balance.
+
+**Input:** two integers `balance rate` (0 ≤ balance ≤ 1,000,000,000,000 and 0 ≤ rate ≤ 10,000).
+**Output:** three lines: the balance in cents after year 1, year 2 and year 3. For `100000 500`
+(1000 dollars at 5%):
+
+```
+105000
+110250
+115763
+```
+
+In year 3 the interest is 110250 × 500 / 10000 = 5512.5 cents, which rounds up to 5513.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    // read the balance and the rate, then print three yearly balances
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    constexpr long long basisPoints = 10000;
+
+    long long balance{}, rate{};
+    std::cin >> balance >> rate;
+
+    balance += (balance * rate + basisPoints / 2) / basisPoints;
+    std::cout << balance << '\n';
+    balance += (balance * rate + basisPoints / 2) / basisPoints;
+    std::cout << balance << '\n';
+    balance += (balance * rate + basisPoints / 2) / basisPoints;
+    std::cout << balance << '\n';
+}
+```
+
+```hint
+Stay in integers. Integer division rounds down, so to round to the nearest whole number add **half the
+divisor** before dividing: `(x + 5000) / 10000`.
+```
+
+```hint
+The balance can reach 8 × 10¹² cents, and `balance * rate` is up to 10,000 times bigger than that.
+Which type holds 8 × 10¹⁶?
+```
+
+```stdin
+100000 500
+```
+
+```expected
+105000
+110250
+115763
+```
+
+```stdin
+1 5000
+```
+
+```expected
+2
+3
+5
+```
+
+```stdin
+0 500
+```
+
+```expected hidden
+0
+0
+0
+```
+
+```stdin
+1000000000000 10000
+```
+
+```expected hidden
+2000000000000
+4000000000000
+8000000000000
+```
+
+```stdin
+12345 0
+```
+
+```expected hidden
+12345
+12345
+12345
+```
+
+```stdin
+99 1
+```
+
+```expected hidden
+99
+99
+99
+```
+
+```stdin
+123456789 750
+```
+
+```expected hidden
+132716048
+142669752
+153369983
+```
+
+```stdin
+1000000000000 9999
+```
+
+```expected hidden
+1999900000000
+3999600010000
+7998800059999
+```
+
+```checks
+must \+= :: Update the balance with +=.
+mustnot \bdouble\b|\bfloat\b :: Stay in integers: floating point can't represent cents exactly.
 ```
 :::

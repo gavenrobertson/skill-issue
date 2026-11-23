@@ -287,7 +287,7 @@ Floating division needs a floating-point operand **before** the division happens
 converts the already-truncated `2` to `2.0`.
 :::
 
-:::exercise Last digit
+:::exercise Last digit {easy}
 Read a non-negative integer `n`. Print its last decimal digit and the number with that digit removed,
 separated by a space.
 
@@ -342,12 +342,28 @@ int main() {
 0 0
 ```
 
+```stdin
+2000000000
+```
+
+```expected hidden
+0 200000000
+```
+
+```stdin
+10
+```
+
+```expected hidden
+0 1
+```
+
 ```checks
 must % :: Use the % operator.
 ```
 :::
 
-:::exercise Make change
+:::exercise Make change {medium}
 Read an amount in cents and give change using as many **quarters** (25¢) as possible, then **dimes**
 (10¢), then **nickels** (5¢), then **pennies** (1¢). Use `/` and `%`.
 
@@ -418,12 +434,36 @@ After taking out the quarters, what's left is `cents % 25`. Repeat the same idea
 1 0 1 0
 ```
 
+```stdin
+100000
+```
+
+```expected hidden
+4000 0 0 0
+```
+
+```stdin
+4
+```
+
+```expected hidden
+0 0 0 4
+```
+
+```stdin
+41
+```
+
+```expected hidden
+1 1 1 1
+```
+
 ```checks
 must % :: Use % to find the remaining cents.
 ```
 :::
 
-:::exercise Celsius to Fahrenheit
+:::exercise Celsius to Fahrenheit {easy}
 Read a whole-number temperature in Celsius and print it in Fahrenheit using `F = C × 9 / 5 + 32`. The
 result can have a fractional part, so make sure you're not doing integer division.
 
@@ -490,14 +530,34 @@ Make one operand a `double`, for example `9.0` instead of `9`.
 ```expected hidden
 33.8
 ```
+
+```stdin
+-273
+```
+
+```expected hidden
+-459.4
+```
+
+```stdin
+0
+```
+
+```expected hidden
+32
+```
+
 :::
 
-:::exercise Wrap around
+:::exercise Wrap around {hard}
 A clock-like counter has positions `0` to `n - 1`. Read a position `a` (which may be negative or larger
 than `n`) and the size `n`, and print the equivalent position in `0 .. n-1`. Remember that `%` keeps
 the sign of the left operand, so `-7 % 3` is `-1`, but the answer here must be `2`.
 
-**Input:** two integers `a n` (`n` ≥ 1).
+Both numbers can be anywhere in the `int` range, so watch out for intermediate results that don't fit
+in an `int`.
+
+**Input:** two integers `a n` (−2,147,483,648 ≤ a ≤ 2,147,483,647 and 1 ≤ n ≤ 2,147,483,647).
 **Output:** the wrapped position, newline. For `-7 3` print `2`.
 
 ```cpp starter
@@ -516,7 +576,8 @@ int main() {
 int main() {
     int a{}, n{};
     std::cin >> a >> n;
-    std::cout << (a % n + n) % n << '\n';
+    long long shifted = a % n + static_cast<long long>(n);   // up to 2n - 2: too big for int
+    std::cout << shifted % n << '\n';
 }
 ```
 
@@ -526,6 +587,11 @@ int main() {
 
 ```hint
 Take the remainder a second time: `(a % n + n) % n`.
+```
+
+```hint
+For a large `n` (say 2,000,000,000), `a % n + n` can be almost `2n`, which overflows an `int`
+(undefined behavior). Do that addition in `long long`.
 ```
 
 ```stdin
@@ -566,6 +632,62 @@ Take the remainder a second time: `(a % n + n) % n`.
 
 ```expected hidden
 11
+```
+
+```stdin
+2147483646 2147483647
+```
+
+```expected hidden
+2147483646
+```
+
+```stdin
+-2147483648 2147483647
+```
+
+```expected hidden
+2147483646
+```
+
+```stdin
+-2147483648 1
+```
+
+```expected hidden
+0
+```
+
+```stdin
+2000000000 2000000000
+```
+
+```expected hidden
+0
+```
+
+```stdin
+1999999999 2000000000
+```
+
+```expected hidden
+1999999999
+```
+
+```stdin
+-1999999999 2000000000
+```
+
+```expected hidden
+1
+```
+
+```stdin
+2147483647 1000000007
+```
+
+```expected hidden
+147483633
 ```
 
 ```checks

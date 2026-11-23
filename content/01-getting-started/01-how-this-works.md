@@ -60,7 +60,7 @@ Where is your progress stored?
 Progress lives in your browser's localStorage. Use Export/Import in Settings to back it up or move it.
 :::
 
-:::exercise Your first check
+:::exercise Your first check {easy}
 Let's try the workflow. The starter program prints the wrong message. Change it so the program prints
 exactly:
 

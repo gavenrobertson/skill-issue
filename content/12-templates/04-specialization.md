@@ -306,7 +306,7 @@ All three could match, and the compiler picks the most specialized. A full speci
 `int*` beats the partial specialization for "any pointer".
 :::
 
-:::exercise Show with specializations
+:::exercise Show with specializations {easy}
 Write a function template `template <typename T> std::string show(const T& value)` that returns
 `std::to_string(value)`. Then add **full specializations** so that:
 
@@ -396,13 +396,23 @@ false
 "C++"
 ```
 
+```stdin
+0 1 x
+```
+
+```expected hidden
+0
+true
+"x"
+```
+
 ```checks
 must template\s*<\s*>[\s\S]*template\s*<\s*> :: Write two full specializations with template <>.
 must show\s*\(\s*b\s*\) :: Call show(b) on the bool itself.
 ```
 :::
 
-:::exercise Describe vectors and pointers
+:::exercise Describe vectors and pointers {medium}
 Here is a primary class template:
 
 ```cpp
@@ -516,13 +526,24 @@ ptr->-1
 ptr->[]
 ```
 
+```stdin
+5 1 -3
+```
+
+```expected hidden
+5
+[-3]
+ptr->5
+ptr->[-3]
+```
+
 ```checks
 must Describer\s*<\s*std::vector\s*<\s*T\s*>\s*> :: Write a partial specialization Describer<std::vector<T>>.
 must Describer\s*<\s*T\s*\*\s*> :: Write a partial specialization Describer<T*>.
 ```
 :::
 
-:::exercise Overload instead of specializing
+:::exercise Overload instead of specializing {medium}
 Write a function template `best(const std::vector<T>& v)` that returns the largest element. Then make
 `best` of a `std::vector<std::string>` return the **longest** word instead (the first one if several
 are equally long). Do this with a plain **overload**, not a specialization.
@@ -620,8 +641,210 @@ hello
 zz
 ```
 
+```stdin
+3 -1 -5 -3
+3 ab cd abc
+```
+
+```expected hidden
+-1
+abc
+```
+
 ```checks
 must std::string\s+best\s*\(\s*const\s+std::vector\s*<\s*std::string\s*>\s*& :: Write a plain overload taking const std::vector<std::string>&.
 mustnot template\s*<\s*> :: Use an overload, not a template <> specialization.
+```
+:::
+
+:::exercise Read anything {hard}
+Build a tiny input library with specializations. The primary template reads any type that
+`operator>>` understands:
+
+```cpp
+template <typename T>
+struct Reader {
+    static T read(std::istream& in) { T value{}; in >> value; return value; }
+};
+```
+
+Add:
+
+- a **full specialization** `Reader<bool>` that reads the word `yes` or `no`,
+- a **partial specialization** `Reader<std::vector<T>>` that reads a count `k` and then `k` elements,
+  each with `Reader<T>` (so vectors of vectors, vectors of pairs, ... all work),
+- a **partial specialization** `Reader<std::pair<A, B>>` that reads an `A` and then a `B`, each with
+  its own `Reader`.
+
+Then read, with **one call each**:
+
+1. `Reader<std::vector<std::pair<std::string, std::vector<int>>>>::read(std::cin)`: teams, each a name
+   and its list of scores,
+2. `Reader<std::pair<bool, std::vector<double>>>::read(std::cin)`: a flag and some measurements.
+
+**Input:** the two values in that format. Example:
+
+```
+2
+ada 3 5 7 3
+bob 0
+yes 2 1.5 2.25
+```
+
+**Output:** one line per team, `name: TOTAL (K scores)` (a total can exceed the range of `int`); then `flag: true` or `flag: false`; then
+`values:` followed by each measurement preceded by a space (just `values:` if there are none). For the
+example:
+
+```
+ada: 15 (3 scores)
+bob: 0 (0 scores)
+flag: true
+values: 1.5 2.25
+```
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+template <typename T>
+struct Reader {
+    static T read(std::istream& in) {
+        T value{};
+        in >> value;
+        return value;
+    }
+};
+
+// add Reader<bool>, Reader<std::vector<T>> and Reader<std::pair<A, B>> here
+
+int main() {
+    // auto teams = Reader<std::vector<std::pair<std::string, std::vector<int>>>>::read(std::cin);
+    // auto data = Reader<std::pair<bool, std::vector<double>>>::read(std::cin);
+}
+```
+
+```cpp solution
+#include <cstddef>
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+template <typename T>
+struct Reader {
+    static T read(std::istream& in) {
+        T value{};
+        in >> value;
+        return value;
+    }
+};
+
+template <>
+struct Reader<bool> {
+    static bool read(std::istream& in) {
+        std::string word;
+        in >> word;
+        return word == "yes";
+    }
+};
+
+template <typename T>
+struct Reader<std::vector<T>> {
+    static std::vector<T> read(std::istream& in) {
+        std::size_t k = Reader<std::size_t>::read(in);
+        std::vector<T> result;
+        for (std::size_t i = 0; i < k; ++i) result.push_back(Reader<T>::read(in));
+        return result;
+    }
+};
+
+template <typename A, typename B>
+struct Reader<std::pair<A, B>> {
+    static std::pair<A, B> read(std::istream& in) {
+        A first = Reader<A>::read(in);      // separate statements: the order of reads matters
+        B second = Reader<B>::read(in);
+        return {first, second};
+    }
+};
+
+int main() {
+    auto teams = Reader<std::vector<std::pair<std::string, std::vector<int>>>>::read(std::cin);
+    auto data = Reader<std::pair<bool, std::vector<double>>>::read(std::cin);
+
+    for (const auto& [name, scores] : teams) {
+        long long total = 0;
+        for (int s : scores) total += s;
+        std::cout << name << ": " << total << " (" << scores.size() << " scores)\n";
+    }
+    std::cout << "flag: " << (data.first ? "true" : "false") << '\n';
+    std::cout << "values:";
+    for (double v : data.second) std::cout << ' ' << v;
+    std::cout << '\n';
+}
+```
+
+```hint
+The partial specializations look like `template <typename T> struct Reader<std::vector<T>> { ... };`
+and `template <typename A, typename B> struct Reader<std::pair<A, B>> { ... };`. Inside, call
+`Reader<T>::read(in)` (or `Reader<A>`, `Reader<B>`) for the parts: the compiler picks the right
+specialization for each part, recursively.
+```
+
+```hint
+In the pair reader, read `first` and `second` in **two separate statements**. In
+`return {Reader<A>::read(in), Reader<B>::read(in)};` the order of the two reads is up to the compiler.
+```
+
+```hint
+`std::vector<bool>` is never needed here, but `Reader<bool>` is: it's the `first` of the pair.
+```
+
+```stdin
+2
+ada 3 5 7 3
+bob 0
+yes 2 1.5 2.25
+```
+
+```expected
+ada: 15 (3 scores)
+bob: 0 (0 scores)
+flag: true
+values: 1.5 2.25
+```
+
+```stdin
+0
+no 0
+```
+
+```expected hidden
+flag: false
+values:
+```
+
+```stdin
+3
+zed 1 -5
+amy 2 2000000000 2000000000
+kim 4 1 1 1 1
+no 3 -0.5 0 10
+```
+
+```expected hidden
+zed: -5 (1 scores)
+amy: 4000000000 (2 scores)
+kim: 4 (4 scores)
+flag: false
+values: -0.5 0 10
+```
+
+```checks
+must template\s*<\s*>\s*struct\s+Reader\s*<\s*bool\s*> :: Write the full specialization Reader<bool>.
+must struct\s+Reader\s*<\s*std::vector\s*<\s*\w+\s*>\s*> :: Write the partial specialization Reader<std::vector<T>>.
+must struct\s+Reader\s*<\s*std::pair\s*<\s*\w+\s*,\s*\w+\s*>\s*> :: Write the partial specialization Reader<std::pair<A, B>>.
+must Reader\s*<\s*std::vector\s*<\s*std::pair :: Read the teams with a single Reader<std::vector<std::pair<...>>> call.
 ```
 :::

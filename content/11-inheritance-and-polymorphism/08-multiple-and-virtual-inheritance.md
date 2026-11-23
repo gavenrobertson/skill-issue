@@ -268,7 +268,7 @@ The special rules that come with virtual bases:
 - The middle classes still initialize `Device` normally when *they* are the most-derived type
   (a standalone `Scanner s(1);` uses `Scanner`'s `Device(id)`).
 - Accessing a virtual base costs an extra indirection, and you can't `static_cast` from a virtual base
-  down to a derived class (`dynamic_cast` works).
+  down to a derived class (`dynamic_cast` works, if the base is polymorphic).
 
 A real example of a diamond with virtual inheritance is in the standard library itself: `std::iostream`
 derives from both `std::istream` and `std::ostream`, which both virtually derive from `std::ios`
@@ -366,7 +366,7 @@ for it are skipped.
 Each base needs its own access specifier; `Talker` gets the `class` default, which is private.
 :::
 
-:::exercise Two interfaces
+:::exercise Two interfaces {easy}
 `Point` should implement two interfaces at once, `Printable` and `Serializable`. Make it inherit
 **publicly from both** and implement:
 
@@ -485,7 +485,7 @@ must serialize\s*\(\s*\)\s*const\s+override :: Override serialize.
 ```
 :::
 
-:::exercise Resolve the ambiguity
+:::exercise Resolve the ambiguity {easy}
 `Amphibian` inherits from both `Car` and `Boat`, which both have `describe()` and `topSpeed()`, so `main`
 doesn't compile. Without changing `main`, `Car`, or `Boat`, add to `Amphibian`:
 
@@ -600,7 +600,7 @@ must Car::topSpeed\s*\(\s*\) :: Use Car::topSpeed() to compute the combined spee
 ```
 :::
 
-:::exercise One shared device
+:::exercise One shared device {medium}
 This copier is built from a `Scanner` and a `Printer`, which both inherit from `Device`. With ordinary
 inheritance, a `Copier` contains **two** `Device`s, so the power-on message prints twice. Use **virtual
 inheritance** so there is exactly one shared `Device`, initialized directly by `Copier`, and stop using

@@ -434,7 +434,7 @@ Private members are inherited (they exist in the object) but are accessible only
 Name lookup finds `f` in `Derived` and stops there. Add `using Base::f;` to `Derived` to make both visible.
 :::
 
-:::exercise Animal and dog
+:::exercise Animal and dog {easy}
 Write `class Dog` that **publicly inherits** from `Animal`:
 
 - Its constructor `Dog(name, breed)` passes the name to `Animal`'s constructor (in the initializer list)
@@ -523,7 +523,7 @@ must :\s*Animal\s*\(\s*\w+\s*\) :: Call Animal's constructor from Dog's initiali
 ```
 :::
 
-:::exercise Construction order
+:::exercise Construction order {medium}
 `Vehicle` and `Car` both print messages from their constructors and destructors. `Car` inherits from
 `Vehicle` and has an `Engine` member. Complete `Car` so that:
 
@@ -656,7 +656,7 @@ must ~Car\s*\( :: Give Car a destructor.
 ```
 :::
 
-:::exercise Inherited constructors
+:::exercise Inherited constructors {easy}
 `Counter` has two constructors: `Counter(start)` (step 1) and `Counter(start, step)`. Write
 `class StepCounter : public Counter` that **inherits both constructors with a using-declaration** and
 adds `void advance(int times)`, which calls the inherited `tick()` that many times.
@@ -770,7 +770,7 @@ must StepCounter\s+c\s*\(\s*start\s*\) :: Use the inherited one-argument constru
 ```
 :::
 
-:::exercise Unhide the overloads
+:::exercise Unhide the overloads {easy}
 `Logger` has `log(int)` and `log(double)`. `TagLogger` adds `log(const std::string&)`, which **hides**
 the base overloads, so `main` doesn't compile. Fix `TagLogger` (not `main`) so all three work.
 
@@ -858,5 +858,193 @@ tag: #x
 
 ```checks
 must using\s+Logger::log\s*; :: Add using Logger::log; to TagLogger.
+```
+:::
+
+:::exercise Min stack {hard}
+`Stack` (given, don't change it) is a plain stack of ints. Write `class MinStack : public Stack` that can
+also report its **smallest element in constant time**, without scanning:
+
+- `MinStack` **hides** `push` and `pop` with its own versions that keep a second, private
+  `std::vector<int>` of minimums up to date, and **call `Stack::push` / `Stack::pop`** to do the actual
+  stack work.
+- `int min() const` returns the smallest element currently on the stack.
+- `top`, `size` and `empty` are simply inherited.
+
+**Input:** commands until end of input: `push X`, `pop`, `top`, `min`, `size`.
+**Output:** `top` and `min` print a number; `size` prints the size. `pop`, `top` and `min` on an empty
+stack print `error: empty` (and change nothing). `push` and a successful `pop` print nothing.
+
+> **Note:** `MinStack` works only as long as it is used *as* a `MinStack`. Passed to a function taking
+> `Stack&`, a call to `push` would run `Stack::push` and skip the minimum bookkeeping (static binding,
+> from the end of this lesson). Virtual functions, two lessons from now, are the real fix.
+
+```cpp starter
+#include <iostream>
+#include <string>
+#include <vector>
+
+class Stack {
+    std::vector<int> items_;
+public:
+    void push(int x) { items_.push_back(x); }
+    void pop() { items_.pop_back(); }          // precondition: not empty
+    int top() const { return items_.back(); }  // precondition: not empty
+    std::size_t size() const { return items_.size(); }
+    bool empty() const { return items_.empty(); }
+};
+
+// write class MinStack here
+
+int main() {
+    // read commands until end of input
+}
+```
+
+```cpp solution
+#include <iostream>
+#include <string>
+#include <vector>
+
+class Stack {
+    std::vector<int> items_;
+public:
+    void push(int x) { items_.push_back(x); }
+    void pop() { items_.pop_back(); }          // precondition: not empty
+    int top() const { return items_.back(); }  // precondition: not empty
+    std::size_t size() const { return items_.size(); }
+    bool empty() const { return items_.empty(); }
+};
+
+class MinStack : public Stack {
+    std::vector<int> mins_;   // mins_.back() is the minimum of the whole stack
+public:
+    void push(int x) {
+        Stack::push(x);
+        if (mins_.empty() || x <= mins_.back()) mins_.push_back(x);   // <=: duplicates matter
+    }
+    void pop() {
+        if (top() == mins_.back()) mins_.pop_back();
+        Stack::pop();
+    }
+    int min() const { return mins_.back(); }
+};
+
+int main() {
+    MinStack s;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "push") {
+            int x;
+            std::cin >> x;
+            s.push(x);
+        } else if (cmd == "size") {
+            std::cout << s.size() << '\n';
+        } else if (s.empty()) {
+            std::cout << "error: empty\n";
+        } else if (cmd == "pop") {
+            s.pop();
+        } else if (cmd == "top") {
+            std::cout << s.top() << '\n';
+        } else if (cmd == "min") {
+            std::cout << s.min() << '\n';
+        }
+    }
+}
+```
+
+```hint
+Keep a second stack holding "the minimum so far". On `push(x)`, push `x` onto it too if it's the new
+minimum. On `pop()`, if the element leaving is the current minimum, pop it from the minimums as well.
+Call `Stack::push(x)` and `Stack::pop()` for the real work: without the `Stack::` prefix you'd call
+your own function again and recurse forever.
+```
+
+```hint
+Duplicates are the trap: with `push 1`, `push 1`, `pop`, the minimum is still `1`. Push onto the minimums
+when `x <= current minimum`, not only when it's strictly smaller.
+```
+
+```stdin
+push 5
+push 3
+push 7
+min
+push 2
+min
+pop
+min
+top
+size
+```
+
+```expected
+3
+2
+3
+7
+3
+```
+
+```stdin
+pop
+top
+min
+size
+push 4
+push 1
+push 1
+pop
+min
+pop
+min
+pop
+min
+```
+
+```expected hidden
+error: empty
+error: empty
+error: empty
+0
+1
+4
+error: empty
+```
+
+```stdin
+push -2
+push 0
+push -3
+push -3
+push 10
+min
+pop
+pop
+min
+pop
+min
+top
+push -1
+min
+push -5
+min
+size
+```
+
+```expected hidden
+-3
+-3
+-2
+0
+-2
+-5
+4
+```
+
+```checks
+must class\s+MinStack\s*:\s*public\s+Stack :: MinStack must publicly inherit from Stack.
+must Stack::push\s*\( :: Call Stack::push to do the real pushing.
+must Stack::pop\s*\( :: Call Stack::pop to do the real popping.
 ```
 :::

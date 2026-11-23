@@ -324,7 +324,7 @@ The inner `x` is a different variable that shadows the outer one. It becomes 12 
 `}`. The outer `x` is still 1.
 :::
 
-:::exercise Echo a number
+:::exercise Echo a number {easy}
 Read one integer from standard input and print it back in a sentence.
 
 **Input:** one integer `n`.
@@ -370,12 +370,20 @@ You entered 42
 You entered -7
 ```
 
+```stdin
+2147483647
+```
+
+```expected hidden
+You entered 2147483647
+```
+
 ```checks
 must std::cin\s*>> :: Read the number with std::cin >>.
 ```
 :::
 
-:::exercise Swap two values
+:::exercise Swap two values {easy}
 Read two integers into variables `a` and `b`. Swap their values **using a third temporary
 variable**, then print `a` and `b` (in that order) separated by a space.
 
@@ -450,7 +458,7 @@ mustnot >>\s*b\s*>>\s*a :: Don't just read the numbers in the other order. Swap 
 ```
 :::
 
-:::exercise Rectangle report
+:::exercise Rectangle report {easy}
 Read a rectangle's `width` and `height` (integers). Declare **all four** variables `width`, `height`,
 `area` and `perimeter` **in a single declaration statement** (one `int`, separated by commas), then
 compute and print:
@@ -511,7 +519,118 @@ area: 0
 perimeter: 10
 ```
 
+```stdin
+1000 1000
+```
+
+```expected hidden
+area: 1000000
+perimeter: 4000
+```
+
+```stdin
+7 1
+```
+
+```expected hidden
+area: 7
+perimeter: 16
+```
+
 ```checks
 must \bint\s+width\b[^;]*,\s*height\b[^;]*,\s*area\b[^;]*,\s*perimeter\b :: Declare width, height, area and perimeter in one int declaration, in that order.
+```
+:::
+
+:::exercise Shadowed total {medium}
+A till program reads the price (in cents) and quantity of **two** items, each inside its own block,
+and prints the grand total. It compiles, but the total is wrong: for `250 2 100 3` it prints
+`total: 300` instead of `total: 800`. Find the scope bug and fix it. Keep both blocks, and keep the
+`price` and `quantity` variables local to their blocks.
+
+**Input:** four integers `price1 quantity1 price2 quantity2`.
+**Output:** `total: <price1 * quantity1 + price2 * quantity2>`, newline.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int total = 0;
+    {
+        int price = 0, quantity = 0;
+        std::cin >> price >> quantity;
+        int total = price * quantity;
+    }
+    {
+        int price = 0, quantity = 0;
+        std::cin >> price >> quantity;
+        total = total + price * quantity;
+    }
+    std::cout << "total: " << total << '\n';
+}
+```
+
+```cpp solution
+#include <iostream>
+
+int main() {
+    int total = 0;
+    {
+        int price = 0, quantity = 0;
+        std::cin >> price >> quantity;
+        total = total + price * quantity;
+    }
+    {
+        int price = 0, quantity = 0;
+        std::cin >> price >> quantity;
+        total = total + price * quantity;
+    }
+    std::cout << "total: " << total << '\n';
+}
+```
+
+```hint
+Read the compiler's warnings: one variable is set but never used. Which `total` does the first block change?
+```
+
+```hint
+`int total = ...;` inside a block declares a **new** variable that shadows the outer one and dies at
+the `}`. To change the outer `total`, assign to it without `int`.
+```
+
+```stdin
+250 2 100 3
+```
+
+```expected
+total: 800
+```
+
+```stdin
+0 5 7 0
+```
+
+```expected hidden
+total: 0
+```
+
+```stdin
+199 1 1 199
+```
+
+```expected hidden
+total: 398
+```
+
+```stdin
+1 1 1 1
+```
+
+```expected hidden
+total: 2
+```
+
+```checks
+mustnot \bint\s+total\b[\s\S]*\bint\s+total\b :: Declare total only once; the second declaration shadows the first.
 ```
 :::

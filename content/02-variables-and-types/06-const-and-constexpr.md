@@ -246,7 +246,7 @@ std::cout << SIDE * SIDE;
 The macro expands to `2 + 3 * 2 + 3`, which is `2 + 6 + 3 = 11`. A `constexpr int side = 2 + 3;` would give 25.
 :::
 
-:::exercise Circle area
+:::exercise Circle area {easy}
 Read a circle's radius and print its area (π × r²). Declare π as a **`constexpr double`** with the
 value `3.14159` (don't use `#define`).
 
@@ -302,6 +302,14 @@ int main() {
 7.06858
 ```
 
+```stdin
+10
+```
+
+```expected hidden
+314.159
+```
+
 ```checks
 must constexpr\s+double\s+\w+\s*(=|\{) :: Declare pi as a constexpr double.
 mustnot #define :: Use constexpr, not #define.
@@ -309,7 +317,7 @@ must 3\.14159 :: Use the value 3.14159 for pi.
 ```
 :::
 
-:::exercise Weeks to minutes
+:::exercise Weeks to minutes {easy}
 Read a number of weeks and print how many minutes that is. No magic numbers: declare **three
 `constexpr int` constants** (days per week, hours per day, minutes per hour) and use them in the calculation.
 
@@ -368,13 +376,21 @@ int main() {
 524160
 ```
 
+```stdin
+1000
+```
+
+```expected hidden
+10080000
+```
+
 ```checks
 must constexpr\s+int[\s\S]*constexpr\s+int[\s\S]*constexpr\s+int :: Declare three constexpr int constants.
 mustnot \b(7|24|60)\s*\*|\*\s*(7|24|60)\b :: Don't multiply by magic numbers; use your named constants.
 ```
 :::
 
-:::exercise Fix the macro
+:::exercise Fix the macro {medium}
 A shop sells boxes for 10 dollars plus 5 dollars shipping each. This program reads how many boxes were
 bought and prints the total cost, but the `#define` makes it compute the wrong answer. Replace the macro
 with a **`constexpr int`** constant so the total is correct.

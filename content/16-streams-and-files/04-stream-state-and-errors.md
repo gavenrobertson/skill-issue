@@ -378,7 +378,7 @@ Why is `while (!in.eof()) { in >> x; use(x); }` wrong?
 Read first, then check: `while (in >> x) use(x);`.
 :::
 
-:::exercise Sum the valid numbers
+:::exercise Sum the valid numbers {medium}
 Read whitespace-separated tokens until the end of input. Tokens that are integers (as read by
 `std::cin >> int`) are added to a sum; any token that makes the read fail is counted as invalid and
 skipped. Use `std::cin.clear()` to recover, then read the bad token into a `std::string` to discard it.
@@ -457,6 +457,15 @@ invalid: 3
 ```
 
 ```stdin
+-4 x7 7x 1 2.5
+```
+
+```expected hidden
+sum: 6
+invalid: 3
+```
+
+```stdin
 12abc 3
 ```
 
@@ -475,7 +484,7 @@ must \.clear\s*\(\s*\) :: Recover the stream with std::cin.clear().
 ```
 :::
 
-:::exercise Validate each line
+:::exercise Validate each line {easy}
 Each input line should contain exactly one integer between 0 and 150 (an age), optionally surrounded by
 spaces. For each line print:
 
@@ -557,12 +566,30 @@ ok 150
 ok 0
 ```
 
+```stdin
++5
+-0
+151
+007
+3.0
+	42	
+```
+
+```expected hidden
+ok 5
+ok 0
+out of range: 151
+ok 7
+not a number: 3.0
+ok 42
+```
+
 ```checks
 must istringstream|stringstream :: Parse each line with a std::istringstream.
 ```
 :::
 
-:::exercise Ask until valid
+:::exercise Ask until valid {medium}
 Simulate a prompt that keeps asking for a number from 1 to 10. Read with `std::cin >> n` repeatedly:
 
 - if the read fails because of a non-number, print `Not a number`, then `clear()` the stream and
@@ -643,6 +670,23 @@ Out of range
 No valid input
 ```
 
+```stdin
+10 11
+```
+
+```expected hidden
+You chose 10
+```
+
+```stdin
+0 5
+```
+
+```expected hidden
+Out of range
+You chose 5
+```
+
 ```expected
 No valid input
 ```
@@ -653,7 +697,7 @@ must \.ignore\s*\( :: Discard the bad line with ignore().
 ```
 :::
 
-:::exercise Directory report
+:::exercise Directory report {medium}
 Each input line has a file name and its text, separated by the first space: `notes.txt buy milk`.
 Create a directory `ex_report_dir`, and write each file into it containing exactly its text followed by
 a newline (a later line with the same name overwrites the earlier file).
@@ -746,6 +790,19 @@ same.txt v2
 ```expected hidden
 same.txt 3
 total: 3 bytes
+```
+
+```stdin
+z.txt 
+b.log one
+a.log two words here
+```
+
+```expected hidden
+a.log 15
+b.log 4
+z.txt 1
+total: 20 bytes
 ```
 
 ```expected

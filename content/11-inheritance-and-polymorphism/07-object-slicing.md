@@ -281,7 +281,7 @@ Which of these prevent slicing? (select all that apply)
 `const` on member functions has nothing to do with copying. The other three avoid copying the object as a `Base`.
 :::
 
-:::exercise Stop the slicing
+:::exercise Stop the slicing {easy}
 `announce` takes its `Animal` **by value**, so every animal is sliced and says `...`. Change only the
 parameter of `announce` so that the real `speak()` is called.
 
@@ -381,7 +381,7 @@ must announce\s*\(\s*const\s+Animal\s*& :: Take the Animal by const reference.
 ```
 :::
 
-:::exercise Unslice the vector
+:::exercise Unslice the vector {easy}
 This program stores shapes in a `std::vector<Shape>`, so every circle and rectangle is sliced into a
 plain `Shape` with area 0. Fix it by storing `std::unique_ptr<Shape>` instead, and make `Shape::area`
 **pure virtual** so this mistake can't compile again.
@@ -535,7 +535,7 @@ must area\s*\(\s*\)\s*const\s*=\s*0 :: Make Shape::area pure virtual.
 ```
 :::
 
-:::exercise Polymorphic clone
+:::exercise Polymorphic clone {medium}
 Give the `Shape` hierarchy a **virtual `clone()`** that returns a `std::unique_ptr<Shape>` holding a
 copy of the real object. `main` clones every shape, scales the **copies** by a factor, and prints both
 lists, so the originals must stay unchanged.

@@ -377,7 +377,7 @@ A compound requirement checks the expression is valid and that its type satisfie
 type inserted as the first argument. Nothing is executed.
 :::
 
-:::exercise Integral-only gcd
+:::exercise Integral-only gcd {easy}
 Write `gcd(a, b)` (greatest common divisor, Euclid's algorithm) as a template constrained with
 `std::integral`. Assume the inputs are non-negative and not both zero.
 
@@ -450,12 +450,22 @@ Replace `typename` with `std::integral` in the template parameter list, then wri
 1
 ```
 
+```stdin
+0 9
+0 1000000000000
+```
+
+```expected hidden
+9
+1000000000000
+```
+
 ```checks
 must std::integral :: Constrain T with std::integral.
 ```
 :::
 
-:::exercise Half of a number
+:::exercise Half of a number {easy}
 Write two overloads of `half` using abbreviated, constrained `auto` parameters:
 
 - `half(std::integral auto x)` returns `x / 2` (integer division),
@@ -525,13 +535,22 @@ The bodies are identical; the point is that the concept selects which overload r
 0.25
 ```
 
+```stdin
+1 -3.5
+```
+
+```expected hidden
+0
+-1.75
+```
+
 ```checks
 must std::integral\s+auto :: Write half(std::integral auto x).
 must std::floating_point\s+auto :: Write half(std::floating_point auto x).
 ```
 :::
 
-:::exercise Sized things
+:::exercise Sized things {medium}
 Write a concept `Sized` that is satisfied by any type `T` for which, given `const T& c`, the expression
 `c.size()` compiles and converts to `std::size_t`. Then write two overloads of `describe`:
 
@@ -628,6 +647,16 @@ value -1
 size 0
 ```
 
+```stdin
+abcdefghij 0 1 5
+```
+
+```expected hidden
+size 10
+value 0
+size 1
+```
+
 ```checks
 must concept\s+Sized :: Define a concept named Sized.
 must requires\s*\( :: Use a requires expression.
@@ -635,7 +664,7 @@ must Sized\s+auto|<\s*Sized\s+\w+\s*>|requires\s+Sized\s*< :: Use Sized to const
 ```
 :::
 
-:::exercise Report shapes
+:::exercise Report shapes {medium}
 Write a concept `Shape` requiring that, for `const T& s`, `s.area()` converts to `double` and
 `s.name()` converts to `std::string`. Write two structs that satisfy it, `Square` (with a `side`) and
 `Rect` (with `w` and `h`), and a constrained function template `report` that prints
@@ -723,9 +752,239 @@ square: 0
 rectangle: 7
 ```
 
+```stdin
+10 3 3
+```
+
+```expected hidden
+square: 100
+rectangle: 9
+```
+
 ```checks
 must concept\s+Shape :: Define a concept named Shape.
 must ->\s*std::convertible_to :: Use compound requirements with std::convertible_to.
 must <\s*Shape\s+\w+\s*>|Shape\s+auto :: Constrain report with the Shape concept.
+```
+:::
+
+:::exercise Pretty-print anything {hard}
+Write a set of `show` overloads, selected by **concepts**, that turns nested standard-library values
+into text:
+
+| Kind of value | Text |
+| --- | --- |
+| `std::string` | in double quotes: `"ada"` |
+| `bool` | `true` or `false` |
+| other arithmetic types | as `<<` prints them: `42`, `2.5` |
+| anything with `.first` and `.second` (pair-like) | `(first, second)` |
+| any other range (vector, map, set, ...) | `[a, b, c]`, or `[]` when empty |
+
+The parts are shown recursively with the same rules, so a `std::map<std::string, std::vector<int>>`
+(a range of pairs) becomes `[("ada", [1, 2]), ("bob", [])]`.
+
+Define your own concepts (for example `Text`, `Boolean`, `Number`, `PairLike`, `Range`) and make sure
+every value matches **exactly one** overload. Two unrelated concepts that both match are ambiguous,
+and a `std::string` is a range too, and a `bool` is integral too...
+
+**Input:** `n`, then `n` lines `name k` followed by `k` integers, collected into a
+`std::map<std::string, std::vector<int>>` (a repeated name appends to its list). Then `m`, `m` words, and
+`yes` or `no`, stored as a `std::pair<std::vector<std::string>, bool>`.
+**Output:** two lines: `show` of the map, then `show` of the pair.
+
+Example: the input `2`, `bob 0`, `ada 2 1 2`, `2 x y yes` prints
+
+```
+[("ada", [1, 2]), ("bob", [])]
+(["x", "y"], true)
+```
+
+```cpp starter
+#include <concepts>
+#include <iostream>
+#include <map>
+#include <ranges>
+#include <string>
+#include <utility>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::map<std::string, std::vector<int>> scores;
+    for (int i = 0; i < n; ++i) {
+        std::string name;
+        int k;
+        std::cin >> name >> k;
+        auto& list = scores[name];
+        for (int j = 0; j < k; ++j) {
+            int x;
+            std::cin >> x;
+            list.push_back(x);
+        }
+    }
+    int m;
+    std::cin >> m;
+    std::pair<std::vector<std::string>, bool> tagged;
+    for (int j = 0; j < m; ++j) {
+        std::string w;
+        std::cin >> w;
+        tagged.first.push_back(w);
+    }
+    std::string flag;
+    std::cin >> flag;
+    tagged.second = flag == "yes";
+    // print show(scores) and show(tagged)
+}
+```
+
+```cpp solution
+#include <concepts>
+#include <iostream>
+#include <map>
+#include <ranges>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+template <typename T>
+concept Text = std::same_as<T, std::string>;
+
+template <typename T>
+concept Boolean = std::same_as<T, bool>;
+
+template <typename T>
+concept Number = std::is_arithmetic_v<T> && !Boolean<T>;
+
+template <typename T>
+concept PairLike = requires(const T& p) {
+    p.first;
+    p.second;
+};
+
+template <typename T>
+concept Range = std::ranges::range<const T> && !Text<T>;
+
+// Declare every overload first, so each one can call the others recursively.
+std::string show(const Text auto& s);
+std::string show(const Boolean auto& b);
+std::string show(const Number auto& x);
+std::string show(const PairLike auto& p);
+std::string show(const Range auto& r);
+
+std::string show(const Text auto& s) { return "\"" + s + "\""; }
+
+std::string show(const Boolean auto& b) { return b ? "true" : "false"; }
+
+std::string show(const Number auto& x) {
+    std::ostringstream out;
+    out << x;
+    return out.str();
+}
+
+std::string show(const PairLike auto& p) {
+    return "(" + show(p.first) + ", " + show(p.second) + ")";
+}
+
+std::string show(const Range auto& r) {
+    std::string out = "[";
+    bool first = true;
+    for (const auto& element : r) {
+        if (!first) out += ", ";
+        out += show(element);
+        first = false;
+    }
+    return out + "]";
+}
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::map<std::string, std::vector<int>> scores;
+    for (int i = 0; i < n; ++i) {
+        std::string name;
+        int k;
+        std::cin >> name >> k;
+        auto& list = scores[name];
+        for (int j = 0; j < k; ++j) {
+            int x;
+            std::cin >> x;
+            list.push_back(x);
+        }
+    }
+    int m;
+    std::cin >> m;
+    std::pair<std::vector<std::string>, bool> tagged;
+    for (int j = 0; j < m; ++j) {
+        std::string w;
+        std::cin >> w;
+        tagged.first.push_back(w);
+    }
+    std::string flag;
+    std::cin >> flag;
+    tagged.second = flag == "yes";
+
+    std::cout << show(scores) << '\n';
+    std::cout << show(tagged) << '\n';
+}
+```
+
+```hint
+Make the concepts **mutually exclusive** instead of relying on "more constrained": for example
+`concept Number = std::is_arithmetic_v<T> && !Boolean<T>;` and
+`concept Range = std::ranges::range<const T> && !Text<T>;`.
+```
+
+```hint
+`PairLike` can be a requires expression: `requires(const T& p) { p.first; p.second; }`.
+```
+
+```hint
+The overloads call each other (a range of pairs of strings...). **Declare** all of them before
+defining any, e.g. `std::string show(const Range auto& r);`. Calls inside a template are looked up
+where the template is defined, so an overload declared later may not be found for standard types.
+```
+
+```stdin
+2
+bob 0
+ada 2 1 2
+2 x y yes
+```
+
+```expected
+[("ada", [1, 2]), ("bob", [])]
+(["x", "y"], true)
+```
+
+```stdin
+0
+0 no
+```
+
+```expected hidden
+[]
+([], false)
+```
+
+```stdin
+3
+zed 1 -5
+amy 3 10 20 30
+zed 2 0 7
+1 hello no
+```
+
+```expected hidden
+[("amy", [10, 20, 30]), ("zed", [-5, 0, 7])]
+(["hello"], false)
+```
+
+```checks
+must concept\s+\w+\s*= :: Define your own concepts.
+must requires :: Use a requires expression (for the pair-like concept).
+mustnot template\s*<\s*>|is_same_v\s*<\s*std::decay :: Select the overloads with concepts, not specializations.
 ```
 :::

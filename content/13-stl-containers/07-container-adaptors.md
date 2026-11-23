@@ -400,7 +400,7 @@ You push `4, 1, 7` into `std::priority_queue<int, std::vector<int>, std::greater
 With `std::greater`, the priority queue behaves as a min-heap: the smallest element is on top.
 :::
 
-:::exercise Balanced brackets
+:::exercise Balanced brackets {easy}
 Check whether a string of brackets `()[]{}` is balanced, using a `std::stack<char>`. Every closing bracket
 must match the most recent unmatched opening bracket, and nothing may be left open at the end.
 
@@ -493,12 +493,28 @@ not balanced
 not balanced
 ```
 
+```stdin
+([]{})[]
+```
+
+```expected hidden
+balanced
+```
+
+```stdin
+]
+```
+
+```expected hidden
+not balanced
+```
+
 ```checks
 must std::stack :: Use a std::stack.
 ```
 :::
 
-:::exercise Hot potato
+:::exercise Hot potato {medium}
 `n` players stand in a circle, listed in order. Starting from the first player, the potato is passed
 `k - 1` times (each pass moves the front player to the back of the line), and then the player holding it
 (at the front) is eliminated. This repeats until one player remains. Simulate it with a
@@ -588,12 +604,22 @@ Solo
 winner: Solo
 ```
 
+```stdin
+2 5
+A B
+```
+
+```expected hidden
+out: A
+winner: B
+```
+
 ```checks
 must std::queue :: Use a std::queue.
 ```
 :::
 
-:::exercise Top k largest
+:::exercise Top k largest {medium}
 Print the `k` largest numbers of the input in descending order, using a **min-heap** of size at most `k`
 (`std::priority_queue` with `std::greater<int>`).
 
@@ -689,13 +715,29 @@ Popping the min-heap gives the answer in **ascending** order. Store it in a vect
 6 6
 ```
 
+```stdin
+1 5
+-5 -1 -9 -1 -3
+```
+
+```expected hidden
+-1
+```
+
+```stdin
+3 0
+```
+
+```expected hidden
+```
+
 ```checks
 must std::priority_queue :: Use a std::priority_queue.
 must std::greater :: Make it a min-heap with std::greater.
 ```
 :::
 
-:::exercise Task scheduler
+:::exercise Task scheduler {medium}
 Read tasks with priorities and print them in the order they should run: **higher priority first**, and
 for equal priorities, **alphabetical** by name. Use a `std::priority_queue` with a custom comparator.
 
@@ -793,8 +835,184 @@ name that is alphabetically later.
 0 c
 ```
 
+```stdin
+4
+-1 a
+3 z
+-1 A
+3 b
+```
+
+```expected hidden
+3 b
+3 z
+-1 A
+-1 a
+```
+
 ```checks
 must std::priority_queue :: Use a std::priority_queue.
 must operator\s*\(\s*\)|\[\s*\]\s*\( :: Write a custom comparator.
+```
+:::
+
+:::exercise Running median {hard}
+Numbers arrive one at a time. After each one, print the **median** of all numbers seen so far: the
+middle value in sorted order. When the count is even there are two middle values; print the
+**smaller** one.
+
+Re-sorting after every number is O(n² log n). The classic solution uses **two heaps**:
+
+- `low`: a max-heap (`std::priority_queue<int>`) holding the smaller half,
+- `high`: a min-heap (`std::priority_queue<int, std::vector<int>, std::greater<int>>`) holding the
+  larger half.
+
+Keep every element of `low` `<=` every element of `high`, and keep their sizes balanced so that `low`
+has the same number of elements as `high`, or one more. Then the answer is always `low.top()`.
+
+**Input:** `n`, then `n` integers.
+**Output:** the `n` medians, one per line.
+
+Example: for `5 2 8 1` the medians are `5` (of 5), `2` (of 2 5), `5` (of 2 5 8), `2` (of 1 2 5 8).
+
+```cpp starter
+#include <functional>
+#include <iostream>
+#include <queue>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    for (int i = 0; i < n; ++i) {
+        int x;
+        std::cin >> x;
+        std::cout << x << '\n';
+    }
+}
+```
+
+```cpp solution
+#include <functional>
+#include <iostream>
+#include <queue>
+#include <vector>
+
+int main() {
+    int n;
+    std::cin >> n;
+    std::priority_queue<int> low;                                       // max-heap: smaller half
+    std::priority_queue<int, std::vector<int>, std::greater<int>> high; // min-heap: larger half
+
+    for (int i = 0; i < n; ++i) {
+        int x;
+        std::cin >> x;
+        if (low.empty() || x <= low.top()) low.push(x);
+        else high.push(x);
+
+        // rebalance: low may have at most one element more than high
+        if (low.size() > high.size() + 1) {
+            high.push(low.top());
+            low.pop();
+        } else if (high.size() > low.size()) {
+            low.push(high.top());
+            high.pop();
+        }
+        std::cout << low.top() << '\n';
+    }
+}
+```
+
+```hint
+Insert first: if `x <= low.top()` (or `low` is empty) it belongs in `low`, otherwise in `high`. Then
+rebalance by moving **one** top element from the bigger heap to the other.
+```
+
+```hint
+The sizes rule "`low` has the same size as `high`, or one more" makes `low.top()` the median for odd
+counts and the lower middle value for even counts.
+```
+
+```stdin
+4
+5 2 8 1
+```
+
+```expected
+5
+2
+5
+2
+```
+
+```stdin
+1
+-7
+```
+
+```expected
+-7
+```
+
+```stdin
+6
+1 2 3 4 5 6
+```
+
+```expected hidden
+1
+1
+2
+2
+3
+3
+```
+
+```stdin
+6
+6 5 4 3 2 1
+```
+
+```expected hidden
+6
+5
+5
+4
+4
+3
+```
+
+```stdin
+7
+3 3 3 -1 -1 10 3
+```
+
+```expected hidden
+3
+3
+3
+3
+3
+3
+3
+```
+
+```stdin
+5
+-10 20 -30 40 0
+```
+
+```expected hidden
+-10
+-10
+-10
+-10
+0
+```
+
+```checks
+must std::priority_queue :: Use std::priority_queue.
+must std::greater :: Use a min-heap (std::greater) for the larger half.
+mustnot std::sort|nth_element|std::multiset :: Use the two heaps instead of sorting.
 ```
 :::

@@ -400,7 +400,7 @@ switch (n) {
 Wrap the statements of `case 1` in braces to limit `y`'s scope.
 :::
 
-:::exercise Day name
+:::exercise Day name {easy}
 Read a day number and print the day's name. Day 1 is `Monday` and day 7 is `Sunday`.
 
 **Input:** one integer.
@@ -480,6 +480,14 @@ Invalid day
 Invalid day
 ```
 
+```stdin
+-1
+```
+
+```expected hidden
+Invalid day
+```
+
 ```checks
 must \bswitch\s*\( :: Use a switch statement.
 must \bdefault\s*: :: Handle invalid days with default.
@@ -487,7 +495,7 @@ mustnot \bif\b :: Use switch instead of if.
 ```
 :::
 
-:::exercise Calculator
+:::exercise Calculator {medium}
 Read a simple integer expression like `7 + 5` and print the result.
 
 **Input:** an integer `a`, an operator character, and an integer `b`, separated by spaces.
@@ -607,12 +615,36 @@ Error: unknown operator
 Error: division by zero
 ```
 
+```stdin
+0 / 5
+```
+
+```expected hidden
+0 / 5 = 0
+```
+
+```stdin
+-7 / 2
+```
+
+```expected hidden
+-7 / 2 = -3
+```
+
+```stdin
+10 - 20
+```
+
+```expected hidden
+10 - 20 = -10
+```
+
 ```checks
 must \bswitch\s*\( :: Use a switch on the operator.
 ```
 :::
 
-:::exercise Vowel or consonant
+:::exercise Vowel or consonant {easy}
 Read one character and classify it. Use a `switch` where all ten vowels (`a e i o u` in lower and upper
 case) are **grouped** into one set of case labels.
 
@@ -707,13 +739,29 @@ consonant
 not a letter
 ```
 
+```stdin
+a
+```
+
+```expected hidden
+vowel
+```
+
+```stdin
+?
+```
+
+```expected hidden
+not a letter
+```
+
 ```checks
 must \bswitch\s*\( :: Use a switch statement.
 must case\s*'.'\s*:\s*case :: Group the vowel cases (case 'a': case 'e': ...).
 ```
 :::
 
-:::exercise Days in month
+:::exercise Days in month {medium}
 Read a month number and a year, and print how many days that month has. Use a `switch` with grouped
 cases. February has 29 days in leap years and 28 otherwise (a leap year is divisible by 4, except years
 divisible by 100 that aren't divisible by 400).
@@ -817,8 +865,237 @@ If you declare a variable (like `bool leap`) inside `case 2`, wrap that case in 
 invalid month
 ```
 
+```stdin
+2 2000
+```
+
+```expected hidden
+29
+```
+
+```stdin
+12 1
+```
+
+```expected hidden
+31
+```
+
+```stdin
+0 2024
+```
+
+```expected hidden
+invalid month
+```
+
+```stdin
+9 2023
+```
+
+```expected hidden
+30
+```
+
 ```checks
 must \bswitch\s*\( :: Use a switch statement.
+must case\s*\d+\s*:\s*case :: Group months with the same number of days.
+```
+:::
+
+:::exercise Next day {hard}
+Given a date, print the date of the **next** day.
+
+**Input:** three integers `day month year` (`1 <= year <= 9999`).
+**Output:**
+
+- `invalid date` if `month` isn't 1 to 12, or `day` isn't between 1 and the number of days in that month
+  (February has 29 days in leap years: divisible by 4, except years divisible by 100 that aren't
+  divisible by 400).
+- Otherwise the next day's date as `YYYY-MM-DD`, with the year padded to 4 digits and the month and day
+  to 2 digits (the year after 9999 is simply `10000`).
+
+| Input | Output |
+| --- | --- |
+| `28 2 2023` | `2023-03-01` |
+| `28 2 2024` | `2024-02-29` |
+| `31 12 1999` | `2000-01-01` |
+
+Use a `switch` with grouped cases to find the number of days in the month.
+
+```cpp starter
+#include <iostream>
+
+int main() {
+    int day = 0, month = 0, year = 0;
+    std::cin >> day >> month >> year;
+    std::cout << year << '-' << month << '-' << day + 1 << '\n';
+}
+```
+
+```cpp solution
+#include <format>
+#include <iostream>
+
+int main() {
+    int day = 0, month = 0, year = 0;
+    std::cin >> day >> month >> year;
+
+    int days = 0;
+    switch (month) {
+        case 1: case 3: case 5: case 7: case 8: case 10: case 12:
+            days = 31;
+            break;
+        case 4: case 6: case 9: case 11:
+            days = 30;
+            break;
+        case 2: {
+            bool leap = (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+            days = leap ? 29 : 28;
+            break;
+        }
+        default:
+            days = 0;   // invalid month
+            break;
+    }
+
+    if (day < 1 || day > days) {
+        std::cout << "invalid date\n";
+        return 0;
+    }
+
+    ++day;
+    if (day > days) {
+        day = 1;
+        ++month;
+        if (month > 12) {
+            month = 1;
+            ++year;
+        }
+    }
+    std::cout << std::format("{:04}-{:02}-{:02}\n", year, month, day);
+}
+```
+
+```hint
+First compute the number of days in the month (0 for an invalid month), then validate `day` against it.
+```
+
+```hint
+Add one to the day. If that runs past the end of the month, go to day 1 of the next month; if *that*
+runs past December, go to January of the next year.
+```
+
+```hint
+Zero padding: `std::format("{:04}-{:02}-{:02}", year, month, day)`, or `std::setfill('0')` with `std::setw`.
+```
+
+```stdin
+28 2 2023
+```
+
+```expected
+2023-03-01
+```
+
+```stdin
+28 2 2024
+```
+
+```expected
+2024-02-29
+```
+
+```stdin
+31 12 1999
+```
+
+```expected
+2000-01-01
+```
+
+```stdin
+29 2 1900
+```
+
+```expected hidden
+invalid date
+```
+
+```stdin
+29 2 2000
+```
+
+```expected hidden
+2000-03-01
+```
+
+```stdin
+30 4 2024
+```
+
+```expected hidden
+2024-05-01
+```
+
+```stdin
+31 4 2024
+```
+
+```expected hidden
+invalid date
+```
+
+```stdin
+0 5 2024
+```
+
+```expected hidden
+invalid date
+```
+
+```stdin
+15 7 5
+```
+
+```expected hidden
+0005-07-16
+```
+
+```stdin
+31 12 9999
+```
+
+```expected hidden
+10000-01-01
+```
+
+```stdin
+1 13 2024
+```
+
+```expected hidden
+invalid date
+```
+
+```stdin
+31 1 2024
+```
+
+```expected hidden
+2024-02-01
+```
+
+```stdin
+30 11 2023
+```
+
+```expected hidden
+2023-12-01
+```
+
+```checks
+must \bswitch\s*\( :: Use a switch for the days in the month.
 must case\s*\d+\s*:\s*case :: Group months with the same number of days.
 ```
 :::

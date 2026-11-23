@@ -294,7 +294,7 @@ catch (...) { std::cout << "B"; }
 Inheritance in a `class` is **private** by default, so `std::exception` is an inaccessible base and the first handler doesn't match. Always write `public`.
 :::
 
-:::exercise Negative deposit
+:::exercise Negative deposit {easy}
 Define `class NegativeAmountError` that derives **publicly** from `std::runtime_error`. Write
 `void deposit(long long& balance, long long amount)` that throws
 `NegativeAmountError("negative amount: " + std::to_string(amount))` when `amount < 0`, and otherwise adds
@@ -380,13 +380,25 @@ balance: 0
 error: negative amount: -1000000000000
 ```
 
+```stdin
+-1
+-2
+5
+```
+
+```expected hidden
+error: negative amount: -1
+error: negative amount: -2
+balance: 5
+```
+
 ```checks
 must class\s+NegativeAmountError\s*:\s*public\s+std::runtime_error :: NegativeAmountError must derive publicly from std::runtime_error.
 must catch\s*\(\s*const\s+NegativeAmountError\s*& :: Catch NegativeAmountError by const reference.
 ```
 :::
 
-:::exercise Config parser
+:::exercise Config parser {medium}
 Parse lines of the form `key=value`. Define `class ParseError` deriving publicly from
 `std::runtime_error` with a member function `int line() const` that returns the (1-based) line number
 where the problem was found.
@@ -505,6 +517,27 @@ y -> 1
 ok: 2
 ```
 
+```stdin
+===
+a b=c d
+no equals here
+k==v
+=
+```
+
+```expected hidden
+line 1: empty key
+a b -> c d
+line 3: missing '='
+k -> =v
+line 5: empty key
+ok: 2
+```
+
+```expected hidden
+ok: 0
+```
+
 ```checks
 must class\s+ParseError\s*:\s*public\s+std::runtime_error :: ParseError must derive publicly from std::runtime_error.
 must int\s+line\s*\(\s*\)\s*const :: Give ParseError an int line() const member function.
@@ -512,7 +545,7 @@ must \.line\s*\(\s*\) :: Use e.line() in the handler.
 ```
 :::
 
-:::exercise Bank errors
+:::exercise Bank errors {hard}
 Build a small exception hierarchy for a bank:
 
 - `BankError`, deriving publicly from `std::runtime_error` (the base for all bank problems).
@@ -643,6 +676,28 @@ pay zed 1
 ```expected hidden
 error: no account ghost
 declined: zed cannot pay 1 (missing 1)
+```
+
+```stdin
+pay ghost 1
+pay ghost 1
+open c 10
+pay c 15
+pay c 10
+pay c 1
+open c 50
+pay c 49
+pay c 2
+```
+
+```expected hidden
+error: no account ghost
+error: no account ghost
+declined: c cannot pay 15 (missing 5)
+c has 0
+declined: c cannot pay 1 (missing 1)
+c has 1
+declined: c cannot pay 2 (missing 1)
 ```
 
 ```checks

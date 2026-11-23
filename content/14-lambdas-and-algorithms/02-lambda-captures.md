@@ -419,7 +419,7 @@ std::cout << f() << n;
 `mutable` lets the lambda change its **own copy** of `n`, which persists between calls: `1`, `2`, `3`. The original `n` stays `0`.
 :::
 
-:::exercise Running total
+:::exercise Running total {easy}
 Read `n` integers and print their sum. Do the summing with `std::for_each` and a lambda that
 captures a `total` variable **by reference**.
 
@@ -496,13 +496,22 @@ sum: -7
 sum: 0
 ```
 
+```stdin
+3
+2000000000 2000000000 -1
+```
+
+```expected hidden
+sum: 3999999999
+```
+
 ```checks
 must for_each :: Use std::for_each.
 must \[\s*&\s*(total)?\s*\] :: Capture total by reference with [&total] or [&].
 ```
 :::
 
-:::exercise Above the threshold
+:::exercise Above the threshold {easy}
 Read a threshold `t`, then `n` integers. Print how many of the integers are **strictly greater**
 than `t`, using `std::count_if` with a lambda that captures `t`.
 
@@ -575,13 +584,23 @@ Put `t` in the capture list: `[t](int x) { return x > t; }`.
 0
 ```
 
+```stdin
+3
+3
+3 3 3
+```
+
+```expected hidden
+0
+```
+
 ```checks
 must count_if :: Use std::count_if.
 must \[\s*(=|&|t|&t)\s*\] :: Capture t in the lambda.
 ```
 :::
 
-:::exercise Ticket dispenser
+:::exercise Ticket dispenser {medium}
 Write a lambda `next_ticket` that hands out ticket numbers. It starts at a number you read from
 input and returns the next number each time it's called. Use an **init-capture** and `mutable`, so
 the counter lives inside the lambda (no outside counter variable).
@@ -662,7 +681,7 @@ must \bmutable\b :: The lambda must be mutable so it can update its own counter.
 ```
 :::
 
-:::exercise Hand over ownership
+:::exercise Hand over ownership {medium}
 Read `n` integers into a `std::vector<int>`. Then **move** the vector into a lambda with an
 init-capture (`[data = std::move(v)]`), so the lambda owns the numbers. The lambda takes an integer
 `m` and returns how many of its numbers are divisible by `m`.
@@ -761,6 +780,19 @@ v now has 0 elements
 
 ```expected hidden
 2
+v now has 0 elements
+```
+
+```stdin
+0
+2
+5
+1
+```
+
+```expected hidden
+0
+0
 v now has 0 elements
 ```
 

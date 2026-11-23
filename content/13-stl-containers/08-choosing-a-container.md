@@ -234,7 +234,7 @@ Which can be passed to a function taking `std::span<const int>`? (select all tha
 A span needs contiguous memory. Lists and sets store their elements in separate nodes.
 :::
 
-:::exercise Sum through a span
+:::exercise Sum through a span {easy}
 Write `long long sum(std::span<const int> values)` and use it with slices of a vector.
 
 **Input:** `n`, then `n` integers.
@@ -323,13 +323,24 @@ is everything from index `k` on.
 0
 ```
 
+```stdin
+2
+2147483647 2147483647
+```
+
+```expected hidden
+4294967294
+2147483647
+2147483647
+```
+
 ```checks
 must std::span :: Use std::span.
 must \.(first|last|subspan)\s*\( :: Slice the span with first, last or subspan.
 ```
 :::
 
-:::exercise Double a slice
+:::exercise Double a slice {easy}
 Write `void doubleAll(std::span<int> values)` that doubles every element **in place**. Apply it to the
 elements from index `l` to index `r` (inclusive) of a vector, using `subspan`.
 
@@ -413,13 +424,23 @@ The range `l..r` inclusive has `r - l + 1` elements: `all.subspan(l, r - l + 1)`
 -1 0 14
 ```
 
+```stdin
+4
+1 2 3 4
+0 3
+```
+
+```expected hidden
+2 4 6 8
+```
+
 ```checks
 must std::span\s*<\s*int\s*> :: Take a std::span<int> parameter.
 must \.subspan\s*\( :: Use subspan to select the slice.
 ```
 :::
 
-:::exercise Visitors in order
+:::exercise Visitors in order {medium}
 A website logs each visit by username. Print each **distinct** visitor once, in the order of their
 **first** visit, followed by statistics. Combine two containers: one that remembers order and one that
 answers "seen before?" quickly.
@@ -488,13 +509,22 @@ visits: 6, unique: 3
 visits: 0, unique: 0
 ```
 
+```stdin
+a a a
+```
+
+```expected hidden
+a
+visits: 3, unique: 1
+```
+
 ```checks
 must std::vector :: Keep the order in a std::vector.
 must std::(unordered_)?set :: Use a set (or unordered_set) for the "seen" check.
 ```
 :::
 
-:::exercise Leaderboard
+:::exercise Leaderboard {medium}
 Players earn points over several rounds. Accumulate each player's total with a map, then print a ranking:
 highest total first, ties in alphabetical order.
 
@@ -586,8 +616,267 @@ solo 1
 1. solo -2
 ```
 
+```stdin
+4
+b 0
+a 0
+c -1
+b 0
+```
+
+```expected hidden
+1. a 0
+2. b 0
+3. c -1
+```
+
 ```checks
 must std::(unordered_)?map :: Accumulate the totals in a map.
 must sort\s*\( :: Sort the ranking.
+```
+:::
+
+:::exercise Library desk {hard}
+Run a small library's lending desk. Choose a fitting container for each piece of state: how many
+copies of each title are on the shelf, the **waiting line** for each title (first come, first
+served), and which titles each user currently holds (printed alphabetically).
+
+| Command | Output |
+| --- | --- |
+| `add TITLE N` | Adds `N` copies (`N >= 1`; the title may be new). Each copy first goes to the next person waiting for it, printing `USER gets TITLE`. Finally prints `TITLE: K on shelf`. |
+| `borrow USER TITLE` | `no such title` if it was never added. `already borrowed` if the user holds it. Otherwise, with a copy on the shelf: `USER borrowed TITLE`. Otherwise `already waiting` if the user is in that title's line, else they join the end of the line: `USER waits for TITLE (position P)` (1-based). |
+| `return USER TITLE` | `not borrowed` if the user doesn't hold it. Otherwise, if someone is waiting, the copy goes straight to the first of them: `USER returned TITLE, NEXT gets it`. Otherwise it goes back on the shelf: `USER returned TITLE`. |
+| `holding USER` | `USER:` followed by ` TITLE` for each title they hold, alphabetically, or `USER: nothing`. |
+
+**Input:** one command per line until the input ends. Users and titles are single words.
+**Output:** one line per printed message, as above.
+
+```cpp starter
+#include <iostream>
+#include <string>
+
+int main() {
+    std::string cmd;
+    while (std::cin >> cmd) {
+        // add, borrow, return, holding
+    }
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <deque>
+#include <iostream>
+#include <map>
+#include <set>
+#include <string>
+
+int main() {
+    std::map<std::string, int> shelf;                          // title -> copies available
+    std::map<std::string, std::deque<std::string>> waiting;    // title -> line of users
+    std::map<std::string, std::set<std::string>> holds;        // user -> titles (sorted)
+
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "add") {
+            std::string title;
+            int n;
+            std::cin >> title >> n;
+            int& copies = shelf[title];
+            auto& line = waiting[title];
+            for (int i = 0; i < n; ++i) {
+                if (!line.empty()) {
+                    std::cout << line.front() << " gets " << title << '\n';
+                    holds[line.front()].insert(title);
+                    line.pop_front();
+                } else {
+                    ++copies;
+                }
+            }
+            std::cout << title << ": " << copies << " on shelf\n";
+        } else if (cmd == "borrow") {
+            std::string user, title;
+            std::cin >> user >> title;
+            auto it = shelf.find(title);
+            if (it == shelf.end()) {
+                std::cout << "no such title\n";
+            } else if (holds[user].contains(title)) {
+                std::cout << "already borrowed\n";
+            } else if (it->second > 0) {
+                --it->second;
+                holds[user].insert(title);
+                std::cout << user << " borrowed " << title << '\n';
+            } else {
+                auto& line = waiting[title];
+                if (std::find(line.begin(), line.end(), user) != line.end()) {
+                    std::cout << "already waiting\n";
+                } else {
+                    line.push_back(user);
+                    std::cout << user << " waits for " << title << " (position " << line.size() << ")\n";
+                }
+            }
+        } else if (cmd == "return") {
+            std::string user, title;
+            std::cin >> user >> title;
+            auto h = holds.find(user);
+            if (h == holds.end() || !h->second.contains(title)) {
+                std::cout << "not borrowed\n";
+                continue;
+            }
+            h->second.erase(title);
+            auto& line = waiting[title];
+            if (!line.empty()) {
+                std::string next = line.front();
+                line.pop_front();
+                holds[next].insert(title);
+                std::cout << user << " returned " << title << ", " << next << " gets it\n";
+            } else {
+                ++shelf[title];
+                std::cout << user << " returned " << title << '\n';
+            }
+        } else if (cmd == "holding") {
+            std::string user;
+            std::cin >> user;
+            auto h = holds.find(user);
+            if (h == holds.end() || h->second.empty()) {
+                std::cout << user << ": nothing\n";
+            } else {
+                std::cout << user << ':';
+                for (const auto& title : h->second) std::cout << ' ' << title;
+                std::cout << '\n';
+            }
+        }
+    }
+}
+```
+
+```hint
+One possible design: `std::map<std::string, int>` for the shelf counts, a `std::map` from title to a
+`std::deque<std::string>` (or `std::queue`) for the waiting lines, and a `std::map` from user to a
+`std::set<std::string>` for what they hold (a set keeps the titles sorted and answers "holds it?" fast).
+```
+
+```hint
+"Never added" must be checked with `find` on the shelf map: `shelf[title]` would create the title
+with 0 copies, and the next `borrow` would put people in line for a book that doesn't exist.
+```
+
+```hint
+A user who gets a copy from the line (on `add` or on someone's `return`) now holds it, and leaves
+the line.
+```
+
+```stdin
+add dune 1
+borrow ann dune
+borrow bob dune
+borrow cat dune
+borrow bob dune
+return ann dune
+holding bob
+holding ann
+```
+
+```expected
+dune: 1 on shelf
+ann borrowed dune
+bob waits for dune (position 1)
+cat waits for dune (position 2)
+already waiting
+ann returned dune, bob gets it
+bob: dune
+ann: nothing
+```
+
+```stdin
+borrow ann ghost
+return ann ghost
+holding nobody
+add ghost 2
+borrow ann ghost
+borrow ann ghost
+holding ann
+```
+
+```expected
+no such title
+not borrowed
+nobody: nothing
+ghost: 2 on shelf
+ann borrowed ghost
+already borrowed
+ann: ghost
+```
+
+```stdin
+add a 1
+borrow w a
+borrow x a
+borrow y a
+borrow z a
+add a 2
+holding y
+return x a
+return y a
+add a 1
+borrow z a
+borrow y a
+holding z
+holding y
+```
+
+```expected hidden
+a: 1 on shelf
+w borrowed a
+x waits for a (position 1)
+y waits for a (position 2)
+z waits for a (position 3)
+x gets a
+y gets a
+a: 0 on shelf
+y: a
+x returned a, z gets it
+y returned a
+a: 2 on shelf
+already borrowed
+y borrowed a
+z: a
+y: a
+```
+
+```stdin
+add zeta 1
+add alpha 1
+add mid 3
+borrow u zeta
+borrow u alpha
+borrow u mid
+holding u
+return u alpha
+return u alpha
+borrow v alpha
+holding v
+holding u
+```
+
+```expected hidden
+zeta: 1 on shelf
+alpha: 1 on shelf
+mid: 3 on shelf
+u borrowed zeta
+u borrowed alpha
+u borrowed mid
+u: alpha mid zeta
+u returned alpha
+not borrowed
+v borrowed alpha
+v: alpha
+u: mid zeta
+```
+
+```checks
+must std::(unordered_)?map :: Use maps for the per-title and per-user state.
+must std::(deque|queue|list) :: Keep each waiting line in a queue-like container.
+must std::set :: Keep each user's titles in a std::set.
 ```
 :::

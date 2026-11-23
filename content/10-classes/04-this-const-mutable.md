@@ -345,7 +345,7 @@ const reference, without weakening the function's promises.
 Returning by value makes a copy; the chained call acts on that copy, which is then thrown away.
 :::
 
-:::exercise Fluent calculator
+:::exercise Fluent calculator {easy}
 Complete the `Calc` class so its operations can be **chained**. Each of `add`, `multiply`, and
 `subtract` must modify the value and return a **reference** to the object (`return *this;`). `value()`
 is a `const` getter. The value starts at 0.
@@ -439,7 +439,7 @@ must value\s*\(\s*\)\s*const :: value() should be a const member function.
 ```
 :::
 
-:::exercise Const-correct inventory
+:::exercise Const-correct inventory {easy}
 This program doesn't compile: `printReport` takes a `const Inventory&`, but the member functions it
 calls aren't marked `const`. Fix the **class** (don't change `printReport`'s parameter) so it compiles
 and prints the report.
@@ -550,7 +550,7 @@ must total\s*\(\s*\)\s*const :: total() must be const.
 ```
 :::
 
-:::exercise Cached maximum
+:::exercise Cached maximum {medium}
 Write a class `Tracker` that stores integers and reports their maximum. Computing the maximum scans
 all values, so cache it:
 
@@ -692,5 +692,212 @@ scans: 0
 ```checks
 must \bmutable\b :: Use mutable members for the cache.
 must max\s*\(\s*\)\s*const :: max() must stay const.
+```
+:::
+
+:::exercise Lazy leaderboard {hard}
+Write a `Leaderboard` class for a game. Sorting is expensive, so the board keeps a **cached sorted
+view** and re-sorts only when a query needs it *and* the scores changed since the last sort.
+
+- `Leaderboard& set(const std::string& name, int score)` adds a player or replaces their score, marks
+  the cache stale, and returns `*this` so calls can be chained (`board.set("ann", 5).set("bob", 7);`).
+- The queries are **`const`** member functions (a const board can still be queried), so the cache and
+  the sort counter must be `mutable`.
+- Ranking order: higher score first; equal scores in alphabetical order of name.
+- The cache starts out stale, so the very first query sorts (even on an empty board). Every `set` makes
+  it stale again, even one that doesn't change the score.
+
+**Input:** commands until end of input:
+
+| Command | Output |
+| --- | --- |
+| `set NAME SCORE` | nothing |
+| `top K` | the first `K` players (or all, if there are fewer), one per line as `R. NAME SCORE`; `(empty)` if the board has no players |
+| `rank NAME` | `NAME is #R`, or `NAME not found` |
+
+After the last command, print `sorts: S`: how many times the board actually sorted.
+
+**Example:** `set ann 50`, `set bob 70`, `set cy 50`, `top 2`, `rank cy`, `set ann 90`, `rank ann`
+prints `1. bob 70`, `2. ann 50`, `cy is #3`, `ann is #1`, `sorts: 2`.
+
+```cpp starter
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <vector>
+
+class Leaderboard {
+    // TODO
+};
+
+int main() {
+    Leaderboard board;
+    // read commands until end of input
+    std::cout << "sorts: " << 0 << '\n';
+}
+```
+
+```cpp solution
+#include <algorithm>
+#include <iostream>
+#include <string>
+#include <utility>
+#include <vector>
+
+class Leaderboard {
+    std::vector<std::pair<std::string, int>> scores_;      // in insertion order
+    mutable std::vector<std::pair<int, std::string>> sorted_;  // (-score, name): sorts in rank order
+    mutable bool fresh_ = false;
+    mutable int sorts_ = 0;
+
+    void refresh() const {
+        if (fresh_) return;
+        sorted_.clear();
+        for (const auto& [name, score] : scores_) sorted_.push_back({-score, name});
+        std::sort(sorted_.begin(), sorted_.end());
+        ++sorts_;
+        fresh_ = true;
+    }
+
+public:
+    Leaderboard& set(const std::string& name, int score) {
+        fresh_ = false;
+        for (auto& entry : scores_) {
+            if (entry.first == name) {
+                entry.second = score;
+                return *this;
+            }
+        }
+        scores_.push_back({name, score});
+        return *this;
+    }
+
+    void printTop(int k) const {
+        refresh();
+        if (sorted_.empty()) {
+            std::cout << "(empty)\n";
+            return;
+        }
+        for (int i = 0; i < k && i < static_cast<int>(sorted_.size()); ++i)
+            std::cout << i + 1 << ". " << sorted_[i].second << ' ' << -sorted_[i].first << '\n';
+    }
+
+    int rank(const std::string& name) const {      // 0 = not found
+        refresh();
+        for (std::size_t i = 0; i < sorted_.size(); ++i)
+            if (sorted_[i].second == name) return static_cast<int>(i) + 1;
+        return 0;
+    }
+
+    int sorts() const { return sorts_; }
+};
+
+int main() {
+    Leaderboard board;
+    std::string cmd;
+    while (std::cin >> cmd) {
+        if (cmd == "set") {
+            std::string name;
+            int score;
+            std::cin >> name >> score;
+            board.set(name, score);
+        } else if (cmd == "top") {
+            int k;
+            std::cin >> k;
+            board.printTop(k);
+        } else if (cmd == "rank") {
+            std::string name;
+            std::cin >> name;
+            int r = board.rank(name);
+            if (r == 0) std::cout << name << " not found\n";
+            else std::cout << name << " is #" << r << '\n';
+        }
+    }
+    std::cout << "sorts: " << board.sorts() << '\n';
+}
+```
+
+```hint
+Keep the real data (names and scores) in one member, and the sorted copy plus a `fresh_` flag and a
+counter in `mutable` members. A private `void refresh() const` that sorts only when `!fresh_` keeps
+the queries short.
+```
+
+```hint
+Sorting a `std::vector<std::pair<int, std::string>>` holding `(-score, name)` with plain `std::sort` gives
+exactly the ranking order: pairs compare by `first`, then by `second`.
+```
+
+```stdin
+set ann 50
+set bob 70
+set cy 50
+top 2
+rank cy
+set ann 90
+rank ann
+```
+
+```expected
+1. bob 70
+2. ann 50
+cy is #3
+ann is #1
+sorts: 2
+```
+
+```stdin
+top 3
+rank ghost
+set zed 10
+set amy 10
+set zed 11
+top 5
+top 1
+rank amy
+rank zed
+```
+
+```expected hidden
+(empty)
+ghost not found
+1. zed 11
+2. amy 10
+1. zed 11
+amy is #2
+zed is #1
+sorts: 2
+```
+
+```stdin
+set a 1
+set b 2
+set c 3
+set a 5
+set b 5
+```
+
+```expected hidden
+sorts: 0
+```
+
+```stdin
+set solo -5
+top 0
+rank solo
+set solo -5
+top 1
+```
+
+```expected hidden
+solo is #1
+1. solo -5
+sorts: 2
+```
+
+```checks
+must Leaderboard\s*&\s*set\s*\( :: set must return Leaderboard& so calls can be chained.
+must return\s*\*\s*this :: Return *this from set.
+must \bmutable\b :: Keep the cache in mutable members.
 ```
 :::
