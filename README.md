@@ -25,8 +25,17 @@ npm run build
 ```
 
 Live at **https://skill-issue.gaven-robertson.workers.dev** (Cloudflare Workers static assets).
-To redeploy after changes, from your own machine: `npm run deploy` (runs the build, then `wrangler deploy`
-using `wrangler.jsonc`; the first time, `npx wrangler login`).
+
+### Deploying
+
+Every push to `main` runs CI (lint, formatting, unit tests, build, content verification) and, if it all
+passes, deploys the site to Cloudflare automatically (`.github/workflows/ci.yml`, job `deploy`). A failed
+check never deploys. You can also deploy `main` by hand from the repo's **Actions → CI → Run workflow**.
+
+One-time setup: add a repository secret named `CLOUDFLARE_API_TOKEN` (GitHub → Settings → Secrets and
+variables → Actions) holding a Cloudflare API token made from the **Edit Cloudflare Workers** template.
+
+From your own machine you can also deploy directly with `npm run deploy` (the first time, `npx wrangler login`).
 
 `dist/` is a plain static site: host it anywhere (Cloudflare Pages, GitHub Pages, Netlify, or any folder
 on a web server). It uses hash routing and relative paths, so no server configuration is needed.

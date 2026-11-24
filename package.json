@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "verify": "node scripts/verify-content.mjs",
-    "deploy": "npm run build && npx wrangler@4 deploy",
+    "deploy": "npm run build && wrangler deploy",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write .",
@@ -43,6 +43,7 @@
     "globals": "^17.6.0",
     "prettier": "^3.10.1",
     "vite": "^8.0.12",
-    "vitest": "^3.2.7"
+    "vitest": "^3.2.7",
+    "wrangler": "^4.168.0"
   }
 }

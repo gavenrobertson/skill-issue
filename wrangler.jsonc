@@ -1,8 +1,10 @@
 {
   // Deploys the built site (dist/) as a static-assets Worker on Cloudflare.
-  // Build first: npm run build, then: npx wrangler deploy
+  // Deployed automatically by .github/workflows/ci.yml on every push to main (after CI passes).
+  // Manual deploy: npm run deploy
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "skill-issue",
+  "account_id": "85639e2cb2b6cc53eab56e77b9511870",
   "compatibility_date": "2026-11-01",
   "assets": {
     "directory": "./dist",

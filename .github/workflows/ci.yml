@@ -3,6 +3,7 @@ name: CI
 on:
   push:
   pull_request:
+  workflow_dispatch: # lets you deploy main manually from the Actions tab
 
 jobs:
   check:
@@ -26,3 +27,28 @@ jobs:
         run: |
           g++ --version
           npm run verify
+
+  # Deploys the site to Cloudflare Workers after every push to main that passes the checks above.
+  # Needs the repository secret CLOUDFLARE_API_TOKEN (see README → Deploying).
+  deploy:
+    needs: check
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://skill-issue.gaven-robertson.workers.dev
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Deploy to Cloudflare
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
